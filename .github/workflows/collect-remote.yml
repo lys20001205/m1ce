@@ -1,0 +1,66 @@
+name: ROUNDHOUSE Remote Log Collect
+
+on:
+  push:
+    paths:
+      - 'log-poll-trigger.txt'
+  workflow_dispatch:
+
+jobs:
+  collect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Fetch cached telemetry
+        shell: bash
+        run: |
+          set -euo pipefail
+          URL='https://ntfy.sh/roundhouse-log-f333c88ded8549f084c70bd5cceb0a7f/json?poll=1'
+          curl --fail --silent --show-error "$URL" -o telemetry.jsonl
+          echo '=== RAW MESSAGE COUNT ==='
+          wc -l telemetry.jsonl
+          echo '=== RECENT ROUNDHOUSE TELEMETRY ==='
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          rows=[]
+          for line in Path('telemetry.jsonl').read_text(encoding='utf-8',errors='replace').splitlines():
+              try:
+                  outer=json.loads(line)
+              except Exception:
+                  continue
+              msg=outer.get('message','')
+              try:
+                  payload=json.loads(msg)
+              except Exception:
+                  continue
+              if isinstance(payload,dict) and payload.get('v','').startswith('v7'):
+                  rows.append(payload)
+          print('parsed_roundhouse_messages=',len(rows))
+          for p in rows[-20:]:
+              st=p.get('state',{})
+              print(json.dumps({
+                  'session':p.get('s'),
+                  'reason':p.get('reason'),
+                  'at':p.get('at'),
+                  'round':st.get('round'),
+                  'px':st.get('px'),
+                  'carIndex':st.get('carIndex'),
+                  'cars':st.get('cars'),
+                  'weapon':st.get('weapon'),
+                  'standalone':st.get('standalone'),
+                  'canvasCss':st.get('canvasCss'),
+                  'canvasBacking':st.get('canvasBacking'),
+                  'cameraX':st.get('cameraX'),
+                  'playerScreenX':st.get('playerScreenX'),
+                  'drawCount':st.get('drawCount'),
+                  'events':p.get('events',[]),
+              },ensure_ascii=False))
+          PY
+
+      - name: Upload telemetry snapshot
+        uses: actions/upload-artifact@v4
+        with:
+          name: roundhouse-remote-telemetry
+          path: telemetry.jsonl
+          retention-days: 1
