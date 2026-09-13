@@ -3,29 +3,26 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-<title>ROUNDHOUSE Mobile Canvas v3</title>
+<meta name="format-detection" content="telephone=no">
+<title>ROUNDHOUSE Mobile Canvas v4</title>
 <style>
-*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#091018;color:#eef3f8;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;touch-action:none}
-#app{position:fixed;inset:0;background:#0c151f}
-#hud{position:absolute;left:8px;right:8px;top:max(6px,env(safe-area-inset-top));height:52px;display:flex;gap:6px;z-index:3}
-.h{background:#111a24;border:1px solid #334456;border-radius:10px;padding:6px 9px;min-width:64px}.h small{display:block;color:#91a4b7;font-size:8px}.h b{font-size:14px}
-#event{position:absolute;left:8px;right:8px;top:64px;height:42px;background:#111a24;border:1px solid #334456;border-radius:10px;padding:7px 10px;z-index:3;font-size:12px}
-#game{position:absolute;left:0;right:0;top:112px;bottom:96px;width:100%;height:calc(100% - 208px);background:#111c29}
-#controls{position:absolute;left:0;right:0;bottom:max(8px,env(safe-area-inset-bottom));height:80px;z-index:4;pointer-events:none}
-.g{position:absolute;bottom:0;display:flex;gap:8px;pointer-events:auto}#mv{left:max(10px,env(safe-area-inset-left))}#ac{right:max(10px,env(safe-area-inset-right))}
-button{border:1px solid #5d7086;background:#1b2734;color:#fff;border-radius:16px;font-weight:800}
-.ctrl{width:64px;height:64px;font-size:22px}.small{width:56px;height:56px;font-size:11px}.fire{width:70px;height:70px;background:#54292b;border-color:#9d5f62}.repair{background:#20422c;border-color:#5b8a68}
-#modal{position:absolute;inset:0;background:rgba(4,8,12,.96);z-index:8;display:flex;align-items:center;justify-content:center;padding:16px}
-.card{width:min(560px,94vw);max-height:88vh;overflow:auto;background:#141d27;border:1px solid #35475a;border-radius:15px;padding:16px}
-h1{margin:0 0 7px;font-size:26px}.sub{color:#9cadbf;font-size:13px;margin-bottom:12px}.row{display:flex;gap:8px;flex-wrap:wrap}.mini{flex:1;background:#1b2632;border:1px solid #314256;border-radius:10px;padding:9px;font-size:12px}
-.choice{margin-top:8px;padding:10px;background:#1b2632;border:1px solid #314256;border-radius:10px}.choice.sel{outline:2px solid #78aaff}
-.actions{display:flex;gap:8px;margin-top:13px}.actions button{flex:1;min-height:48px;font-size:14px}.start{background:#20412b}.danger{background:#4f2829}
-.warn{color:#f0bc5c;font-size:12px;margin-top:10px}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#081018;color:#eef4fa;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;overscroll-behavior:none}#app{position:fixed;inset:0;background:linear-gradient(180deg,#09131c,#0d1824 38%,#081018)}button,canvas,div,span{touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+#hud{position:absolute;left:6px;right:6px;top:max(6px,env(safe-area-inset-top));display:flex;gap:5px;z-index:4;pointer-events:none}
+.h{background:rgba(11,20,30,.82);border:1px solid rgba(81,108,136,.65);border-radius:12px;padding:5px 8px;min-width:60px;backdrop-filter:blur(6px)}.h small{display:block;color:#8ea4ba;font-size:8px;letter-spacing:.08em}.h b{display:block;font-size:12px;line-height:1.15;margin-top:1px}.h.brand{min-width:86px}.h.brand b{font-size:13px;letter-spacing:.05em}
+#event{position:absolute;left:6px;right:6px;top:58px;height:34px;padding:7px 11px;background:rgba(10,18,28,.76);border:1px solid rgba(81,108,136,.62);border-radius:12px;z-index:4;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;backdrop-filter:blur(6px);pointer-events:none}
+#game{position:absolute;left:0;right:0;top:96px;bottom:72px;width:100%;height:calc(100% - 168px);display:block}
+#controls{position:absolute;left:0;right:0;bottom:max(6px,env(safe-area-inset-bottom));height:66px;z-index:5;pointer-events:none}
+.g{position:absolute;bottom:0;display:flex;gap:8px;pointer-events:auto}#mv{left:max(8px,env(safe-area-inset-left))}#ac{right:max(8px,env(safe-area-inset-right))}
+button{border:1px solid rgba(108,130,153,.88);background:rgba(21,31,43,.9);color:#fff;border-radius:17px;font-weight:800;box-shadow:0 8px 24px rgba(0,0,0,.28);padding:0}button:active,button.active{transform:scale(.96);filter:brightness(1.08)}
+.ctrl{width:58px;height:58px;font-size:24px}.small{width:52px;height:52px;font-size:11px;line-height:1.05}.fire{width:64px;height:64px;background:rgba(85,38,40,.92);border-color:rgba(184,103,106,.95)}.repair{background:rgba(28,65,40,.92);border-color:rgba(93,144,108,.95)}.roof{background:rgba(24,35,47,.94)}
+#modal{position:absolute;inset:0;background:rgba(4,9,14,.92);z-index:8;display:flex;align-items:center;justify-content:center;padding:14px} .card{width:min(560px,94vw);max-height:88vh;overflow:auto;background:#131d28;border:1px solid #33475e;border-radius:16px;padding:16px;box-shadow:0 18px 48px rgba(0,0,0,.4)} h1{margin:0 0 7px;font-size:25px} .sub{color:#9fb0c3;font-size:13px;margin-bottom:10px} .row{display:flex;gap:8px;flex-wrap:wrap}.mini{flex:1 1 120px;background:#1a2633;border:1px solid #2e4155;border-radius:10px;padding:9px;font-size:12px}.choice{margin-top:8px;padding:10px;background:#1a2633;border:1px solid #2e4155;border-radius:10px}.choice.sel{outline:2px solid #78aaff}.actions{display:flex;gap:8px;margin-top:12px}.actions button{flex:1;min-height:46px;font-size:14px}.start{background:#21422c}.danger{background:#4d2728}.warn{color:#f1bc5a;font-size:12px;margin-top:10px}
+#hint{position:absolute;left:50%;bottom:74px;transform:translateX(-50%);background:rgba(10,18,28,.72);border:1px solid rgba(81,108,136,.52);border-radius:999px;padding:5px 10px;font-size:11px;color:#9eb3c7;z-index:4;pointer-events:none;backdrop-filter:blur(5px)}
 </style>
 </head>
 <body>
 <div id="app">
   <div id="hud">
+    <div class="h brand"><small>GAME</small><b>ROUNDHOUSE</b></div>
     <div class="h"><small>ROUND</small><b id="r">1</b></div>
     <div class="h"><small>CASH</small><b id="m">$1,000</b></div>
     <div class="h"><small>MULT</small><b id="x">×1.00</b></div>
@@ -33,25 +30,26 @@ h1{margin:0 0 7px;font-size:26px}.sub{color:#9cadbf;font-size:13px;margin-bottom
     <div class="h"><small>ENGINE</small><b id="e">100%</b></div>
     <div class="h"><small>TIME</small><b id="t">45</b></div>
   </div>
-  <div id="event">点击 START 才会开始。</div>
+  <div id="event">点击 START 开始。建议在 Safari 横屏游玩。</div>
   <canvas id="game"></canvas>
+  <div id="hint">左下移动，右下操作</div>
   <div id="controls">
     <div class="g" id="mv"><button class="ctrl" id="L">◀</button><button class="ctrl" id="R">▶</button></div>
-    <div class="g" id="ac"><button class="ctrl small" id="roof">车顶</button><button class="ctrl small repair" id="fix">修理</button><button class="ctrl fire" id="fire">射击</button></div>
+    <div class="g" id="ac"><button class="ctrl small roof" id="roof">车顶</button><button class="ctrl small repair" id="fix">修理</button><button class="ctrl fire" id="fire">射击</button></div>
   </div>
   <div id="modal">
     <div class="card">
       <h1 id="mt">ROUNDHOUSE</h1>
-      <div class="sub" id="ms">Canvas 轻量版。不会在开始前偷偷计时。</div>
+      <div class="sub" id="ms">手机试玩 v4。现在先解决手感和 UI，可在 GitHub Pages 直接打开。</div>
       <div class="row" id="intro">
         <div class="mini">守住列车直到倒计时结束。</div>
-        <div class="mini">每轮后选择 CASH OUT / ONE MORE ROUND。</div>
+        <div class="mini">每轮结束后决定 CASH OUT 或 ONE MORE ROUND。</div>
       </div>
       <div id="roundUi" style="display:none">
         <div class="row"><div class="mini">当前收益：<b id="rm"></b></div><div class="mini">下一倍率：<b id="rx"></b></div></div>
         <div id="choices"></div>
       </div>
-      <div class="warn">建议横屏并在 Safari/正常浏览器运行。</div>
+      <div class="warn">如果方向键长按仍然弹出系统菜单，告诉我你用的是 Safari 还是内置浏览器，我继续压掉。</div>
       <div class="actions">
         <button id="cash" style="display:none">CASH OUT</button>
         <button class="start" id="start" onclick="startRound()">START RUN</button>
@@ -64,101 +62,71 @@ h1{margin:0 0 7px;font-size:26px}.sub{color:#9cadbf;font-size:13px;margin-bottom
 "use strict";
 const cv=document.getElementById("game"),ctx=cv.getContext("2d",{alpha:false});
 const E=document.getElementById("event");
-const carDefs={engine:["ENGINE",160],cargo:["CARGO",100],battery:["BATTERY",90],workshop:["WORKSHOP",110],turret:["TURRET",95]};
-const S={round:1,money:1000,mult:1,time:45,running:false,roof:false,px:55,enemies:[],cars:[{type:"engine",hp:160,max:160},{type:"cargo",hp:100,max:100,cargo:3}],spawn:0,last:0,selected:"battery",move:0};
+const carDefs={engine:["ENGINE",160],cargo:["CARGO",100],battery:["BATTERY",90],workshop:["WORKSHOP",110],turret:["TURRET",95],passenger:["PASSENGER",85]};
+const hints={battery:"后勤稳定",workshop:"修理更快",turret:"自动火力",cargo:"更多收益",passenger:"高价值高风险"};
+const S={round:1,money:1000,mult:1,time:45,running:false,roof:false,px:52,enemies:[],cars:[{type:"engine",hp:160,max:160},{type:"cargo",hp:100,max:100,cargo:3}],spawn:0,last:0,selected:"battery",move:0,effects:[],shake:0,turretCd:0};
 function cash(n){return "$"+Math.max(0,Math.round(n)).toLocaleString()}
-function resize(){const d=Math.min(devicePixelRatio||1,2);const rect=cv.getBoundingClientRect();cv.width=Math.max(1,Math.floor(rect.width*d));cv.height=Math.max(1,Math.floor(rect.height*d));ctx.setTransform(d,0,0,d,0,0)}
-addEventListener("resize",resize);resize();
-function hud(){
- document.getElementById("r").textContent=S.round;
- document.getElementById("m").textContent=cash(S.money);
- document.getElementById("x").textContent="×"+S.mult.toFixed(2);
- document.getElementById("c").textContent=S.cars.length;
- document.getElementById("e").textContent=Math.round(S.cars[0].hp/S.cars[0].max*100)+"%";
- document.getElementById("t").textContent=Math.max(0,Math.ceil(S.time));
+function setEvent(msg){E.textContent=msg}
+function resize(){const d=Math.min(devicePixelRatio||1,2),rect=cv.getBoundingClientRect();cv.width=Math.max(1,Math.floor(rect.width*d));cv.height=Math.max(1,Math.floor(rect.height*d));ctx.setTransform(d,0,0,d,0,0)}
+addEventListener("resize",resize,{passive:true});resize();
+function hud(){document.getElementById("r").textContent=S.round;document.getElementById("m").textContent=cash(S.money);document.getElementById("x").textContent="×"+S.mult.toFixed(2);document.getElementById("c").textContent=S.cars.length;document.getElementById("e").textContent=Math.round(S.cars[0].hp/S.cars[0].max*100)+"%";document.getElementById("t").textContent=Math.max(0,Math.ceil(S.time))}
+function tw(){return S.cars.length*150}
+function carIndexAt(x){return Math.max(0,Math.min(S.cars.length-1,Math.floor((x+18)/150)))}
+function addFloat(x,y,text,color){S.effects.push({type:"float",x,y,text,color,life:0.8})}
+function hitShake(power){S.shake=Math.max(S.shake,power)}
+function drawBackground(w,h){
+  const g=ctx.createLinearGradient(0,0,0,h);g.addColorStop(0,"#17283a");g.addColorStop(.55,"#0f1c29");g.addColorStop(1,"#091018");ctx.fillStyle=g;ctx.fillRect(0,0,w,h);
+  ctx.globalAlpha=.18;ctx.fillStyle="#2a3b4a";for(let x=0;x<w+120;x+=95){const bh=60+((x*13)%100);ctx.fillRect(x,h*0.24,bh*.9,bh)}ctx.globalAlpha=1;
+  ctx.fillStyle="rgba(255,255,255,.05)";for(let x=0;x<w;x+=120)ctx.fillRect(x,0,2,h);
+  ctx.globalAlpha=.23;ctx.strokeStyle="#8db6ff";for(let i=0;i<10;i++){const y=20+i*24;ctx.beginPath();ctx.moveTo((performance.now()/8+i*70)% (w+80)-80,y);ctx.lineTo((performance.now()/8+i*70)% (w+80)-20,y);ctx.stroke()}ctx.globalAlpha=1;
 }
-function tw(){return S.cars.length*138}
-function carIndexAt(x){return Math.max(0,Math.min(S.cars.length-1,Math.floor(x/138)))}
-function rr(x,y,w,h,r,fill,stroke){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();if(fill)ctx.fill();if(stroke)ctx.stroke()}
 function draw(){
- const w=cv.clientWidth,h=cv.clientHeight;
- ctx.fillStyle="#101c29";ctx.fillRect(0,0,w,h);
- ctx.fillStyle="#152536";for(let x=0;x<w;x+=95)ctx.fillRect(x,0,2,h);
- const base=h-54;ctx.fillStyle="#5a6571";ctx.fillRect(0,base+14,w,7);ctx.fillStyle="#27313b";ctx.fillRect(0,base+30,w,7);
- const scale=Math.min(1,w/Math.max(420,tw()+30));
- ctx.save();ctx.translate(12,0);ctx.scale(scale,scale);
+ const w=cv.clientWidth,h=cv.clientHeight;ctx.save();ctx.clearRect(0,0,w,h);
+ if(S.shake>0){ctx.translate((Math.random()-.5)*S.shake,(Math.random()-.5)*S.shake);S.shake*=.82;if(S.shake<.15)S.shake=0}
+ drawBackground(w,h);
+ const base=Math.min(h-44,Math.max(170,h*0.74));
+ ctx.fillStyle="#708192";ctx.fillRect(0,base+20,w,8);ctx.fillStyle="#2d3945";ctx.fillRect(0,base+37,w,9);
+ const fitScale=Math.min(1.15,Math.max(.82,w/(Math.max(460,tw()+50))));
+ const visibleWorld=w/fitScale;const maxCam=Math.max(0,tw()-visibleWorld);const camX=Math.max(0,Math.min(maxCam,S.px-visibleWorld*0.42));
+ ctx.save();ctx.scale(fitScale,fitScale);ctx.translate(-camX,0);
+ ctx.strokeStyle="#728292";ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(18,base-4);ctx.lineTo(tw()-18,base-4);ctx.stroke();
  S.cars.forEach((c,i)=>{
-   const x=i*138,y=base-104;
-   ctx.fillStyle=c.type==="cargo"?"#2e291c":c.type==="battery"?"#1c2b24":c.type==="workshop"?"#29222c":c.type==="turret"?"#222934":"#202c37";
-   ctx.strokeStyle="#637081";ctx.lineWidth=2;rr(x,y,132,94,7,true,true);
-   ctx.fillStyle="#44515f";ctx.fillRect(x+5,y-10,122,10);
-   ctx.fillStyle="#edf2f7";ctx.font="bold 10px system-ui";ctx.fillText(String(i+1).padStart(2,"0")+" "+carDefs[c.type][0],x+7,y+15);
-   ctx.fillStyle="#28323d";ctx.fillRect(x+7,y+74,118,6);
-   ctx.fillStyle="#6fc68c";ctx.fillRect(x+7,y+74,118*Math.max(0,c.hp/c.max),6);
-   if(c.type==="cargo"){ctx.fillStyle="#8a7033";for(let k=0;k<(c.cargo||0);k++)ctx.fillRect(x+12+k*20,y+34,15,14)}
+   const x=i*150+8,y=base-118;ctx.fillStyle=c.type==="cargo"?"#463c1f":c.type==="battery"?"#203428":c.type==="workshop"?"#2f2435":c.type==="turret"?"#232d38":c.type==="passenger"?"#3a2628":"#223242";ctx.strokeStyle="#7a8ea4";ctx.lineWidth=2;rr(x,y,138,100,10,true,true);
+   ctx.fillStyle="#516172";rr(x+7,y-12,124,13,6,true,false);
+   ctx.fillStyle="rgba(255,255,255,.05)";ctx.fillRect(x+9,y+9,120,24);
+   ctx.fillStyle="#1d232c";ctx.beginPath();ctx.arc(x+32,base+8,10,0,Math.PI*2);ctx.arc(x+106,base+8,10,0,Math.PI*2);ctx.fill();ctx.fillStyle="#59697b";ctx.beginPath();ctx.arc(x+32,base+8,5,0,Math.PI*2);ctx.arc(x+106,base+8,5,0,Math.PI*2);ctx.fill();
+   ctx.fillStyle="rgba(111,198,140,.15)";ctx.fillRect(x+11,y+78,116*Math.max(0,c.hp/c.max),8);
+   ctx.fillStyle="#2b3540";ctx.fillRect(x+11,y+78,116,8);ctx.fillStyle="#74d08e";ctx.fillRect(x+11,y+78,116*Math.max(0,c.hp/c.max),8);
+   ctx.fillStyle="#edf2f7";ctx.font="bold 10px system-ui";ctx.fillText(String(i+1).padStart(2,"0")+" "+carDefs[c.type][0],x+12,y+23);ctx.fillStyle="#d4dde6";ctx.font="10px system-ui";ctx.fillText(Math.round(c.hp/c.max*100)+"%",x+104,y+23);
+   if(c.type==="cargo"){ctx.fillStyle="#aa8a41";for(let k=0;k<(c.cargo||0);k++){rr(x+16+k*24,y+40,18,14,3,true,false)}}
+   else if(c.type==="turret"){ctx.fillStyle="#b7c5d6";ctx.fillRect(x+66,y+26,8,18);ctx.fillRect(x+62,y+20,16,8)}
+   else if(c.type==="engine"){ctx.fillStyle="#79a7ff";ctx.globalAlpha=.22;ctx.fillRect(x+18,y+16,20,46);ctx.globalAlpha=1;for(let s=0;s<3;s++){const py=y-10-((performance.now()/100+s*20)%26);ctx.fillStyle="rgba(220,230,245,.35)";ctx.beginPath();ctx.arc(x+28,py,5-s,0,Math.PI*2);ctx.fill();}}
  });
- const py=S.roof?base-137:base-46;ctx.fillStyle="#7cabff";rr(S.px,py,20,30,5,true,false);
- S.enemies.forEach(en=>{ctx.fillStyle=en.type==="thief"?"#a479ff":en.type==="clinger"?"#ff9a5a":"#e46868";const yy=en.type==="clinger"?base-126:base-44;rr(en.x,yy,19,28,5,true,false)});
- ctx.restore();hud();
+ const py=S.roof?base-154:base-54;ctx.fillStyle="#7cabff";ctx.shadowColor="rgba(122,172,255,.45)";ctx.shadowBlur=12;rr(S.px,py,22,34,6,true,false);ctx.shadowBlur=0;ctx.fillStyle="#dcebff";ctx.fillRect(S.px+5,py+8,12,3);ctx.font="10px system-ui";ctx.fillText("YOU",S.px-1,py-6);
+ S.enemies.forEach(en=>{const yy=en.type==="clinger"?base-142:base-52;ctx.fillStyle=en.type==="thief"?"#a67aff":en.type==="clinger"?"#ff9a60":"#e36d6d";ctx.shadowColor="rgba(255,130,130,.4)";ctx.shadowBlur=10;rr(en.x,yy,20,30,6,true,false);ctx.shadowBlur=0;if(en.flash>0){ctx.fillStyle="rgba(255,255,255,"+en.flash+")";rr(en.x,yy,20,30,6,true,false)}});
+ const dt=.016;S.effects=S.effects.filter(f=>{f.life-=dt;f.y-=28*dt;return f.life>0});
+ S.effects.forEach(f=>{ctx.globalAlpha=Math.max(0,f.life/0.8);ctx.fillStyle=f.color;ctx.font="bold 12px system-ui";ctx.fillText(f.text,f.x,f.y)});ctx.globalAlpha=1;
+ ctx.restore();ctx.restore();hud();
 }
-function spawn(){
- let type="boarder",q=Math.random();if(S.round>=2&&q<.25)type="thief";else if(S.round>=3&&q>.82)type="clinger";
- S.enemies.push({type,x:Math.random()<.5?0:Math.max(0,tw()-20),hp:type==="boarder"?2:3,atk:0});
-}
-function ai(dt){
- S.enemies.forEach(en=>{
-   let ti=carIndexAt(S.px),tx=S.px;
-   if(en.type==="thief"){let found=-1;for(let i=S.cars.length-1;i>=0;i--)if(S.cars[i].type==="cargo"&&(S.cars[i].cargo||0)>0){found=i;break}if(found>=0){ti=found;tx=ti*138+66}}
-   if(en.type==="clinger"){ti=Math.max(1,Math.min(S.cars.length-1,carIndexAt(en.x)));tx=ti*138+66}
-   const sp=en.type==="thief"?40:26;
-   if(Math.abs(en.x-tx)>14)en.x+=Math.sign(tx-en.x)*sp*dt;
-   else{en.atk+=dt;if(en.atk>1){en.atk=0;
-     if(en.type==="thief"){let c=S.cars[ti];if(c&&c.type==="cargo"&&(c.cargo||0)>0){c.cargo--;S.money=Math.max(0,S.money-250*S.mult);E.textContent="THIEF 抢走了货物！"}}
-     else{let c=S.cars[ti];if(c)c.hp=Math.max(0,c.hp-(en.type==="clinger"?7:4));if(ti===0&&c.hp<=0)lose("ENGINE DESTROYED")}
-   }}
- });
-}
-function update(dt){
- if(!S.running)return;
- S.time-=dt;S.spawn+=dt;if(S.spawn>Math.max(.9,3.2-S.round*.17)){S.spawn=0;spawn()}
- if(S.move)S.px=Math.max(0,Math.min(tw()-24,S.px+S.move*90*dt));
- ai(dt);S.enemies=S.enemies.filter(e=>e.hp>0&&e.x>-80&&e.x<tw()+80);
- if(S.time<=0)finish();
-}
-function loop(ts){let dt=Math.min(.05,(ts-(S.last||ts))/1000);S.last=ts;update(dt);draw();requestAnimationFrame(loop)}requestAnimationFrame(loop);
-function startRound(){
- S.running=true;S.time=45+Math.min(20,(S.round-1)*3);S.spawn=0;S.last=0;document.getElementById("modal").style.display="none";E.textContent="Round "+S.round+"：守住列车。";
-}
-window.startRound=startRound;
+function rr(x,y,w,h,r,fill,stroke){ctx.beginPath();ctx.roundRect(x,y,w,h,r);if(fill)ctx.fill();if(stroke)ctx.stroke()}
+function spawn(){let type="boarder",q=Math.random();if(S.round>=2&&q<.25)type="thief";else if(S.round>=3&&q>.82)type="clinger";S.enemies.push({type,x:Math.random()<.5?0:Math.max(0,tw()-30),hp:type==="boarder"?2:3,atk:0,flash:0})}
+function turretStep(dt){S.turretCd-=dt;if(S.turretCd>0)return;const count=S.cars.filter(c=>c.type==="turret"&&c.hp>0).length;if(!count||!S.enemies.length)return;S.turretCd=.7;for(let i=0;i<count;i++){if(!S.enemies.length)break;S.enemies[0].hp--;S.enemies[0].flash=.7;addFloat(S.enemies[0].x,140,"hit","#dbe7ff");if(S.enemies[0].hp<=0){S.money+=35*S.mult;addFloat(S.enemies[0].x,130,"+$35","#7be093");S.enemies.shift()}}}
+function ai(dt){S.enemies.forEach(en=>{en.flash=Math.max(0,(en.flash||0)-dt*4);let ti=carIndexAt(S.px),tx=S.px;if(en.type==="thief"){let found=-1;for(let i=S.cars.length-1;i>=0;i--)if(S.cars[i].type==="cargo"&&(S.cars[i].cargo||0)>0){found=i;break}if(found>=0){ti=found;tx=ti*150+78}}if(en.type==="clinger"){ti=Math.max(1,Math.min(S.cars.length-1,carIndexAt(en.x)));tx=ti*150+76}const sp=en.type==="thief"?46:30;if(Math.abs(en.x-tx)>12)en.x+=Math.sign(tx-en.x)*sp*dt;else{en.atk+=dt;if(en.atk>1){en.atk=0;if(en.type==="thief"){const c=S.cars[ti];if(c&&c.type==="cargo"&&(c.cargo||0)>0){c.cargo--;S.money=Math.max(0,S.money-250*S.mult);setEvent("THIEF 抢走一箱货物！");addFloat(en.x,120,"-$250","#ffb0b0");hitShake(2.5)}}else{const c=S.cars[ti];if(c){const dmg=en.type==="clinger"?7:4;c.hp=Math.max(0,c.hp-dmg);addFloat(ti*150+48,120,"-"+dmg,"#ffb0b0");hitShake(en.type==="clinger"?4:2.5);if(ti===0&&c.hp<=0)lose("ENGINE DESTROYED");else if(en.type==="clinger")setEvent("CLINGER 正在撕裂车体！")}}}}})}
+function update(dt){if(!S.running)return;S.time-=dt;S.spawn+=dt;if(S.move)S.px=Math.max(0,Math.min(tw()-24,S.px+S.move*120*dt));if(S.spawn>Math.max(.9,3.1-S.round*.18)){S.spawn=0;spawn()}ai(dt);turretStep(dt);S.enemies=S.enemies.filter(e=>e.hp>0&&e.x>-80&&e.x<tw()+80);if(S.time<=0)finish()}
+function loop(ts){const dt=Math.min(.05,(ts-(S.last||ts))/1000);S.last=ts;update(dt);draw();requestAnimationFrame(loop)}requestAnimationFrame(loop);
+function startRound(){S.running=true;S.time=45+Math.min(24,(S.round-1)*3);S.spawn=0;S.last=0;document.getElementById("modal").style.display="none";setEvent("Round "+S.round+"：守住列车。")}window.startRound=startRound;
 function finish(){S.running=false;S.money+=Math.round((900+S.round*500)*S.mult);showRoundhouse()}
-function showRoundhouse(){
- document.getElementById("modal").style.display="flex";document.getElementById("mt").textContent="ROUND COMPLETE";
- document.getElementById("ms").textContent="现在离开就能保住收益。";
- document.getElementById("intro").style.display="none";document.getElementById("roundUi").style.display="block";
- document.getElementById("cash").style.display="block";document.getElementById("more").style.display="block";document.getElementById("start").style.display="none";
- document.getElementById("rm").textContent=cash(S.money);document.getElementById("rx").textContent="×"+(S.mult*1.28).toFixed(2);buildChoices();
-}
-function buildChoices(){
- const root=document.getElementById("choices");root.innerHTML="";const cycle=["battery","workshop","turret","cargo"],a=(S.round-1)%cycle.length,p=[cycle[a],cycle[(a+1)%cycle.length]];
- if(!p.includes(S.selected))S.selected=p[0];p.forEach(type=>{let d=document.createElement("div");d.className="choice"+(S.selected===type?" sel":"");d.textContent=carDefs[type][0]+" — "+(type==="turret"?"自动火力":type==="workshop"?"修理更快":type==="cargo"?"更多收益":"后勤稳定");d.onclick=()=>{S.selected=type;buildChoices()};root.appendChild(d)})
-}
-function oneMore(){
- S.round++;S.mult*=1.28;let type=S.selected,def=carDefs[type],c={type,hp:def[1],max:def[1]};if(type==="cargo")c.cargo=4;S.cars.push(c);S.px=55;S.enemies=[];S.roof=false;
- document.getElementById("mt").textContent="ROUNDHOUSE";document.getElementById("ms").textContent="新车厢已接入。点击开始下一轮。";
- document.getElementById("roundUi").style.display="none";document.getElementById("cash").style.display="none";document.getElementById("more").style.display="none";
- const st=document.getElementById("start");st.style.display="block";st.textContent="START ROUND "+S.round;E.textContent="等待开始 Round "+S.round+"。";
-}
-window.oneMore=oneMore;
+function showRoundhouse(){document.getElementById("modal").style.display="flex";document.getElementById("mt").textContent="ROUND COMPLETE";document.getElementById("ms").textContent="列车回到 Roundhouse。现在离开就能保住收益。";document.getElementById("intro").style.display="none";document.getElementById("roundUi").style.display="block";document.getElementById("cash").style.display="block";document.getElementById("more").style.display="block";document.getElementById("start").style.display="none";document.getElementById("rm").textContent=cash(S.money);document.getElementById("rx").textContent="×"+(S.mult*1.28).toFixed(2);buildChoices()}
+function buildChoices(){const root=document.getElementById("choices");root.innerHTML="";const cycle=["battery","workshop","turret","cargo","passenger"],a=(S.round-1)%cycle.length,p=[cycle[a],cycle[(a+1)%cycle.length]];if(!p.includes(S.selected))S.selected=p[0];p.forEach(type=>{let d=document.createElement("div");d.className="choice"+(S.selected===type?" sel":"");d.innerHTML="<b>"+carDefs[type][0]+"</b> — "+hints[type];d.onclick=()=>{S.selected=type;buildChoices()};root.appendChild(d)})}
+function oneMore(){S.round++;S.mult*=1.28;const type=S.selected,def=carDefs[type],c={type,hp:def[1],max:def[1]};if(type==="cargo")c.cargo=4;S.cars.push(c);S.px=52;S.enemies=[];S.roof=false;document.getElementById("mt").textContent="ROUNDHOUSE";document.getElementById("ms").textContent=carDefs[type][0]+" 已接入。点击开始下一轮。";document.getElementById("roundUi").style.display="none";document.getElementById("cash").style.display="none";document.getElementById("more").style.display="none";const st=document.getElementById("start");st.style.display="block";st.textContent="START ROUND "+S.round;setEvent("准备开始 Round "+S.round+"。")}window.oneMore=oneMore;
 document.getElementById("cash").onclick=()=>{S.running=false;document.getElementById("mt").textContent="CASHED OUT";document.getElementById("ms").innerHTML="最终兑现："+cash(S.money)+"<br>你有没有一瞬间想继续？";document.getElementById("roundUi").style.display="none";document.getElementById("cash").style.display="none";document.getElementById("more").style.display="none";};
 function lose(reason){S.running=false;document.getElementById("modal").style.display="flex";document.getElementById("mt").textContent="RUN OVER";document.getElementById("ms").innerHTML=reason+"<br>失去未兑现收益 "+cash(S.money);document.getElementById("intro").style.display="none";document.getElementById("roundUi").style.display="none";document.getElementById("cash").style.display="none";document.getElementById("more").style.display="none";document.getElementById("start").style.display="none"}
-function shoot(){if(!S.running)return;let bi=-1,bd=999;S.enemies.forEach((e,i)=>{let d=Math.abs(e.x-S.px);if(d<bd){bd=d;bi=i}});if(bi>=0&&bd<190){if(--S.enemies[bi].hp<=0){S.money+=40*S.mult;S.enemies.splice(bi,1)}}else E.textContent="没有敌人在射程内。"}
-function fix(){if(!S.running)return;let i=carIndexAt(S.px),c=S.cars[i],bonus=S.cars.some(x=>x.type==="workshop"&&x.hp>0)?18:10;c.hp=Math.min(c.max,c.hp+bonus);E.textContent="修理 CAR "+(i+1)+" +"+bonus+" HP"}
-function bindHold(id,dir){let el=document.getElementById(id);el.addEventListener("pointerdown",e=>{e.preventDefault();S.move=dir});["pointerup","pointercancel","pointerleave"].forEach(n=>el.addEventListener(n,e=>{e.preventDefault();if(S.move===dir)S.move=0}))}
-bindHold("L",-1);bindHold("R",1);
-document.getElementById("fire").addEventListener("pointerdown",e=>{e.preventDefault();shoot()});
-document.getElementById("fix").addEventListener("pointerdown",e=>{e.preventDefault();fix()});
-document.getElementById("roof").addEventListener("pointerdown",e=>{e.preventDefault();if(S.running)S.roof=!S.roof});
-draw();
+function shoot(){if(!S.running)return;let bi=-1,bd=999;S.enemies.forEach((e,i)=>{const d=Math.abs(e.x-S.px);if(d<bd){bd=d;bi=i}});if(bi>=0&&bd<210){S.enemies[bi].hp--;S.enemies[bi].flash=1;addFloat(S.enemies[bi].x,120,"hit","#fff4c2");if(S.enemies[bi].hp<=0){S.money+=40*S.mult;addFloat(S.enemies[bi].x,110,"+$40","#7be093");S.enemies.splice(bi,1)}}else setEvent("没有敌人在射程内。")}function fix(){if(!S.running)return;const i=carIndexAt(S.px),c=S.cars[i],bonus=S.cars.some(x=>x.type==="workshop"&&x.hp>0)?18:10;c.hp=Math.min(c.max,c.hp+bonus);addFloat(i*150+55,105,"+"+bonus,"#94f1ad");setEvent("修理 CAR "+(i+1)+" +"+bonus+" HP")}
+function prevent(ev){ev.preventDefault();ev.stopPropagation()}
+function bindHold(id,dir){const el=document.getElementById(id);const down=ev=>{prevent(ev);S.move=dir;el.classList.add("active")};const up=ev=>{prevent(ev);if(S.move===dir)S.move=0;el.classList.remove("active")};["pointerdown","touchstart","mousedown"].forEach(n=>el.addEventListener(n,down,{passive:false}));["pointerup","pointercancel","pointerleave","touchend","touchcancel","mouseup"].forEach(n=>el.addEventListener(n,up,{passive:false}))}
+function bindTap(id,fn){const el=document.getElementById(id);const down=ev=>{prevent(ev);el.classList.add("active");fn()};const up=ev=>{prevent(ev);el.classList.remove("active")};["pointerdown","touchstart","mousedown"].forEach(n=>el.addEventListener(n,down,{passive:false}));["pointerup","pointercancel","pointerleave","touchend","touchcancel","mouseup"].forEach(n=>el.addEventListener(n,up,{passive:false}))}
+bindHold("L",-1);bindHold("R",1);bindTap("fire",shoot);bindTap("fix",fix);bindTap("roof",()=>{if(S.running)S.roof=!S.roof});
+["contextmenu","selectstart","dragstart","gesturestart"].forEach(n=>document.addEventListener(n,e=>{e.preventDefault()}, {passive:false}));document.addEventListener("touchmove",e=>{if(e.target===cv||e.target.closest("button"))e.preventDefault()},{passive:false});
+draw();hud();
 </script>
-</body>
-</html>
+</body></html>
