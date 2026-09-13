@@ -73,12 +73,12 @@ async def run_browser(p,name):
         await page.screenshot(path=str(ART/f'{name}-engine-stalled.png'))
         box=await page.locator('#fix').bounding_box();await page.mouse.move(box['x']+box['width']/2,box['y']+box['height']/2);await page.mouse.down()
         checks['repair_button_drives_input']=await page.evaluate('window.__RH_TEST.input().repair')
-        await page.evaluate('window.__RH_TEST.step(1,window.__RH_TEST.input())')
+        await page.evaluate('window.__RH_TEST.step(1,window.__RH_TEST.input());window.__RH_TEST.game().pause(true)')
         partial=await page.evaluate('window.__RH_DEBUG.snapshot()')
         checks['repair_progress_no_early_heal']=partial['engineHp']==0 and partial['repair'] is not None and partial['repair']['progress']>0
         checks['repair_bar_visible']=await page.locator('#repairPanel').is_visible()
         await page.screenshot(path=str(ART/f'{name}-repair-progress.png'))
-        await page.evaluate('window.__RH_TEST.step(2.1,window.__RH_TEST.input())');await page.mouse.up()
+        await page.evaluate('const a=window.__RH_TEST,g=a.game(),remaining=g.repairJob.duration-g.repairJob.progress;g.pause(false);a.step(remaining+.05,a.input());g.pause(true)');await page.mouse.up()
         rescued=await page.evaluate('window.__RH_DEBUG.snapshot()');result['rescued']=rescued
         checks['repair_restarts_engine']=rescued['engineHp']>0 and rescued['rescue'] is None and rescued['stats']['clutchSaves']==1
         checks['rescue_has_recovery_window']=rescued['threat']['rest']>7
@@ -96,10 +96,11 @@ async def run_browser(p,name):
         cargo=await page.evaluate("""() => {const a=window.__RH_TEST;a.reset();a.forcePlayer(4.2);const g=a.game(),e=g.spawn('thief',12.4,false);e.climb=0;a.step(1);const before=g.money;g.hitEnemy(e,99);g.hitEnemy(e,99);g.pause(true);a.view().render(0);return {before,after:g.money,saved:g.total.cargoSaved,cargo:g.cars[1].cargo};}""")
         checks['cargo_recovery_feedback_and_accounting']=cargo=={'before':1000,'after':1050,'saved':250,'cargo':3}
         await page.evaluate('window.__RH_TEST.reset();window.__RH_TEST.forceCars(12);window.__RH_TEST.forceRoute(.9)')
-        visible=True
+        visible=True;result['camera_samples']=[]
         for x in [.5,20,60,97]:
-            await page.evaluate('(x)=>{window.__RH_TEST.game().player.x=x}',x);await page.wait_for_timeout(350)
-            s=await page.evaluate('window.__RH_DEBUG.snapshot()');visible &= 25<s['playerScreenX']<s['canvasCss'][0]-25 and 10<s['playerScreenY']<s['canvasCss'][1]-10
+            mark=await page.evaluate('(x)=>{window.__RH_TEST.game().player.x=x;return window.__RH_TEST.view().frames}',x)
+            await page.wait_for_function('(mark)=>window.__RH_TEST.view().frames>=mark+2',arg=mark,timeout=15000)
+            s=await page.evaluate('window.__RH_DEBUG.snapshot()');result['camera_samples'].append({k:s[k] for k in ['px','cameraX','playerScreenX','playerScreenY','canvasCss','drawCount']});visible &= 25<s['playerScreenX']<s['canvasCss'][0]-25 and 10<s['playerScreenY']<s['canvasCss'][1]-10
         checks['twelve_car_camera_tracking']=visible
         await page.screenshot(path=str(ART/f'{name}-long-train.png'))
         long_grace=await page.evaluate('window.__RH_TEST.game().damageCar(0,180,"test");window.__RH_DEBUG.snapshot().rescue.window')
