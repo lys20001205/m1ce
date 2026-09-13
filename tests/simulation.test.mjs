@@ -1,0 +1,20 @@
+import test from 'node:test';import assert from 'node:assert/strict';import {Game,car,FLOOR,ROOF,phaseAt} from '../src/sim.js';
+function advance(g,t,input={}){for(let i=0;i<Math.round(t/.025);i++)g.step(.025,input)}
+function fresh(){const g=new Game();g.start();return g}
+test('departure starts at zero and no time passes before start',()=>{const g=new Game();advance(g,5);assert.equal(g.t,0);g.start();assert.equal(g.phase,'depart');assert.equal(g.t,0);assert.equal(g.start(),false)})
+test('pause freezes enemies and route',()=>{const g=fresh();g.pause(true);const s=g.snapshot();advance(g,3,{move:1,attack:true});assert.equal(g.t,s.routeT);assert.equal(g.player.x,s.px)})
+test('only one health authority for engine and repair has a cooldown',()=>{const g=fresh();g.cars[0].hp=80;g.repair(.025);const hp=g.cars[0].hp;g.repair(.025);assert.equal(g.cars[0].hp,hp);assert.equal(g.snapshot().engineHp,hp)})
+test('ladder proximity required; carrying blocks layer change',()=>{const g=fresh();g.player.x=.5;assert.equal(g.layer(),false);g.player.x=4.2;assert.equal(g.layer(),true);g.player.carry=true;assert.equal(g.layer(),false)})
+test('melee cannot strike another lane',()=>{const g=fresh();const e=g.spawn('boarder',4,true);e.climb=0;g.attack();advance(g,.24);assert.equal(e.hp,2)})
+test('melee has windup and knockback; no click-speed damage bypass',()=>{const g=fresh();const e=g.spawn('boarder',4,false);e.climb=0;g.attack();assert.equal(g.attack(),false);assert.equal(e.hp,2);advance(g,.19);assert.equal(e.hp,1);assert(e.x>4)})
+test('floor enemy cannot hit player on roof',()=>{const g=fresh();g.player.y=ROOF;g.player.roof=true;const e=g.spawn('boarder',3,false);e.climb=0;advance(g,2);assert.equal(g.player.hp,100)})
+test('crane hit requires spatial intersection with actual sweep',()=>{const g=fresh();g.t=.37;g.phase='crane';g.player.roof=true;g.player.y=ROOF;g.player.x=.5;advance(g,.05);assert.equal(g.player.hp,100);g.player.x=g.craneX;advance(g,.025);assert.equal(g.player.hp,68)})
+test('tunnel penalizes exposed roof, safe interior avoids damage',()=>{const g=fresh();g.t=.561;g.phase='tunnel';g.player.roof=true;g.player.y=ROOF;g.step(.025);assert.equal(g.player.roof,false);assert.equal(g.player.hp,70);assert.equal(g.layer(),false);advance(g,.15);assert.equal(g.player.hp,70)})
+test('projectile origin matches authored weapon socket and expires at range',()=>{const g=fresh();g.round=3;g.attack();assert.equal(g.projectiles[0].x,g.muzzle().x);assert.equal(g.projectiles[0].y,g.muzzle().y);advance(g,.5);assert.equal(g.projectiles.length,0)})
+test('thief steals exactly one crate and only debits on escape',()=>{const g=fresh();g.player.roof=true;const e=g.spawn('thief',12.4,false);e.climb=0;advance(g,1);assert(e.carry);assert.equal(g.cars[1].cargo,2);assert.equal(g.money,1000);advance(g,3);assert.equal(g.money,750)})
+test('killing carrying thief recovers its crate',()=>{const g=fresh();const e=g.spawn('thief',12.4,false);e.climb=0;advance(g,1);g.hitEnemy(e,99);assert.equal(g.cars[1].cargo,3)})
+test('route-dependent boost advances progress; no free permanent speed',()=>{const g=fresh();g.interact();advance(g,1);assert(g.t>.015);advance(g,4);assert.equal(g.throttle,0)})
+test('cashout only from completed route, exactly once',()=>{const g=fresh();assert.equal(g.cashout(),false);g.finish();const cash=g.money;assert(g.cashout());assert(!g.cashout());assert.equal(g.bank,cash);assert.equal(g.money,0)})
+test('fatal damage takes priority over arrival, no double settlement',()=>{const g=fresh();g.t=.99999;g.cars[0].hp=0;g.step(.05);assert.equal(g.status,'lost');assert.equal(g.bank,0);assert.equal(g.money,0)})
+test('continuing preserves hull damage, appends actual car and restarts departure',()=>{const g=fresh();g.cars[0].hp=120;g.finish();g.more('battery');assert.equal(g.cars.length,3);assert.equal(g.cars[0].hp,120);g.start();assert.equal(g.phase,'depart');assert.equal(g.t,0)})
+test('bank persists in new-run constructor',()=>{const g=new Game({bank:4123});assert.equal(g.bank,4123);g.start();g.fail();assert.equal(g.bank,4123)})

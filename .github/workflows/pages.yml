@@ -1,40 +1,69 @@
-name: Deploy ROUNDHOUSE to GitHub Pages
-
+name: Validate and deploy ROUNDHOUSE 3D
 on:
   push:
-    branches:
-      - master
+    branches: [master, v9r1-webgl-repair]
+    paths-ignore: ['docs/**', '**.md', 'tools/pull_telemetry.py', '.github/workflows/telemetry.yml']
   workflow_dispatch:
-
 permissions:
   contents: read
-  pages: write
-  id-token: write
-
 concurrency:
-  group: pages
+  group: roundhouse-${{ github.ref }}
   cancel-in-progress: true
-
 jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    env:
+      LIBGL_ALWAYS_SOFTWARE: '1'
+      WEBKIT_DISABLE_DMABUF_RENDERER: '1'
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: npm test
+      - run: npm run build
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.13'
+      - name: Install fixed browser tests
+        run: |
+          pip install playwright==1.56.0 pillow==12.0.0
+          python -m playwright install --with-deps chromium webkit
+      - name: Actual WebGL + mobile regressions
+        run: xvfb-run -a python tests/browser_smoke.py
+      - name: Upload evidence even on failure
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v9r1-validation
+          path: artifacts/
+          retention-days: 7
+      - name: Upload built site for review
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v9r1-site
+          path: dist/
+          retention-days: 7
+      - name: Stage Pages artifact only after successful tests
+        if: github.ref == 'refs/heads/master'
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: dist/
   deploy:
+    if: github.ref == 'refs/heads/master'
+    needs: validate
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v6
-
-      - name: Configure Pages
-        uses: actions/configure-pages@v5
-
-      - name: Upload site
-        uses: actions/upload-pages-artifact@v4
-        with:
-          path: '.'
-
-      - name: Deploy
-        id: deployment
+      - uses: actions/configure-pages@v5
+      - id: deployment
         uses: actions/deploy-pages@v4
-
-# Triggered after enabling GitHub Pages via Actions.

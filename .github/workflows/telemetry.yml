@@ -1,31 +1,27 @@
 name: ROUNDHOUSE Telemetry Pull
-
 on:
   push:
-    branches:
-      - master
+    branches: [master]
+    paths: ['tools/pull_telemetry.py', '.github/workflows/telemetry.yml']
   schedule:
     - cron: '*/15 * * * *'
   workflow_dispatch:
-
+permissions:
+  contents: read
+concurrency:
+  group: telemetry-pull
+  cancel-in-progress: true
 jobs:
   pull:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - name: Checkout
-        uses: actions/checkout@v6
-
-      - name: Set up Python
-        uses: actions/setup-python@v6
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
         with:
           python-version: '3.13'
-
-      - name: Pull recent mobile telemetry
-        run: python tools/pull_telemetry.py
-
-      - name: Upload telemetry snapshot
-        uses: actions/upload-artifact@v4
+      - run: python tools/pull_telemetry.py
+      - uses: actions/upload-artifact@v4
         with:
           name: roundhouse-telemetry
           path: telemetry_snapshot.json

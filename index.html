@@ -1,74 +1,9 @@
-<!doctype html>
-<html lang="zh-CN">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-<meta name="format-detection" content="telephone=no">
-<meta name="theme-color" content="#071018">
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="ROUNDHOUSE">
-<link rel="manifest" href="./manifest.webmanifest">
-<title>ROUNDHOUSE v9 Route Prototype</title>
-<link rel="stylesheet" href="./style.css?v=9">
-</head>
-<body>
-<div id="app">
-  <canvas id="game"></canvas>
-  <div id="hud">
-    <div class="h brand"><small>ROUNDHOUSE</small><b id="routeName">INDUSTRIAL LOOP</b></div>
-    <div class="h"><small>ROUND</small><b id="r">1</b></div>
-    <div class="h"><small>PHASE</small><b id="phase">ROUNDHOUSE</b></div>
-    <div class="h"><small>UNBANKED</small><b id="m">$1,000</b></div>
-    <div class="h"><small>ENGINE</small><b id="e">100%</b></div>
-    <div class="h"><small>PLAYER</small><b id="hp">100%</b></div>
-  </div>
-  <div id="routeBar"><div id="routeFill"></div><span id="routeText">ROUNDHOUSE → INDUSTRIAL → TUNNEL → RETURN</span></div>
-  <div id="event">等待发车。</div>
-  <button id="debugBtn" type="button">LOG AUTO</button>
-  <div id="controls">
-    <div class="g" id="mv"><button class="ctrl" id="L" type="button">◀</button><button class="ctrl" id="R" type="button">▶</button></div>
-    <div class="g" id="ac"><button class="ctrl small" id="layer" type="button">车顶</button><button class="ctrl small repair" id="fix" type="button">修理</button><button class="ctrl attack" id="attack" type="button">挥击</button></div>
-  </div>
-  <div id="debugPanel">
-    <div id="debugCard">
-      <h2>ROUNDHOUSE V9 TELEMETRY</h2>
-      <div id="debugMeta"></div><div id="remoteStatus"></div>
-      <pre id="debugText"></pre>
-      <div id="debugActions"><button id="refreshDebug" type="button">刷新</button><button id="reportDebug" type="button">生成 GitHub 报告</button><button id="closeDebug" type="button">返回</button></div>
-    </div>
-  </div>
-  <div id="modal">
-    <div class="card">
-      <h1 id="mt">ROUNDHOUSE · V9</h1>
-      <div class="sub" id="ms">2.5D 剖面列车路线原型：先跑真实的一圈，再决定是否继续。</div>
-      <div class="routeCards" id="briefCards">
-        <div class="routeCard"><b>01 · ROUNDHOUSE</b><span>中央转盘锁定列车，准备发车。</span></div>
-        <div class="routeCard danger"><b>02 · INDUSTRIAL YARD</b><span>巨型装卸机械臂会横扫车顶。</span></div>
-        <div class="routeCard tunnel"><b>03 · SERVICE TUNNEL</b><span>低净空：车顶不可停留，照明下降。</span></div>
-        <div class="routeCard"><b>04 · RETURN</b><span>回到 Roundhouse，再决定 CASH OUT / ONE MORE ROUND。</span></div>
-      </div>
-      <div id="roundUi" style="display:none">
-        <div class="summaryGrid">
-          <div><small>UNBANKED</small><b id="rm">$0</b></div>
-          <div><small>TRAIN LENGTH</small><b id="rc">2 CARS</b></div>
-          <div><small>NEXT RISK</small><b id="risk">+1</b></div>
-        </div>
-        <h3>接入下一节车厢</h3>
-        <div id="choices"></div>
-      </div>
-      <div class="actions">
-        <button id="cash" type="button" style="display:none">CASH OUT</button>
-        <button class="start" id="start" type="button">DEPART INDUSTRIAL LOOP</button>
-        <button class="dangerBtn" id="more" type="button" style="display:none">ONE MORE ROUND</button>
-      </div>
-      <div class="footnote">V9 使用程序化 2.5D blockout。外部免费模型源先锁定 CC0：Kenney / Quaternius；不影响当前玩法验证。</div>
-    </div>
-  </div>
-</div>
-<script src="./app-core.js?v=9"></script>
-<script src="./app-game.js?v=9"></script>
-<script src="./app-init.js?v=9"></script>
-</body>
-</html>
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover"><meta name="theme-color" content="#101c25"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="apple-mobile-web-app-title" content="ROUNDHOUSE"><link rel="manifest" href="./manifest.webmanifest"><link rel="icon" href="data:,"><title>ROUNDHOUSE · V9R1 · WebGL 3D</title><link rel="stylesheet" href="./style.css?v=9r1"></head><body>
+<main id="app"><header id="hud"><div class="brand">ROUNDHOUSE <small>V9R1 / WEBGL 3D</small></div><div><small>圈数</small><b id="round">01</b></div><div><small>未兑现</small><b id="money">1,000</b></div><div><small>动力 / 生命</small><b id="health">100 / 100</b></div><div><small>装备</small><b id="weapon">WRENCH</b></div><nav><button id="angle">斜视</button><button id="pause">暂停</button><button id="log">日志</button></nav></header>
+<div id="route"><div id="fill"></div><span id="phase">机库 / 准备</span><span id="progress">机库 → 工业区 → 机械臂 → 隧道 → 返回</span></div>
+<section id="viewport"><canvas id="game" aria-label="3D 剖面列车游戏"></canvas><div id="event">正在加载真正的 3D 模型…</div><div id="playerTag">YOU</div><div id="carTags"></div><div id="fatal" hidden></div></section>
+<footer id="controls"><div class="group"><button class="move" id="L" aria-label="向左">◀</button><button class="move" id="R" aria-label="向右">▶</button></div><div id="centerHint">车内 / 车顶 · 通过黄色梯子切换</div><div class="group"><button id="layer">车顶</button><button id="interact">交互</button><button id="fix" class="repair">修理</button><button id="attack" class="attack">挥击</button></div></footer>
+<div id="modal"><article><p class="eyebrow">2.5D ROUTE PROTOTYPE</p><h1>ROUNDHOUSE <span>V9R1</span></h1><p id="intro">真正的 3D 模型、灯光和深度。近侧车壁切开，保留车内与车顶两层玩法。</p><div class="brief"><span><b>机库出发</b>转盘对轨、驶出机库</span><span><b>工业区</b>看见机械臂 → 下车顶避让</span><span><b>低净空隧道</b>提前回车内，保护供电</span></div><p id="summary"></p><div id="choices"></div><label class="privacy"><input type="checkbox" id="telemetry">自动上传游戏调试日志（临时公开通道，不含账号；可随时关闭）</label><div class="actions"><button id="cash" hidden>兑现 / CASH OUT</button><button id="start" disabled>加载 3D 模型…</button><button id="more" hidden>再来一圈</button><button id="restart" hidden>新一局</button></div><p class="note">手机横屏。移动到黄色梯子旁切层；长按攻击或修理。动力车「交互」可短时增压。单人原型，暂不含并行列车或联机。</p></article></div>
+<div id="debug" hidden><article><h2>V9R1 · 运行诊断</h2><p id="remote"></p><pre id="debugText"></pre><div class="actions"><button id="upload">立即上传</button><button id="copy">复制日志</button><button id="closeLog">关闭</button></div></article></div>
+<div id="portrait" hidden><article><h2>请横屏游玩</h2><p>游戏已暂停，转为横屏后点击「继续」。</p></article></div>
+</main><script type="module" src="./src/main.js?v=9r1"></script></body></html>
