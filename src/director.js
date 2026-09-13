@@ -1,0 +1,40 @@
+import {B,capFor,reserveFor,intervalFor} from './balance.js?v=10';
+// Admission control, not a hidden rubber-band damage system. Existing enemies are never deleted.
+export class Director {
+  constructor(){this.clock=0;this.rest=0;this.faultUsed=false;this.fault=null;this.maxLoad=0;this.spawns=0;}
+  enemyLoad(g){return g.enemies.filter(e=>e.hp>0).length;}
+  load(g){return this.enemyLoad(g)+reserveFor(g.round);}
+  recover(g,reason,seconds=B.recoveryTime){this.rest=Math.max(this.rest,seconds);this.clock=0;g.tell('recovery_started',{reason,seconds});}
+  canSpawn(g){return this.load(g)+1<=capFor(g.round) && this.enemyLoad(g)<16;}
+  cancelFault(g,reason){if(!this.fault)return;this.fault=null;g.tell('fault_resolved',{reason});this.recover(g,'engine_fault');}
+  step(g,dt){
+    this.rest=Math.max(0,this.rest-dt);
+    if(this.fault){
+      const f=this.fault;f.time+=dt;
+      if(f.time>=B.faultLead && !f.active){f.active=true;g.tell('engine_fault_active');}
+      if(f.active){f.tick+=Math.min(dt,Math.max(0,f.time-B.faultLead));if(f.tick>=1-1e-8){f.tick-=1;g.damageCar(0,B.faultDPS,'engine_fault');}}
+      if(f.time>=B.faultLead+B.faultTime-1e-8){this.fault=null;this.recover(g,'fault_ended');g.tell('engine_fault_ended');}
+    }
+    const relief=this.rest>0 || g.engineState==='stalled' || g.engineState==='critical' || g.player.hp<=20;
+    if(g.practice || relief){this.clock=0;return;}
+    // A maintenance fault is advertised, finite, and reserved away from environmental hazards.
+    const headroom=(.30-g.t)*100/B.boostScale;
+    if(g.round>=3 && g.phase==='yard' && !this.faultUsed && !this.fault && headroom>B.faultLead+B.faultTime+1 && g.cars[0].hp/g.cars[0].max>.5 && g.player.hp>40){
+      this.faultUsed=true;this.fault={time:0,tick:0,active:false};
+      g.tell('engine_fault_warning',{lead:B.faultLead});g.event='01 动力车冷却故障：3 秒后开始损伤，完成维修可提前止损。';
+    }
+    if(!['yard','crane','tunnel'].includes(g.phase)){this.clock=0;return;}
+    this.clock+=dt;
+    if(this.clock>=intervalFor(g.round) && this.canSpawn(g)){
+      this.clock=0;const cargoCars=g.cars.filter(c=>c.type==='cargo').length;
+      const type=g.round===1?'boarder':g.rand()<Math.min(.5,.28+.1*Math.max(0,cargoCars-1))?'thief':'boarder';
+      const e=g.spawn(type);if(e){this.spawns++;this.maxLoad=Math.max(this.maxLoad,this.load(g));}
+    }
+  }
+  snapshot(g){const actualHazard=['crane','approach','tunnel'].includes(g.phase)?reserveFor(g.round):0;return{
+    cap:capFor(g.round),enemies:this.enemyLoad(g),reserved:reserveFor(g.round),load:this.load(g),
+    actual:this.enemyLoad(g)+Math.max(actualHazard,this.fault?2:0),maxLoad:this.maxLoad,
+    rest:this.rest,fault:this.fault?{time:this.fault.time,active:this.fault.active}:null,
+    relief:this.rest>0||g.engineState==='critical'||g.engineState==='stalled'||g.player.hp<=20
+  };}
+}

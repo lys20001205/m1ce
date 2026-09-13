@@ -1,7 +1,7 @@
 name: Validate and deploy ROUNDHOUSE 3D
 on:
   push:
-    branches: [master, v9r1-webgl-repair]
+    branches: [master, v10-recovery]
     paths-ignore: ['docs/**', '**.md', 'tools/pull_telemetry.py', '.github/workflows/telemetry.yml']
   workflow_dispatch:
 permissions:
@@ -23,9 +23,17 @@ jobs:
           node-version: '22'
           cache: npm
       - run: npm ci --ignore-scripts
-      - run: npm test
+      - name: Deterministic rules and syntax
+        run: |
+          set -o pipefail
+          mkdir -p artifacts
+          for f in src/*.js; do node --check "$f"; done
+          npm test | tee artifacts/rule-tests.txt
       - run: npm run build
-      - run: node --test tests/model_roundtrip.test.mjs
+      - name: Model serialization regression
+        run: |
+          set -o pipefail
+          node --test tests/model_roundtrip.test.mjs | tee artifacts/model-tests.txt
       - uses: actions/setup-python@v6
         with:
           python-version: '3.13'
@@ -33,23 +41,23 @@ jobs:
         run: |
           pip install playwright==1.56.0 pillow==12.0.0
           python -m playwright install --with-deps chromium webkit
-      - name: Actual WebGL + mobile regressions
+      - name: Actual WebGL and V10 mobile regressions
         run: xvfb-run -a python tests/browser_smoke.py
       - name: Upload evidence even on failure
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: v9r1-validation
+          name: v10-validation
           path: artifacts/
           retention-days: 7
       - name: Upload built site for review
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: v9r1-site
+          name: v10-site
           path: dist/
           retention-days: 7
-      - name: Stage Pages artifact only after successful tests
+      - name: Stage Pages only after successful tests
         if: github.ref == 'refs/heads/master'
         uses: actions/upload-pages-artifact@v4
         with:

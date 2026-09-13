@@ -1,11 +1,23 @@
-# ROUNDHOUSE V9R1 — real WebGL 2.5D route prototype
+# ROUNDHOUSE — V10 WebGL playtest
 
-Real model files, lights, depth and shadows; side-view gameplay in a cutaway train.
+A single-player 2.5D cutaway train prototype: real Three.js models, two movement layers, a depot/industrial/tunnel loop, cargo and opt-in telemetry. V10 focuses on rescue, feedback and fair failure, not new content volume.
 
-Node 22+: npm ci && npm run build. Serve with python -m http.server 8765 --directory dist. Use the Pages HTTPS URL on a phone. All runtime dependencies are local to the published site.
+Live: https://lys20001205.github.io/m1ce/?build=v10
 
-Controls: A/D or touch arrows; W/layer button near yellow ladder; J/attack; E/repair; F/contextual interaction. Hold touch attack or repair. Engine interaction temporarily boosts travel, Cargo lets you carry a box, Workshop heals for current-run funds. Background/portrait pauses. Press Continue to resume.
+Phone: landscape, start from Safari or the home-screen app. Confirm `V10 / WEBGL 3D`. A labelled rescue practice mode is available; it never writes bank credits.
 
-npm test runs rules. The Pages workflow additionally runs actual Chromium and WebKit WebGL tests over HTTP and saves screenshots/JSON before allowing deployment. Test mutation API requires ?test=1. docs/AUDIT_V9R1.md contains findings, fixes and boundaries. docs/ASSET_LICENSES.md is the actual license inventory.
+- Hold left/right to move. Roof travel is faster, with clearance hazards.
+- At a yellow ladder, switch interior/roof.
+- Hold attack. Near a station, stand still and hold repair for a full channel.
+- At engine zero HP, use the displayed last-chance deadline to restart it.
+- At the depot, read condition and risk before continuing/cashing out.
+- Audio is optional. Logs upload only after explicit consent to the temporary public endpoint.
 
-Single-player browser prototype only. No S&box runtime, networking or parallel train. Preserves roundhouse_bank and leaves other old save keys untouched. The previous garage is not expanded in this repair. Auto telemetry is opt-in via the start-screen checkbox; the temporary channel is PUBLIC and must contain no private data.
+## Develop
+
+Node 22; `npm ci --ignore-scripts`; `npm test`; `npm run build`; `node --test tests/model_roundtrip.test.mjs`.
+Serve `dist` over HTTP. Do not preview `index.html` as a local iOS file.
+Browser checks: pinned Python Playwright and Pillow as in `.github/workflows/pages.yml`, then `xvfb-run -a python tests/browser_smoke.py`.
+
+Documentation: `docs/V10_CHANGELOG.md`, `docs/AUDIT_V9R1.md`, `docs/ASSET_LICENSES.md`.
+No S&box build or multiplayer implementation is included. Browser test success is not real iPhone or fun/balance acceptance.
