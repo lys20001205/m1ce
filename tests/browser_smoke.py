@@ -45,7 +45,22 @@ async def main():
             await page.set_viewport_size({'width':932,'height':430})
             await page.wait_for_timeout(300)
             resized = await page.evaluate('window.__RH_DEBUG.snapshot()')
-            await page.screenshot(path='artifacts/roundhouse_v7_smoke.png', full_page=True)
+
+            await page.evaluate('window.__RH_DEBUG.forceMoney(6000); window.__RH_DEBUG.forceFinish()')
+            await page.wait_for_timeout(80)
+            await page.click('#cash')
+            await page.wait_for_timeout(100)
+            banked = await page.evaluate('window.__RH_DEBUG.meta()')
+            garage_visible = await page.locator('#garageUi').is_visible()
+            first_shop_btn = page.locator('.shopRow').first.locator('button')
+            if await first_shop_btn.is_enabled():
+                await first_shop_btn.click()
+                await page.wait_for_timeout(80)
+            after_purchase = await page.evaluate('window.__RH_DEBUG.meta()')
+            await page.click('#newRun')
+            await page.wait_for_timeout(80)
+            new_run = await page.evaluate('window.__RH_DEBUG.snapshot()')
+            await page.screenshot(path='artifacts/roundhouse_v8_smoke.png', full_page=True)
 
             def backing_matches(s):
                 return abs(s['canvasBacking'][0]-round(s['canvasCss'][0]*s['dpr'])) <= 1 and abs(s['canvasBacking'][1]-round(s['canvasCss'][1]*s['dpr'])) <= 1
@@ -64,10 +79,15 @@ async def main():
                 'boot_canvas_backing_matches_css': backing_matches(boot),
                 'resized_canvas_backing_matches_css': backing_matches(resized),
                 'resize_triggered_canvas_sync': resized['canvasSyncCount'] > boot['canvasSyncCount'],
+                'train_uses_lower_screen': resized['base'] > resized['canvasCss'][1] * .78,
+                'cashout_banks_money': banked['bank'] >= 6000,
+                'garage_visible_after_cashout': garage_visible,
+                'reroll_purchase_works': after_purchase['rerollTokens'] >= 1,
+                'new_run_resets_unbanked': new_run['round'] == 1 and new_run['cash'] == 1000 and new_run['bank'] == after_purchase['bank'],
                 'no_page_errors': not errors,
                 'no_console_errors': not console_errors,
             }
-            print(json.dumps({'checks':checks,'errors':errors,'console_errors':console_errors,'boot':boot,'after_left':after_left,'after_right':after_right,'projectile':projectile,'long_train':long_train,'resized':resized},ensure_ascii=False,indent=2))
+            print(json.dumps({'checks':checks,'errors':errors,'console_errors':console_errors,'boot':boot,'after_left':after_left,'after_right':after_right,'projectile':projectile,'long_train':long_train,'resized':resized,'banked':banked,'after_purchase':after_purchase,'new_run':new_run},ensure_ascii=False,indent=2))
             await browser.close()
             if not all(checks.values()): raise SystemExit(1)
     finally:
