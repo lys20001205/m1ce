@@ -1,0 +1,27 @@
+name: V9R1 dependency staging
+on:
+  push:
+    branches: [v9r1-webgl-repair]
+    paths: [.github/workflows/v9r1-bootstrap.yml]
+permissions:
+  contents: read
+jobs:
+  stage:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Stage fixed Three.js release
+        run: |
+          mkdir -p stage/baseline stage/dependency
+          cp -r app-core.js app-game.js app-init.js style.css index.html manifest.webmanifest tests tools .github stage/baseline/
+          cd stage/dependency
+          npm pack three@0.180.0
+      - uses: actions/upload-artifact@v4
+        with:
+          name: v9r1-dependency-baseline
+          path: stage/
+          retention-days: 3
