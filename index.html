@@ -4,76 +4,71 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="format-detection" content="telephone=no">
-<meta name="theme-color" content="#081018">
+<meta name="theme-color" content="#071018">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="ROUNDHOUSE">
 <link rel="manifest" href="./manifest.webmanifest">
-<title>ROUNDHOUSE Mobile v8</title>
-<link rel="stylesheet" href="./style.css?v=8">
+<title>ROUNDHOUSE v9 Route Prototype</title>
+<link rel="stylesheet" href="./style.css?v=9">
 </head>
 <body>
 <div id="app">
   <canvas id="game"></canvas>
   <div id="hud">
-    <div class="h brand"><small>GAME</small><b>ROUNDHOUSE</b></div>
+    <div class="h brand"><small>ROUNDHOUSE</small><b id="routeName">INDUSTRIAL LOOP</b></div>
     <div class="h"><small>ROUND</small><b id="r">1</b></div>
+    <div class="h"><small>PHASE</small><b id="phase">ROUNDHOUSE</b></div>
     <div class="h"><small>UNBANKED</small><b id="m">$1,000</b></div>
-    <div class="h"><small>MULT</small><b id="x">×1.00</b></div>
-    <div class="h"><small>CARS</small><b id="c">2</b></div>
     <div class="h"><small>ENGINE</small><b id="e">100%</b></div>
-    <div class="h weapon"><small>WEAPON</small><b id="w">WRENCH</b></div>
-    <div class="h"><small>TIME</small><b id="t">45</b></div>
+    <div class="h"><small>PLAYER</small><b id="hp">100%</b></div>
   </div>
-  <div id="event">点击 START 开始。Round 1 只有近战。</div>
-  <button id="fullscreenTip" type="button">隐藏浏览器顶栏</button>
-  <div id="rangeLegend">黄线＝玩家射程 · 蓝线＝Turret 局部射程</div>
+  <div id="routeBar"><div id="routeFill"></div><span id="routeText">ROUNDHOUSE → INDUSTRIAL → TUNNEL → RETURN</span></div>
+  <div id="event">等待发车。</div>
   <button id="debugBtn" type="button">LOG AUTO</button>
-  <div id="debugPanel">
-    <div id="debugCard">
-      <h2>TEST LOG · AUTO TELEMETRY</h2>
-      <div id="debugMeta"></div>
-      <div id="remoteStatus">REMOTE: starting…</div>
-      <pre id="debugText"></pre>
-      <div id="debugActions"><button id="refreshDebug" type="button">刷新</button><button id="reportDebug" type="button">生成 GitHub 报告</button><button id="clearDebug" type="button">清空日志</button><button id="closeDebug" type="button">返回游戏</button></div>
-    </div>
-  </div>
   <div id="controls">
     <div class="g" id="mv"><button class="ctrl" id="L" type="button">◀</button><button class="ctrl" id="R" type="button">▶</button></div>
-    <div class="g" id="ac"><button class="ctrl small roof" id="roof" type="button">车顶</button><button class="ctrl small repair" id="fix" type="button">修理</button><button class="ctrl attack" id="attack" type="button">近战</button></div>
+    <div class="g" id="ac"><button class="ctrl small" id="layer" type="button">车顶</button><button class="ctrl small repair" id="fix" type="button">修理</button><button class="ctrl attack" id="attack" type="button">挥击</button></div>
+  </div>
+  <div id="debugPanel">
+    <div id="debugCard">
+      <h2>ROUNDHOUSE V9 TELEMETRY</h2>
+      <div id="debugMeta"></div><div id="remoteStatus"></div>
+      <pre id="debugText"></pre>
+      <div id="debugActions"><button id="refreshDebug" type="button">刷新</button><button id="reportDebug" type="button">生成 GitHub 报告</button><button id="closeDebug" type="button">返回</button></div>
+    </div>
   </div>
   <div id="modal">
     <div class="card">
-      <h1 id="mt">ROUNDHOUSE</h1>
-      <div class="sub" id="ms">v8：PWA 画面向下扩展；Cash Out 会存入 BANK，并可在 Garage 购买永久许可证与重抽券。</div>
-      <div class="row" id="intro">
-        <div class="mini"><b>Round 1</b><br>WRENCH：短距离近战，需要跑到敌人身边。</div>
-        <div class="mini"><b>Round 2</b><br>HEAVY WRENCH：更远、更重。</div>
-        <div class="mini"><b>Round 3</b><br>SIDEARM：第一次获得远程弹道。</div>
+      <h1 id="mt">ROUNDHOUSE · V9</h1>
+      <div class="sub" id="ms">2.5D 剖面列车路线原型：先跑真实的一圈，再决定是否继续。</div>
+      <div class="routeCards" id="briefCards">
+        <div class="routeCard"><b>01 · ROUNDHOUSE</b><span>中央转盘锁定列车，准备发车。</span></div>
+        <div class="routeCard danger"><b>02 · INDUSTRIAL YARD</b><span>巨型装卸机械臂会横扫车顶。</span></div>
+        <div class="routeCard tunnel"><b>03 · SERVICE TUNNEL</b><span>低净空：车顶不可停留，照明下降。</span></div>
+        <div class="routeCard"><b>04 · RETURN</b><span>回到 Roundhouse，再决定 CASH OUT / ONE MORE ROUND。</span></div>
       </div>
       <div id="roundUi" style="display:none">
-        <div class="row"><div class="mini">当前收益：<b id="rm"></b></div><div class="mini">下一倍率：<b id="rx"></b></div><div class="mini">下一武器：<b id="rw"></b></div></div>
+        <div class="summaryGrid">
+          <div><small>UNBANKED</small><b id="rm">$0</b></div>
+          <div><small>TRAIN LENGTH</small><b id="rc">2 CARS</b></div>
+          <div><small>NEXT RISK</small><b id="risk">+1</b></div>
+        </div>
+        <h3>接入下一节车厢</h3>
         <div id="choices"></div>
-        <button id="reroll" type="button" class="shopBtn" style="display:none">REROLL</button>
       </div>
-      <div id="garageUi" style="display:none">
-        <div class="row"><div class="mini"><b>BANKED CREDITS</b><br><span id="bankValue">$0</span></div><div class="mini"><b>原则</b><br>买“选择空间”，不直接买永久伤害。</div></div>
-        <div id="garageShop"></div>
-      </div>
-      <div class="warn" id="pwaNote">想真正全屏：用 Safari 打开 → 分享 → 添加到主屏幕 → 从桌面图标启动。</div>
       <div class="actions">
         <button id="cash" type="button" style="display:none">CASH OUT</button>
-        <button class="start" id="start" type="button">START RUN</button>
-        <button class="danger" id="more" type="button" style="display:none">ONE MORE ROUND</button>
-        <button class="start" id="garageBtn" type="button" style="display:none">RETURN TO GARAGE</button>
-        <button class="start" id="newRun" type="button" style="display:none">START NEW RUN</button>
+        <button class="start" id="start" type="button">DEPART INDUSTRIAL LOOP</button>
+        <button class="dangerBtn" id="more" type="button" style="display:none">ONE MORE ROUND</button>
       </div>
+      <div class="footnote">V9 使用程序化 2.5D blockout。外部免费模型源先锁定 CC0：Kenney / Quaternius；不影响当前玩法验证。</div>
     </div>
   </div>
 </div>
-<script src="./app-core.js?v=8"></script>
-<script src="./app-game.js?v=8"></script>
-<script src="./app-init.js?v=8"></script>
+<script src="./app-core.js?v=9"></script>
+<script src="./app-game.js?v=9"></script>
+<script src="./app-init.js?v=9"></script>
 </body>
 </html>
