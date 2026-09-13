@@ -13,7 +13,7 @@ function emit(type,data){telemetry?.log(type,data);audio.event(type);}
 telemetry=new Telemetry(snapshot);game=new Game({bank:readBank(),seed:seed(),emit});
 function clearInput(){input={move:0,attack:false,repair:false};pressed.clear();document.querySelectorAll('.active').forEach(e=>e.classList.remove('active'));}
 function fatal(error){clearInput();game.pause(true);audio.silence();frameError=true;$('modal').hidden=true;$('portrait').hidden=true;telemetry.log('runtime_error',{message:String(error?.message||error).slice(0,150)});$('fatal').hidden=false;$('fatal').textContent='3D 运行暂停：'+String(error?.message||error)+'\n日志已保留。请重新载入；此版本不会切回二维画面。';}
-function refreshInputs(){let move=0,attack=false,repair=false;for(const key of pressed.values()){if(key==='L')move=-1;if(key==='R')move=1;if(key==='attack')attack=true;if(key==='fix')repair=true;}input={move,attack,repair};}
+function refreshInputs(){let move=0,attack=false,repair=false;for(const key of pressed.values()){if(key==='L')move=-1;if(key==='R')move=1;if(key==='attack')attack=true;if(key==='fix')repair=true;}if(input.repair&&!repair)game.cancelRepair('released');input={move,attack,repair};}
 for(const id of ['L','R','attack','fix']){
   const el=$(id);
   el.addEventListener('pointerdown',e=>{e.preventDefault();if(game.paused||game.status!=='running')return;el.setPointerCapture(e.pointerId);pressed.set(e.pointerId,id);el.classList.add('active');refreshInputs();telemetry.log('input_down',{key:id,x:game.player.x});});
@@ -85,7 +85,7 @@ function ui(){
   $('event').textContent=message;$('event').dataset.state=game.rescue?'stalled':engine;$('viewport').dataset.health=game.player.hp<=20?'critical':'normal';
   $('layer').textContent=game.player.roof?'下车内':'上车顶';$('interact').textContent=game.player.carry?'放货':game.cars[game.currentCar].type==='engine'?'增压':game.cars[game.currentCar].type==='cargo'?'搬货':'交互';
   $('repairPanel').hidden=!job;$('repairFill').style.width=job?Math.min(100,job.progress/job.duration*100)+'%':'0%';$('repairText').textContent=job?(job.emergency?'紧急重启':'维修 '+String(job.car+1).padStart(2,'0'))+' · '+Math.min(100,Math.floor(job.progress/job.duration*100))+'%':'';
-  const notice=game.notices.at(-1);$('success').hidden=!notice||!!job;$('successTitle').textContent=notice?.title||'';$('successDetail').textContent=notice?.detail||'';
+  const notice=game.notices.at(-1);$('success').hidden=!notice;$('centerStack').dataset.repair=job?'true':'false';$('successTitle').textContent=notice?.title||'';$('successDetail').textContent=notice?.detail||'';
   $('centerHint').hidden=!!job||!!notice;$('centerHint').textContent=game.status==='arriving'?'安全回站 · '+Math.max(0,B.arrivalTime-game.arrivalElapsed).toFixed(1)+'s':input.repair?game.repairHint:game.player.roof?'车顶移动 +25% · 提前留意净空':'近设备长按修理 · 黄梯切层';
   if(game.status!==lastStatus){lastStatus=game.status;if(['complete','lost','cashed','practice_complete'].includes(game.status))showEnd();if(game.status==='arriving')clearInput();}
 }
