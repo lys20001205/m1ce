@@ -38,7 +38,7 @@ At arrival enemies stop, input clears, and a 4-second safe docking phase plays b
 
 Initial R1–R5 admission caps: 2,3,4,5,6; later capped at 8. One environment slot is reserved in R1, two in later rounds. The reserve is held even before the hazard so live enemies do not suddenly push the total over budget at a phase boundary. Low health is a consequence of existing incidents, not an extra duplicated budget charge.
 Enemy HP does not grow with rounds. R1 introduces only ordinary boarders. Extra cargo cars bias thief composition within the same cap. Wallet/bank values never raise difficulty.
-Recovery windows after hazards/rescue/faults block new incidents for 8 seconds, without deleting threats or granting global invincibility. Critical engine/player condition also suspends new admissions until stabilised.
+Recovery windows after hazards/rescue/faults block new incidents for 8 seconds, without deleting threats or granting global invincibility. Critical engine/player condition offers one 8-second respite per lap, then resumes with a reduced admission ceiling. Remaining permanently critical or repeatedly crossing the threshold does not create permanent spawn immunity.
 From R3, one announced maintenance fault may occur early in the yard: 3 seconds warning then at most 6 seconds of 6 HP/sec damage. Successful engine repair ends it. It is excluded for weak players/engines and must fit before the crane phase. This is not a scripted forced stall.
 Roof movement is 25% faster. Workshop makes repairs faster; functioning battery above 25% adds a further 20% speed. Boost uses finite stored charge, preferring a healthy battery, refilled at dock.
 
@@ -49,6 +49,8 @@ Snapshots add engine state, rescue/channel progress, admission budget, recovery,
 `roundhouse_bank` and unrelated existing keys are preserved. No service worker or new remote dependency was introduced. Application module URLs are versioned together to avoid mixing cached V9R1 rules with V10 UI.
 
 ## Verification
+
+A balance review caught a permanent critical-state spawn-immunity exploit; two dedicated regressions now cover finite grace and repeated-threshold abuse. Continuous repair keeps the clutch success confirmation visible, and low-health audio clocks reset per run. Browser evidence sampling waits for actual camera frames and freezes exact repair poses instead of assuming a CI GPU renders within a short wall-clock wait.
 
 Local: deterministic rule tests and the five original model round-trip tests. This environment cannot create a WebGL2 context, so no local visual pass is claimed.
 GitHub CI: the built site over HTTP, actual WebGL2 in Chromium and WebKit, retained V9R1 rendering checks plus V10 input/channel/rescue/deadline/cargo/arrival/practice checks and screenshots. Pages is dependent on validation success. The workflow result/artifact is the authoritative pass/fail record.

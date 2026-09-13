@@ -1,1 +1,1 @@
-{"name":"roundhouse","version":"10.0.0","type":"module","scripts":{"test":"node --test tests/simulation.test.mjs","build":"node tools/build.mjs"},"dependencies":{"three":"0.180.0"}}
+{"name":"roundhouse","version":"10.0.0","type":"module","scripts":{"test":"node --test tests/simulation.test.mjs tests/difficulty.test.mjs","build":"node tools/build.mjs"},"dependencies":{"three":"0.180.0"}}

@@ -1,11 +1,12 @@
 import {B,capFor,reserveFor,intervalFor} from './balance.js?v=10';
 // Admission control, not a hidden rubber-band damage system. Existing enemies are never deleted.
 export class Director {
-  constructor(){this.clock=0;this.rest=0;this.faultUsed=false;this.fault=null;this.maxLoad=0;this.spawns=0;}
+  constructor(){this.clock=0;this.rest=0;this.faultUsed=false;this.fault=null;this.maxLoad=0;this.spawns=0;this.distressOffered=false;}
   enemyLoad(g){return g.enemies.filter(e=>e.hp>0).length;}
   load(g){return this.enemyLoad(g)+reserveFor(g.round);}
   recover(g,reason,seconds=B.recoveryTime){this.rest=Math.max(this.rest,seconds);this.clock=0;g.tell('recovery_started',{reason,seconds});}
-  canSpawn(g){return this.load(g)+1<=capFor(g.round) && this.enemyLoad(g)<16;}
+  effectiveCap(g){const weak=g.engineState==='critical'||g.player.hp<=20;return Math.max(reserveFor(g.round)+1,capFor(g.round)-(weak?1:0));}
+  canSpawn(g){return this.load(g)+1<=this.effectiveCap(g) && this.enemyLoad(g)<16;}
   cancelFault(g,reason){if(!this.fault)return;this.fault=null;g.tell('fault_resolved',{reason});this.recover(g,'engine_fault');}
   step(g,dt){
     this.rest=Math.max(0,this.rest-dt);
@@ -15,7 +16,10 @@ export class Director {
       if(f.active){f.tick+=Math.min(dt,Math.max(0,f.time-B.faultLead));if(f.tick>=1-1e-8){f.tick-=1;g.damageCar(0,B.faultDPS,'engine_fault');}}
       if(f.time>=B.faultLead+B.faultTime-1e-8){this.fault=null;this.recover(g,'fault_ended');g.tell('engine_fault_ended');}
     }
-    const relief=this.rest>0 || g.engineState==='stalled' || g.engineState==='critical' || g.player.hp<=20;
+    const weak=g.engineState==='critical'||g.player.hp<=20;
+    // One grace offer per lap, then reduced pressure: staying weak is not permanent immunity.
+    if(weak&&!this.distressOffered){this.distressOffered=true;if(this.rest<=0)this.recover(g,'critical_condition');}
+    const relief=this.rest>0 || g.engineState==='stalled';
     if(g.practice || relief){this.clock=0;return;}
     // A maintenance fault is advertised, finite, and reserved away from environmental hazards.
     const headroom=(.30-g.t)*100/B.boostScale;
@@ -32,9 +36,9 @@ export class Director {
     }
   }
   snapshot(g){const actualHazard=['crane','approach','tunnel'].includes(g.phase)?reserveFor(g.round):0;return{
-    cap:capFor(g.round),enemies:this.enemyLoad(g),reserved:reserveFor(g.round),load:this.load(g),
+    cap:capFor(g.round),effectiveCap:this.effectiveCap(g),enemies:this.enemyLoad(g),reserved:reserveFor(g.round),load:this.load(g),
     actual:this.enemyLoad(g)+Math.max(actualHazard,this.fault?2:0),maxLoad:this.maxLoad,
     rest:this.rest,fault:this.fault?{time:this.fault.time,active:this.fault.active}:null,
-    relief:this.rest>0||g.engineState==='critical'||g.engineState==='stalled'||g.player.hp<=20
+    relief:this.rest>0||g.engineState==='stalled'
   };}
 }

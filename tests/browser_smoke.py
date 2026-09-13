@@ -35,7 +35,15 @@ async def run_browser(p,name):
         before=await page.evaluate('window.__RH_DEBUG.snapshot()')
         for id in ['L','R']:
             box=await page.locator('#'+id).bounding_box();await page.mouse.move(box['x']+box['width']/2,box['y']+box['height']/2)
-            await page.mouse.down();await page.wait_for_timeout(650);await page.mouse.up();await page.wait_for_timeout(100)
+            await page.mouse.down()
+            # Slow software WebGL may not tick within a fixed 650ms interval. Keep real input
+            # held until two actual frames have processed it, still enforcing displacement.
+            await page.wait_for_function("""({x,frames,id}) => {
+                const a=window.__RH_TEST,g=a.game();
+                return a.input().move===(id==='L'?-1:1) && a.view().frames>=frames+2 &&
+                    (id==='L'?g.player.x<x-.02:g.player.x>x+.02);
+            }""",arg={'x':before['px'],'frames':before['drawCount'],'id':id},timeout=15000)
+            await page.mouse.up()
             after=await page.evaluate('window.__RH_DEBUG.snapshot()')
             checks[id+'_moves']=after['px']<before['px'] if id=='L' else after['px']>before['px']
             checks[id+'_render_continues']=after['drawCount']>before['drawCount']+1;before=after
