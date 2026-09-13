@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>ROUNDHOUSE Mobile Canvas v3</title>
+<style>
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#091018;color:#eef3f8;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;touch-action:none}
+#app{position:fixed;inset:0;background:#0c151f}
+#hud{position:absolute;left:8px;right:8px;top:max(6px,env(safe-area-inset-top));height:52px;display:flex;gap:6px;z-index:3}
+.h{background:#111a24;border:1px solid #334456;border-radius:10px;padding:6px 9px;min-width:64px}.h small{display:block;color:#91a4b7;font-size:8px}.h b{font-size:14px}
+#event{position:absolute;left:8px;right:8px;top:64px;height:42px;background:#111a24;border:1px solid #334456;border-radius:10px;padding:7px 10px;z-index:3;font-size:12px}
+#game{position:absolute;left:0;right:0;top:112px;bottom:96px;width:100%;height:calc(100% - 208px);background:#111c29}
+#controls{position:absolute;left:0;right:0;bottom:max(8px,env(safe-area-inset-bottom));height:80px;z-index:4;pointer-events:none}
+.g{position:absolute;bottom:0;display:flex;gap:8px;pointer-events:auto}#mv{left:max(10px,env(safe-area-inset-left))}#ac{right:max(10px,env(safe-area-inset-right))}
+button{border:1px solid #5d7086;background:#1b2734;color:#fff;border-radius:16px;font-weight:800}
+.ctrl{width:64px;height:64px;font-size:22px}.small{width:56px;height:56px;font-size:11px}.fire{width:70px;height:70px;background:#54292b;border-color:#9d5f62}.repair{background:#20422c;border-color:#5b8a68}
+#modal{position:absolute;inset:0;background:rgba(4,8,12,.96);z-index:8;display:flex;align-items:center;justify-content:center;padding:16px}
+.card{width:min(560px,94vw);max-height:88vh;overflow:auto;background:#141d27;border:1px solid #35475a;border-radius:15px;padding:16px}
+h1{margin:0 0 7px;font-size:26px}.sub{color:#9cadbf;font-size:13px;margin-bottom:12px}.row{display:flex;gap:8px;flex-wrap:wrap}.mini{flex:1;background:#1b2632;border:1px solid #314256;border-radius:10px;padding:9px;font-size:12px}
+.choice{margin-top:8px;padding:10px;background:#1b2632;border:1px solid #314256;border-radius:10px}.choice.sel{outline:2px solid #78aaff}
+.actions{display:flex;gap:8px;margin-top:13px}.actions button{flex:1;min-height:48px;font-size:14px}.start{background:#20412b}.danger{background:#4f2829}
+.warn{color:#f0bc5c;font-size:12px;margin-top:10px}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="hud">
+    <div class="h"><small>ROUND</small><b id="r">1</b></div>
+    <div class="h"><small>CASH</small><b id="m">$1,000</b></div>
+    <div class="h"><small>MULT</small><b id="x">×1.00</b></div>
+    <div class="h"><small>CARS</small><b id="c">2</b></div>
+    <div class="h"><small>ENGINE</small><b id="e">100%</b></div>
+    <div class="h"><small>TIME</small><b id="t">45</b></div>
+  </div>
+  <div id="event">点击 START 才会开始。</div>
+  <canvas id="game"></canvas>
+  <div id="controls">
+    <div class="g" id="mv"><button class="ctrl" id="L">◀</button><button class="ctrl" id="R">▶</button></div>
+    <div class="g" id="ac"><button class="ctrl small" id="roof">车顶</button><button class="ctrl small repair" id="fix">修理</button><button class="ctrl fire" id="fire">射击</button></div>
+  </div>
+  <div id="modal">
+    <div class="card">
+      <h1 id="mt">ROUNDHOUSE</h1>
+      <div class="sub" id="ms">Canvas 轻量版。不会在开始前偷偷计时。</div>
+      <div class="row" id="intro">
+        <div class="mini">守住列车直到倒计时结束。</div>
+        <div class="mini">每轮后选择 CASH OUT / ONE MORE ROUND。</div>
+      </div>
+      <div id="roundUi" style="display:none">
+        <div class="row"><div class="mini">当前收益：<b id="rm"></b></div><div class="mini">下一倍率：<b id="rx"></b></div></div>
+        <div id="choices"></div>
+      </div>
+      <div class="warn">建议横屏并在 Safari/正常浏览器运行。</div>
+      <div class="actions">
+        <button id="cash" style="display:none">CASH OUT</button>
+        <button class="start" id="start" onclick="startRound()">START RUN</button>
+        <button class="danger" id="more" style="display:none" onclick="oneMore()">ONE MORE ROUND</button>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+"use strict";
+const cv=document.getElementById("game"),ctx=cv.getContext("2d",{alpha:false});
+const E=document.getElementById("event");
+const carDefs={engine:["ENGINE",160],cargo:["CARGO",100],battery:["BATTERY",90],workshop:["WORKSHOP",110],turret:["TURRET",95]};
+const S={round:1,money:1000,mult:1,time:45,running:false,roof:false,px:55,enemies:[],cars:[{type:"engine",hp:160,max:160},{type:"cargo",hp:100,max:100,cargo:3}],spawn:0,last:0,selected:"battery",move:0};
+function cash(n){return "$"+Math.max(0,Math.round(n)).toLocaleString()}
+function resize(){const d=Math.min(devicePixelRatio||1,2);const rect=cv.getBoundingClientRect();cv.width=Math.max(1,Math.floor(rect.width*d));cv.height=Math.max(1,Math.floor(rect.height*d));ctx.setTransform(d,0,0,d,0,0)}
+addEventListener("resize",resize);resize();
+function hud(){
+ document.getElementById("r").textContent=S.round;
+ document.getElementById("m").textContent=cash(S.money);
+ document.getElementById("x").textContent="×"+S.mult.toFixed(2);
+ document.getElementById("c").textContent=S.cars.length;
+ document.getElementById("e").textContent=Math.round(S.cars[0].hp/S.cars[0].max*100)+"%";
+ document.getElementById("t").textContent=Math.max(0,Math.ceil(S.time));
+}
+function tw(){return S.cars.length*138}
+function carIndexAt(x){return Math.max(0,Math.min(S.cars.length-1,Math.floor(x/138)))}
+function rr(x,y,w,h,r,fill,stroke){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();if(fill)ctx.fill();if(stroke)ctx.stroke()}
+function draw(){
+ const w=cv.clientWidth,h=cv.clientHeight;
+ ctx.fillStyle="#101c29";ctx.fillRect(0,0,w,h);
+ ctx.fillStyle="#152536";for(let x=0;x<w;x+=95)ctx.fillRect(x,0,2,h);
+ const base=h-54;ctx.fillStyle="#5a6571";ctx.fillRect(0,base+14,w,7);ctx.fillStyle="#27313b";ctx.fillRect(0,base+30,w,7);
+ const scale=Math.min(1,w/Math.max(420,tw()+30));
+ ctx.save();ctx.translate(12,0);ctx.scale(scale,scale);
+ S.cars.forEach((c,i)=>{
+   const x=i*138,y=base-104;
+   ctx.fillStyle=c.type==="cargo"?"#2e291c":c.type==="battery"?"#1c2b24":c.type==="workshop"?"#29222c":c.type==="turret"?"#222934":"#202c37";
+   ctx.strokeStyle="#637081";ctx.lineWidth=2;rr(x,y,132,94,7,true,true);
+   ctx.fillStyle="#44515f";ctx.fillRect(x+5,y-10,122,10);
+   ctx.fillStyle="#edf2f7";ctx.font="bold 10px system-ui";ctx.fillText(String(i+1).padStart(2,"0")+" "+carDefs[c.type][0],x+7,y+15);
+   ctx.fillStyle="#28323d";ctx.fillRect(x+7,y+74,118,6);
+   ctx.fillStyle="#6fc68c";ctx.fillRect(x+7,y+74,118*Math.max(0,c.hp/c.max),6);
+   if(c.type==="cargo"){ctx.fillStyle="#8a7033";for(let k=0;k<(c.cargo||0);k++)ctx.fillRect(x+12+k*20,y+34,15,14)}
+ });
+ const py=S.roof?base-137:base-46;ctx.fillStyle="#7cabff";rr(S.px,py,20,30,5,true,false);
+ S.enemies.forEach(en=>{ctx.fillStyle=en.type==="thief"?"#a479ff":en.type==="clinger"?"#ff9a5a":"#e46868";const yy=en.type==="clinger"?base-126:base-44;rr(en.x,yy,19,28,5,true,false)});
+ ctx.restore();hud();
+}
+function spawn(){
+ let type="boarder",q=Math.random();if(S.round>=2&&q<.25)type="thief";else if(S.round>=3&&q>.82)type="clinger";
+ S.enemies.push({type,x:Math.random()<.5?0:Math.max(0,tw()-20),hp:type==="boarder"?2:3,atk:0});
+}
+function ai(dt){
+ S.enemies.forEach(en=>{
+   let ti=carIndexAt(S.px),tx=S.px;
+   if(en.type==="thief"){let found=-1;for(let i=S.cars.length-1;i>=0;i--)if(S.cars[i].type==="cargo"&&(S.cars[i].cargo||0)>0){found=i;break}if(found>=0){ti=found;tx=ti*138+66}}
+   if(en.type==="clinger"){ti=Math.max(1,Math.min(S.cars.length-1,carIndexAt(en.x)));tx=ti*138+66}
+   const sp=en.type==="thief"?40:26;
+   if(Math.abs(en.x-tx)>14)en.x+=Math.sign(tx-en.x)*sp*dt;
+   else{en.atk+=dt;if(en.atk>1){en.atk=0;
+     if(en.type==="thief"){let c=S.cars[ti];if(c&&c.type==="cargo"&&(c.cargo||0)>0){c.cargo--;S.money=Math.max(0,S.money-250*S.mult);E.textContent="THIEF 抢走了货物！"}}
+     else{let c=S.cars[ti];if(c)c.hp=Math.max(0,c.hp-(en.type==="clinger"?7:4));if(ti===0&&c.hp<=0)lose("ENGINE DESTROYED")}
+   }}
+ });
+}
+function update(dt){
+ if(!S.running)return;
+ S.time-=dt;S.spawn+=dt;if(S.spawn>Math.max(.9,3.2-S.round*.17)){S.spawn=0;spawn()}
+ if(S.move)S.px=Math.max(0,Math.min(tw()-24,S.px+S.move*90*dt));
+ ai(dt);S.enemies=S.enemies.filter(e=>e.hp>0&&e.x>-80&&e.x<tw()+80);
+ if(S.time<=0)finish();
+}
+function loop(ts){let dt=Math.min(.05,(ts-(S.last||ts))/1000);S.last=ts;update(dt);draw();requestAnimationFrame(loop)}requestAnimationFrame(loop);
+function startRound(){
+ S.running=true;S.time=45+Math.min(20,(S.round-1)*3);S.spawn=0;S.last=0;document.getElementById("modal").style.display="none";E.textContent="Round "+S.round+"：守住列车。";
+}
+window.startRound=startRound;
+function finish(){S.running=false;S.money+=Math.round((900+S.round*500)*S.mult);showRoundhouse()}
+function showRoundhouse(){
+ document.getElementById("modal").style.display="flex";document.getElementById("mt").textContent="ROUND COMPLETE";
+ document.getElementById("ms").textContent="现在离开就能保住收益。";
+ document.getElementById("intro").style.display="none";document.getElementById("roundUi").style.display="block";
+ document.getElementById("cash").style.display="block";document.getElementById("more").style.display="block";document.getElementById("start").style.display="none";
+ document.getElementById("rm").textContent=cash(S.money);document.getElementById("rx").textContent="×"+(S.mult*1.28).toFixed(2);buildChoices();
+}
+function buildChoices(){
+ const root=document.getElementById("choices");root.innerHTML="";const cycle=["battery","workshop","turret","cargo"],a=(S.round-1)%cycle.length,p=[cycle[a],cycle[(a+1)%cycle.length]];
+ if(!p.includes(S.selected))S.selected=p[0];p.forEach(type=>{let d=document.createElement("div");d.className="choice"+(S.selected===type?" sel":"");d.textContent=carDefs[type][0]+" — "+(type==="turret"?"自动火力":type==="workshop"?"修理更快":type==="cargo"?"更多收益":"后勤稳定");d.onclick=()=>{S.selected=type;buildChoices()};root.appendChild(d)})
+}
+function oneMore(){
+ S.round++;S.mult*=1.28;let type=S.selected,def=carDefs[type],c={type,hp:def[1],max:def[1]};if(type==="cargo")c.cargo=4;S.cars.push(c);S.px=55;S.enemies=[];S.roof=false;
+ document.getElementById("mt").textContent="ROUNDHOUSE";document.getElementById("ms").textContent="新车厢已接入。点击开始下一轮。";
+ document.getElementById("roundUi").style.display="none";document.getElementById("cash").style.display="none";document.getElementById("more").style.display="none";
+ const st=document.getElementById("start");st.style.display="block";st.textContent="START ROUND "+S.round;E.textContent="等待开始 Round "+S.round+"。";
+}
+window.oneMore=oneMore;
+document.getElementById("cash").onclick=()=>{S.running=false;document.getElementById("mt").textContent="CASHED OUT";document.getElementById("ms").innerHTML="最终兑现："+cash(S.money)+"<br>你有没有一瞬间想继续？";document.getElementById("roundUi").style.display="none";document.getElementById("cash").style.display="none";document.getElementById("more").style.display="none";};
+function lose(reason){S.running=false;document.getElementById("modal").style.display="flex";document.getElementById("mt").textContent="RUN OVER";document.getElementById("ms").innerHTML=reason+"<br>失去未兑现收益 "+cash(S.money);document.getElementById("intro").style.display="none";document.getElementById("roundUi").style.display="none";document.getElementById("cash").style.display="none";document.getElementById("more").style.display="none";document.getElementById("start").style.display="none"}
+function shoot(){if(!S.running)return;let bi=-1,bd=999;S.enemies.forEach((e,i)=>{let d=Math.abs(e.x-S.px);if(d<bd){bd=d;bi=i}});if(bi>=0&&bd<190){if(--S.enemies[bi].hp<=0){S.money+=40*S.mult;S.enemies.splice(bi,1)}}else E.textContent="没有敌人在射程内。"}
+function fix(){if(!S.running)return;let i=carIndexAt(S.px),c=S.cars[i],bonus=S.cars.some(x=>x.type==="workshop"&&x.hp>0)?18:10;c.hp=Math.min(c.max,c.hp+bonus);E.textContent="修理 CAR "+(i+1)+" +"+bonus+" HP"}
+function bindHold(id,dir){let el=document.getElementById(id);el.addEventListener("pointerdown",e=>{e.preventDefault();S.move=dir});["pointerup","pointercancel","pointerleave"].forEach(n=>el.addEventListener(n,e=>{e.preventDefault();if(S.move===dir)S.move=0}))}
+bindHold("L",-1);bindHold("R",1);
+document.getElementById("fire").addEventListener("pointerdown",e=>{e.preventDefault();shoot()});
+document.getElementById("fix").addEventListener("pointerdown",e=>{e.preventDefault();fix()});
+document.getElementById("roof").addEventListener("pointerdown",e=>{e.preventDefault();if(S.running)S.roof=!S.roof});
+draw();
+</script>
+</body>
+</html>
