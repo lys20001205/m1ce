@@ -1,3 +1,4 @@
+const __rhDrawCar=drawCar;drawCar=function(car,i,_array){return __rhDrawCar(car,i,VIEW.base)};
 function prevent(e){e.preventDefault();e.stopPropagation()}
 function bindHold(id,dir){const el=document.getElementById(id);const down=e=>{prevent(e);S.move=dir;S.facing=dir;el.classList.add("active");logEvent("move_start",{dir,px:S.px})};const up=e=>{prevent(e);if(S.move===dir)S.move=0;el.classList.remove("active");logEvent("move_end",{dir,px:S.px})};["pointerdown","touchstart","mousedown"].forEach(n=>el.addEventListener(n,down,{passive:false}));["pointerup","pointercancel","pointerleave","touchend","touchcancel","mouseup"].forEach(n=>el.addEventListener(n,up,{passive:false}))}
 function bindTap(id,fn){const el=document.getElementById(id);el.addEventListener("pointerdown",e=>{prevent(e);el.classList.add("active");fn()},{passive:false});el.addEventListener("pointerup",e=>{prevent(e);el.classList.remove("active")},{passive:false})}
