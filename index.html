@@ -4,23 +4,40 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="format-detection" content="telephone=no">
-<title>ROUNDHOUSE Mobile Canvas v4</title>
+<meta name="theme-color" content="#081018">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="ROUNDHOUSE">
+<link rel="manifest" href="./manifest.webmanifest">
+<title>ROUNDHOUSE Mobile v5</title>
 <style>
-*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#081018;color:#eef4fa;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;overscroll-behavior:none}#app{position:fixed;inset:0;background:linear-gradient(180deg,#09131c,#0d1824 38%,#081018)}button,canvas,div,span{touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
-#hud{position:absolute;left:6px;right:6px;top:max(6px,env(safe-area-inset-top));display:flex;gap:5px;z-index:4;pointer-events:none}
-.h{background:rgba(11,20,30,.82);border:1px solid rgba(81,108,136,.65);border-radius:12px;padding:5px 8px;min-width:60px;backdrop-filter:blur(6px)}.h small{display:block;color:#8ea4ba;font-size:8px;letter-spacing:.08em}.h b{display:block;font-size:12px;line-height:1.15;margin-top:1px}.h.brand{min-width:86px}.h.brand b{font-size:13px;letter-spacing:.05em}
-#event{position:absolute;left:6px;right:6px;top:58px;height:34px;padding:7px 11px;background:rgba(10,18,28,.76);border:1px solid rgba(81,108,136,.62);border-radius:12px;z-index:4;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;backdrop-filter:blur(6px);pointer-events:none}
-#game{position:absolute;left:0;right:0;top:96px;bottom:72px;width:100%;height:calc(100% - 168px);display:block}
-#controls{position:absolute;left:0;right:0;bottom:max(6px,env(safe-area-inset-bottom));height:66px;z-index:5;pointer-events:none}
-.g{position:absolute;bottom:0;display:flex;gap:8px;pointer-events:auto}#mv{left:max(8px,env(safe-area-inset-left))}#ac{right:max(8px,env(safe-area-inset-right))}
-button{border:1px solid rgba(108,130,153,.88);background:rgba(21,31,43,.9);color:#fff;border-radius:17px;font-weight:800;box-shadow:0 8px 24px rgba(0,0,0,.28);padding:0}button:active,button.active{transform:scale(.96);filter:brightness(1.08)}
-.ctrl{width:58px;height:58px;font-size:24px}.small{width:52px;height:52px;font-size:11px;line-height:1.05}.fire{width:64px;height:64px;background:rgba(85,38,40,.92);border-color:rgba(184,103,106,.95)}.repair{background:rgba(28,65,40,.92);border-color:rgba(93,144,108,.95)}.roof{background:rgba(24,35,47,.94)}
-#modal{position:absolute;inset:0;background:rgba(4,9,14,.92);z-index:8;display:flex;align-items:center;justify-content:center;padding:14px} .card{width:min(560px,94vw);max-height:88vh;overflow:auto;background:#131d28;border:1px solid #33475e;border-radius:16px;padding:16px;box-shadow:0 18px 48px rgba(0,0,0,.4)} h1{margin:0 0 7px;font-size:25px} .sub{color:#9fb0c3;font-size:13px;margin-bottom:10px} .row{display:flex;gap:8px;flex-wrap:wrap}.mini{flex:1 1 120px;background:#1a2633;border:1px solid #2e4155;border-radius:10px;padding:9px;font-size:12px}.choice{margin-top:8px;padding:10px;background:#1a2633;border:1px solid #2e4155;border-radius:10px}.choice.sel{outline:2px solid #78aaff}.actions{display:flex;gap:8px;margin-top:12px}.actions button{flex:1;min-height:46px;font-size:14px}.start{background:#21422c}.danger{background:#4d2728}.warn{color:#f1bc5a;font-size:12px;margin-top:10px}
-#hint{position:absolute;left:50%;bottom:74px;transform:translateX(-50%);background:rgba(10,18,28,.72);border:1px solid rgba(81,108,136,.52);border-radius:999px;padding:5px 10px;font-size:11px;color:#9eb3c7;z-index:4;pointer-events:none;backdrop-filter:blur(5px)}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#081018;color:#eef4fa;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;overscroll-behavior:none}
+body{position:fixed;inset:0}
+#app{position:absolute;inset:0;background:#081018;overflow:hidden}
+button,canvas,div,span{touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+#game{position:absolute;inset:0;width:100%;height:100%;display:block;background:#0b1621}
+#hud{position:absolute;left:max(5px,env(safe-area-inset-left));right:max(5px,env(safe-area-inset-right));top:max(5px,env(safe-area-inset-top));display:flex;gap:4px;z-index:5;pointer-events:none;flex-wrap:nowrap}
+.h{background:rgba(8,16,24,.77);border:1px solid rgba(83,112,140,.60);border-radius:10px;padding:4px 7px;min-width:54px;backdrop-filter:blur(6px)}
+.h small{display:block;color:#8da3b9;font-size:7px;letter-spacing:.08em}.h b{display:block;font-size:11px;line-height:1.15;margin-top:1px;white-space:nowrap}
+.h.brand{min-width:80px}.h.brand b{font-size:12px;letter-spacing:.04em}.h.weapon{min-width:86px}
+#event{position:absolute;left:max(7px,env(safe-area-inset-left));top:48px;max-width:52%;height:30px;padding:6px 10px;background:rgba(8,16,24,.72);border:1px solid rgba(83,112,140,.52);border-radius:10px;z-index:5;font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;backdrop-filter:blur(5px);pointer-events:none}
+#fullscreenTip{position:absolute;right:max(7px,env(safe-area-inset-right));top:48px;z-index:6;min-height:30px;padding:0 10px;border:1px solid rgba(83,112,140,.55);background:rgba(8,16,24,.76);color:#b9c9d9;border-radius:10px;font-size:10px;font-weight:700}
+#controls{position:absolute;left:0;right:0;bottom:max(5px,env(safe-area-inset-bottom));height:60px;z-index:6;pointer-events:none}
+.g{position:absolute;bottom:0;display:flex;gap:7px;pointer-events:auto}#mv{left:max(7px,env(safe-area-inset-left))}#ac{right:max(7px,env(safe-area-inset-right))}
+button{border:1px solid rgba(108,130,153,.86);background:rgba(20,30,42,.88);color:#fff;border-radius:15px;font-weight:800;box-shadow:0 7px 20px rgba(0,0,0,.28);padding:0}
+button:active,button.active{transform:scale(.96);filter:brightness(1.12)}
+.ctrl{width:54px;height:54px;font-size:22px}.small{width:48px;height:48px;font-size:10px;line-height:1.05}.attack{width:60px;height:60px;background:rgba(86,39,41,.92);border-color:rgba(188,104,107,.95);font-size:14px}.repair{background:rgba(28,65,40,.92);border-color:rgba(93,144,108,.95)}.roof{background:rgba(24,35,47,.94)}
+#modal{position:absolute;inset:0;background:rgba(4,9,14,.91);z-index:10;display:flex;align-items:center;justify-content:center;padding:14px}.card{width:min(570px,94vw);max-height:88vh;overflow:auto;background:#131d28;border:1px solid #33475e;border-radius:16px;padding:15px;box-shadow:0 18px 48px rgba(0,0,0,.42)}
+h1{margin:0 0 6px;font-size:24px}.sub{color:#9fb0c3;font-size:12px;margin-bottom:10px}.row{display:flex;gap:7px;flex-wrap:wrap}.mini{flex:1 1 125px;background:#1a2633;border:1px solid #2e4155;border-radius:10px;padding:8px;font-size:11px}.choice{margin-top:7px;padding:9px;background:#1a2633;border:1px solid #2e4155;border-radius:10px;font-size:12px}.choice.sel{outline:2px solid #78aaff}.actions{display:flex;gap:8px;margin-top:11px}.actions button{flex:1;min-height:44px;font-size:13px}.start{background:#21422c}.danger{background:#4d2728}.warn{color:#f1bc5a;font-size:11px;margin-top:9px}
+#rangeLegend{position:absolute;right:max(8px,env(safe-area-inset-right));bottom:70px;z-index:5;padding:5px 8px;border-radius:9px;background:rgba(8,16,24,.66);border:1px solid rgba(83,112,140,.45);font-size:9px;color:#9fb5c8;pointer-events:none}
+@media (max-width:700px){.h.brand{display:none}.h{min-width:48px;padding:4px 6px}.h.weapon{min-width:76px}#event{max-width:60%}}
 </style>
 </head>
 <body>
 <div id="app">
+  <canvas id="game"></canvas>
   <div id="hud">
     <div class="h brand"><small>GAME</small><b>ROUNDHOUSE</b></div>
     <div class="h"><small>ROUND</small><b id="r">1</b></div>
@@ -28,32 +45,34 @@ button{border:1px solid rgba(108,130,153,.88);background:rgba(21,31,43,.9);color
     <div class="h"><small>MULT</small><b id="x">×1.00</b></div>
     <div class="h"><small>CARS</small><b id="c">2</b></div>
     <div class="h"><small>ENGINE</small><b id="e">100%</b></div>
+    <div class="h weapon"><small>WEAPON</small><b id="w">WRENCH</b></div>
     <div class="h"><small>TIME</small><b id="t">45</b></div>
   </div>
-  <div id="event">点击 START 开始。建议在 Safari 横屏游玩。</div>
-  <canvas id="game"></canvas>
-  <div id="hint">左下移动，右下操作</div>
+  <div id="event">点击 START 开始。Round 1 只有近战。</div>
+  <button id="fullscreenTip" type="button">隐藏浏览器顶栏</button>
+  <div id="rangeLegend">黄线＝玩家射程 · 蓝线＝Turret 局部射程</div>
   <div id="controls">
-    <div class="g" id="mv"><button class="ctrl" id="L">◀</button><button class="ctrl" id="R">▶</button></div>
-    <div class="g" id="ac"><button class="ctrl small roof" id="roof">车顶</button><button class="ctrl small repair" id="fix">修理</button><button class="ctrl fire" id="fire">射击</button></div>
+    <div class="g" id="mv"><button class="ctrl" id="L" type="button">◀</button><button class="ctrl" id="R" type="button">▶</button></div>
+    <div class="g" id="ac"><button class="ctrl small roof" id="roof" type="button">车顶</button><button class="ctrl small repair" id="fix" type="button">修理</button><button class="ctrl attack" id="attack" type="button">近战</button></div>
   </div>
   <div id="modal">
     <div class="card">
       <h1 id="mt">ROUNDHOUSE</h1>
-      <div class="sub" id="ms">手机试玩 v4。现在先解决手感和 UI，可在 GitHub Pages 直接打开。</div>
+      <div class="sub" id="ms">v5：一开始只用扳手近战，之后才逐步解锁枪械；Turret 只守附近车厢。</div>
       <div class="row" id="intro">
-        <div class="mini">守住列车直到倒计时结束。</div>
-        <div class="mini">每轮结束后决定 CASH OUT 或 ONE MORE ROUND。</div>
+        <div class="mini"><b>Round 1</b><br>WRENCH：短距离近战，需要跑到敌人身边。</div>
+        <div class="mini"><b>Round 2</b><br>HEAVY WRENCH：更远、更重。</div>
+        <div class="mini"><b>Round 3</b><br>SIDEARM：第一次获得远程弹道。</div>
       </div>
       <div id="roundUi" style="display:none">
-        <div class="row"><div class="mini">当前收益：<b id="rm"></b></div><div class="mini">下一倍率：<b id="rx"></b></div></div>
+        <div class="row"><div class="mini">当前收益：<b id="rm"></b></div><div class="mini">下一倍率：<b id="rx"></b></div><div class="mini">下一武器：<b id="rw"></b></div></div>
         <div id="choices"></div>
       </div>
-      <div class="warn">如果方向键长按仍然弹出系统菜单，告诉我你用的是 Safari 还是内置浏览器，我继续压掉。</div>
+      <div class="warn" id="pwaNote">想真正全屏：用 Safari 打开 → 分享 → 添加到主屏幕 → 从桌面图标启动。</div>
       <div class="actions">
-        <button id="cash" style="display:none">CASH OUT</button>
-        <button class="start" id="start" onclick="startRound()">START RUN</button>
-        <button class="danger" id="more" style="display:none" onclick="oneMore()">ONE MORE ROUND</button>
+        <button id="cash" type="button" style="display:none">CASH OUT</button>
+        <button class="start" id="start" type="button">START RUN</button>
+        <button class="danger" id="more" type="button" style="display:none">ONE MORE ROUND</button>
       </div>
     </div>
   </div>
@@ -61,72 +80,57 @@ button{border:1px solid rgba(108,130,153,.88);background:rgba(21,31,43,.9);color
 <script>
 "use strict";
 const cv=document.getElementById("game"),ctx=cv.getContext("2d",{alpha:false});
-const E=document.getElementById("event");
+const E=document.getElementById("event"), attackBtn=document.getElementById("attack");
 const carDefs={engine:["ENGINE",160],cargo:["CARGO",100],battery:["BATTERY",90],workshop:["WORKSHOP",110],turret:["TURRET",95],passenger:["PASSENGER",85]};
-const hints={battery:"后勤稳定",workshop:"修理更快",turret:"自动火力",cargo:"更多收益",passenger:"高价值高风险"};
-const S={round:1,money:1000,mult:1,time:45,running:false,roof:false,px:52,enemies:[],cars:[{type:"engine",hp:160,max:160},{type:"cargo",hp:100,max:100,cargo:3}],spawn:0,last:0,selected:"battery",move:0,effects:[],shake:0,turretCd:0};
+const hints={battery:"后勤稳定",workshop:"修理更快",turret:"局部自动防御（最多 1 节）",cargo:"更多收益",passenger:"高价值高风险"};
+const S={round:1,money:1000,mult:1,time:45,running:false,roof:false,px:52,facing:1,enemies:[],cars:[{type:"engine",hp:160,max:160},{type:"cargo",hp:100,max:100,cargo:3}],spawn:0,last:0,selected:"battery",move:0,effects:[],shake:0,attackCd:0,projectiles:[],turretCd:0,turretRange:175};
 function cash(n){return "$"+Math.max(0,Math.round(n)).toLocaleString()}
+function weaponLevel(){return S.round>=5?3:S.round>=3?2:S.round>=2?1:0}
+function weaponName(){return ["WRENCH","HEAVY WRENCH","SIDEARM","CARBINE"][weaponLevel()]}
+function weaponRange(){return [62,82,240,320][weaponLevel()]}
+function weaponDamage(){return [1,2,1,1][weaponLevel()]}
+function weaponCooldown(){return [0.42,0.55,0.48,0.28][weaponLevel()]}
+function nextWeaponText(){const nr=S.round+1;return nr>=5?"CARBINE":nr>=3?"SIDEARM":nr>=2?"HEAVY WRENCH":"WRENCH"}
 function setEvent(msg){E.textContent=msg}
 function resize(){const d=Math.min(devicePixelRatio||1,2),rect=cv.getBoundingClientRect();cv.width=Math.max(1,Math.floor(rect.width*d));cv.height=Math.max(1,Math.floor(rect.height*d));ctx.setTransform(d,0,0,d,0,0)}
 addEventListener("resize",resize,{passive:true});resize();
-function hud(){document.getElementById("r").textContent=S.round;document.getElementById("m").textContent=cash(S.money);document.getElementById("x").textContent="×"+S.mult.toFixed(2);document.getElementById("c").textContent=S.cars.length;document.getElementById("e").textContent=Math.round(S.cars[0].hp/S.cars[0].max*100)+"%";document.getElementById("t").textContent=Math.max(0,Math.ceil(S.time))}
+function hud(){document.getElementById("r").textContent=S.round;document.getElementById("m").textContent=cash(S.money);document.getElementById("x").textContent="×"+S.mult.toFixed(2);document.getElementById("c").textContent=S.cars.length;document.getElementById("e").textContent=Math.round(S.cars[0].hp/S.cars[0].max*100)+"%";document.getElementById("w").textContent=weaponName();document.getElementById("t").textContent=Math.max(0,Math.ceil(S.time));attackBtn.textContent=weaponLevel()<2?"近战":"射击"}
 function tw(){return S.cars.length*150}
 function carIndexAt(x){return Math.max(0,Math.min(S.cars.length-1,Math.floor((x+18)/150)))}
-function addFloat(x,y,text,color){S.effects.push({type:"float",x,y,text,color,life:0.8})}
+function laneY(lane,base){return lane==="roof"?base-152:base-56}
+function addFloat(x,y,text,color){S.effects.push({type:"float",x,y,text,color,life:.8})}
+function addSpark(x,y,color){for(let i=0;i<5;i++)S.effects.push({type:"spark",x,y,vx:(Math.random()-.5)*100,vy:(Math.random()-.7)*100,color,life:.35})}
 function hitShake(power){S.shake=Math.max(S.shake,power)}
-function drawBackground(w,h){
-  const g=ctx.createLinearGradient(0,0,0,h);g.addColorStop(0,"#17283a");g.addColorStop(.55,"#0f1c29");g.addColorStop(1,"#091018");ctx.fillStyle=g;ctx.fillRect(0,0,w,h);
-  ctx.globalAlpha=.18;ctx.fillStyle="#2a3b4a";for(let x=0;x<w+120;x+=95){const bh=60+((x*13)%100);ctx.fillRect(x,h*0.24,bh*.9,bh)}ctx.globalAlpha=1;
-  ctx.fillStyle="rgba(255,255,255,.05)";for(let x=0;x<w;x+=120)ctx.fillRect(x,0,2,h);
-  ctx.globalAlpha=.23;ctx.strokeStyle="#8db6ff";for(let i=0;i<10;i++){const y=20+i*24;ctx.beginPath();ctx.moveTo((performance.now()/8+i*70)% (w+80)-80,y);ctx.lineTo((performance.now()/8+i*70)% (w+80)-20,y);ctx.stroke()}ctx.globalAlpha=1;
-}
-function draw(){
- const w=cv.clientWidth,h=cv.clientHeight;ctx.save();ctx.clearRect(0,0,w,h);
- if(S.shake>0){ctx.translate((Math.random()-.5)*S.shake,(Math.random()-.5)*S.shake);S.shake*=.82;if(S.shake<.15)S.shake=0}
- drawBackground(w,h);
- const base=Math.min(h-44,Math.max(170,h*0.74));
- ctx.fillStyle="#708192";ctx.fillRect(0,base+20,w,8);ctx.fillStyle="#2d3945";ctx.fillRect(0,base+37,w,9);
- const fitScale=Math.min(1.15,Math.max(.82,w/(Math.max(460,tw()+50))));
- const visibleWorld=w/fitScale;const maxCam=Math.max(0,tw()-visibleWorld);const camX=Math.max(0,Math.min(maxCam,S.px-visibleWorld*0.42));
- ctx.save();ctx.scale(fitScale,fitScale);ctx.translate(-camX,0);
- ctx.strokeStyle="#728292";ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(18,base-4);ctx.lineTo(tw()-18,base-4);ctx.stroke();
- S.cars.forEach((c,i)=>{
-   const x=i*150+8,y=base-118;ctx.fillStyle=c.type==="cargo"?"#463c1f":c.type==="battery"?"#203428":c.type==="workshop"?"#2f2435":c.type==="turret"?"#232d38":c.type==="passenger"?"#3a2628":"#223242";ctx.strokeStyle="#7a8ea4";ctx.lineWidth=2;rr(x,y,138,100,10,true,true);
-   ctx.fillStyle="#516172";rr(x+7,y-12,124,13,6,true,false);
-   ctx.fillStyle="rgba(255,255,255,.05)";ctx.fillRect(x+9,y+9,120,24);
-   ctx.fillStyle="#1d232c";ctx.beginPath();ctx.arc(x+32,base+8,10,0,Math.PI*2);ctx.arc(x+106,base+8,10,0,Math.PI*2);ctx.fill();ctx.fillStyle="#59697b";ctx.beginPath();ctx.arc(x+32,base+8,5,0,Math.PI*2);ctx.arc(x+106,base+8,5,0,Math.PI*2);ctx.fill();
-   ctx.fillStyle="rgba(111,198,140,.15)";ctx.fillRect(x+11,y+78,116*Math.max(0,c.hp/c.max),8);
-   ctx.fillStyle="#2b3540";ctx.fillRect(x+11,y+78,116,8);ctx.fillStyle="#74d08e";ctx.fillRect(x+11,y+78,116*Math.max(0,c.hp/c.max),8);
-   ctx.fillStyle="#edf2f7";ctx.font="bold 10px system-ui";ctx.fillText(String(i+1).padStart(2,"0")+" "+carDefs[c.type][0],x+12,y+23);ctx.fillStyle="#d4dde6";ctx.font="10px system-ui";ctx.fillText(Math.round(c.hp/c.max*100)+"%",x+104,y+23);
-   if(c.type==="cargo"){ctx.fillStyle="#aa8a41";for(let k=0;k<(c.cargo||0);k++){rr(x+16+k*24,y+40,18,14,3,true,false)}}
-   else if(c.type==="turret"){ctx.fillStyle="#b7c5d6";ctx.fillRect(x+66,y+26,8,18);ctx.fillRect(x+62,y+20,16,8)}
-   else if(c.type==="engine"){ctx.fillStyle="#79a7ff";ctx.globalAlpha=.22;ctx.fillRect(x+18,y+16,20,46);ctx.globalAlpha=1;for(let s=0;s<3;s++){const py=y-10-((performance.now()/100+s*20)%26);ctx.fillStyle="rgba(220,230,245,.35)";ctx.beginPath();ctx.arc(x+28,py,5-s,0,Math.PI*2);ctx.fill();}}
- });
- const py=S.roof?base-154:base-54;ctx.fillStyle="#7cabff";ctx.shadowColor="rgba(122,172,255,.45)";ctx.shadowBlur=12;rr(S.px,py,22,34,6,true,false);ctx.shadowBlur=0;ctx.fillStyle="#dcebff";ctx.fillRect(S.px+5,py+8,12,3);ctx.font="10px system-ui";ctx.fillText("YOU",S.px-1,py-6);
- S.enemies.forEach(en=>{const yy=en.type==="clinger"?base-142:base-52;ctx.fillStyle=en.type==="thief"?"#a67aff":en.type==="clinger"?"#ff9a60":"#e36d6d";ctx.shadowColor="rgba(255,130,130,.4)";ctx.shadowBlur=10;rr(en.x,yy,20,30,6,true,false);ctx.shadowBlur=0;if(en.flash>0){ctx.fillStyle="rgba(255,255,255,"+en.flash+")";rr(en.x,yy,20,30,6,true,false)}});
- const dt=.016;S.effects=S.effects.filter(f=>{f.life-=dt;f.y-=28*dt;return f.life>0});
- S.effects.forEach(f=>{ctx.globalAlpha=Math.max(0,f.life/0.8);ctx.fillStyle=f.color;ctx.font="bold 12px system-ui";ctx.fillText(f.text,f.x,f.y)});ctx.globalAlpha=1;
- ctx.restore();ctx.restore();hud();
-}
-function rr(x,y,w,h,r,fill,stroke){ctx.beginPath();ctx.roundRect(x,y,w,h,r);if(fill)ctx.fill();if(stroke)ctx.stroke()}
-function spawn(){let type="boarder",q=Math.random();if(S.round>=2&&q<.25)type="thief";else if(S.round>=3&&q>.82)type="clinger";S.enemies.push({type,x:Math.random()<.5?0:Math.max(0,tw()-30),hp:type==="boarder"?2:3,atk:0,flash:0})}
-function turretStep(dt){S.turretCd-=dt;if(S.turretCd>0)return;const count=S.cars.filter(c=>c.type==="turret"&&c.hp>0).length;if(!count||!S.enemies.length)return;S.turretCd=.7;for(let i=0;i<count;i++){if(!S.enemies.length)break;S.enemies[0].hp--;S.enemies[0].flash=.7;addFloat(S.enemies[0].x,140,"hit","#dbe7ff");if(S.enemies[0].hp<=0){S.money+=35*S.mult;addFloat(S.enemies[0].x,130,"+$35","#7be093");S.enemies.shift()}}}
-function ai(dt){S.enemies.forEach(en=>{en.flash=Math.max(0,(en.flash||0)-dt*4);let ti=carIndexAt(S.px),tx=S.px;if(en.type==="thief"){let found=-1;for(let i=S.cars.length-1;i>=0;i--)if(S.cars[i].type==="cargo"&&(S.cars[i].cargo||0)>0){found=i;break}if(found>=0){ti=found;tx=ti*150+78}}if(en.type==="clinger"){ti=Math.max(1,Math.min(S.cars.length-1,carIndexAt(en.x)));tx=ti*150+76}const sp=en.type==="thief"?46:30;if(Math.abs(en.x-tx)>12)en.x+=Math.sign(tx-en.x)*sp*dt;else{en.atk+=dt;if(en.atk>1){en.atk=0;if(en.type==="thief"){const c=S.cars[ti];if(c&&c.type==="cargo"&&(c.cargo||0)>0){c.cargo--;S.money=Math.max(0,S.money-250*S.mult);setEvent("THIEF 抢走一箱货物！");addFloat(en.x,120,"-$250","#ffb0b0");hitShake(2.5)}}else{const c=S.cars[ti];if(c){const dmg=en.type==="clinger"?7:4;c.hp=Math.max(0,c.hp-dmg);addFloat(ti*150+48,120,"-"+dmg,"#ffb0b0");hitShake(en.type==="clinger"?4:2.5);if(ti===0&&c.hp<=0)lose("ENGINE DESTROYED");else if(en.type==="clinger")setEvent("CLINGER 正在撕裂车体！")}}}}})}
-function update(dt){if(!S.running)return;S.time-=dt;S.spawn+=dt;if(S.move)S.px=Math.max(0,Math.min(tw()-24,S.px+S.move*120*dt));if(S.spawn>Math.max(.9,3.1-S.round*.18)){S.spawn=0;spawn()}ai(dt);turretStep(dt);S.enemies=S.enemies.filter(e=>e.hp>0&&e.x>-80&&e.x<tw()+80);if(S.time<=0)finish()}
+function rr(x,y,w,h,r,fill,stroke){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();if(fill)ctx.fill();if(stroke)ctx.stroke()}
+function drawBackground(w,h){const g=ctx.createLinearGradient(0,0,0,h);g.addColorStop(0,"#15283b");g.addColorStop(.55,"#0e1b28");g.addColorStop(1,"#081018");ctx.fillStyle=g;ctx.fillRect(0,0,w,h);ctx.globalAlpha=.16;ctx.fillStyle="#2a3b4a";for(let x=0;x<w+120;x+=100){const bh=64+((x*17)%100);ctx.fillRect(x,h*.18,68,bh)}ctx.globalAlpha=1;const now=performance.now();ctx.lineWidth=1;for(let i=0;i<12;i++){const y=100+i*31,xx=(now/5+i*83)%(w+160)-160;ctx.strokeStyle="rgba(145,190,255,.18)";ctx.beginPath();ctx.moveTo(xx,y);ctx.lineTo(xx+78,y);ctx.stroke()}ctx.globalAlpha=.1;ctx.strokeStyle="#a9c5e8";for(let x=((now/20)%160)-160;x<w;x+=160){ctx.beginPath();ctx.moveTo(x,90);ctx.lineTo(x+10,h-80);ctx.stroke()}ctx.globalAlpha=1}
+function drawRange(base){const wl=weaponLevel(),r=weaponRange(),y=laneY(S.roof?"roof":"floor",base)+16;ctx.save();ctx.lineWidth=2;if(wl<2){ctx.strokeStyle="rgba(255,205,92,.55)";ctx.beginPath();ctx.arc(S.px+11,y,S.facing*r,S.facing<0?Math.PI*.75:-Math.PI*.25,S.facing<0?Math.PI*1.25:Math.PI*.25,S.facing<0);ctx.stroke()}else{ctx.setLineDash([7,6]);ctx.strokeStyle="rgba(255,205,92,.45)";ctx.beginPath();ctx.moveTo(S.px+11,y);ctx.lineTo(S.px+11+S.facing*r,y);ctx.stroke();ctx.setLineDash([]);ctx.fillStyle="rgba(255,205,92,.8)";ctx.fillRect(S.px+11+S.facing*r-2,y-7,4,14)}ctx.restore()}
+function drawTurretRanges(base){S.cars.forEach((c,i)=>{if(c.type!=="turret"||c.hp<=0)return;const tx=i*150+77,lo=tx-S.turretRange,hi=tx+S.turretRange;ctx.save();ctx.strokeStyle="rgba(110,180,255,.46)";ctx.setLineDash([5,5]);ctx.beginPath();ctx.moveTo(lo,base-158);ctx.lineTo(hi,base-158);ctx.stroke();ctx.setLineDash([]);ctx.fillStyle="rgba(110,180,255,.70)";ctx.fillRect(lo-2,base-166,4,16);ctx.fillRect(hi-2,base-166,4,16);ctx.font="9px system-ui";ctx.fillText("TURRET RANGE",tx-34,base-164);ctx.restore()})}
+function draw(){const w=cv.clientWidth,h=cv.clientHeight;ctx.save();ctx.clearRect(0,0,w,h);if(S.shake>0){ctx.translate((Math.random()-.5)*S.shake,(Math.random()-.5)*S.shake);S.shake*=.82;if(S.shake<.1)S.shake=0}drawBackground(w,h);const base=Math.max(260,h-112);ctx.fillStyle="#778899";ctx.fillRect(0,base+21,w,7);ctx.fillStyle="#2e3944";ctx.fillRect(0,base+38,w,9);const scale=Math.min(1.12,Math.max(.88,w/(Math.max(520,tw()+60))));const visibleWorld=w/scale,maxCam=Math.max(0,tw()-visibleWorld),camX=Math.max(0,Math.min(maxCam,S.px-visibleWorld*.40));ctx.save();ctx.scale(scale,scale);ctx.translate(-camX,0);drawTurretRanges(base);drawRange(base);ctx.strokeStyle="#788899";ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(20,base-4);ctx.lineTo(tw()-20,base-4);ctx.stroke();S.cars.forEach((c,i)=>{const x=i*150+8,y=base-118;ctx.fillStyle=c.type==="cargo"?"#493f20":c.type==="battery"?"#203428":c.type==="workshop"?"#2f2435":c.type==="turret"?"#23303c":c.type==="passenger"?"#3a2729":"#223242";ctx.strokeStyle="#7d8fa2";ctx.lineWidth=2;rr(x,y,138,100,10,true,true);ctx.fillStyle="#526274";rr(x+7,y-12,124,13,6,true,false);ctx.fillStyle="rgba(255,255,255,.05)";ctx.fillRect(x+9,y+8,120,24);ctx.fillStyle="#1d232b";for(const wx of [x+32,x+106]){ctx.beginPath();ctx.arc(wx,base+8,10,0,Math.PI*2);ctx.fill();ctx.strokeStyle="#586b7e";ctx.lineWidth=2;ctx.beginPath();ctx.arc(wx,base+8,5,0,Math.PI*2);ctx.stroke()}ctx.fillStyle="#2b3540";ctx.fillRect(x+11,y+78,116,8);ctx.fillStyle="#74d08e";ctx.fillRect(x+11,y+78,116*Math.max(0,c.hp/c.max),8);ctx.fillStyle="#edf2f7";ctx.font="bold 10px system-ui";ctx.fillText(String(i+1).padStart(2,"0")+" "+carDefs[c.type][0],x+12,y+23);ctx.fillStyle="#d4dde6";ctx.font="10px system-ui";ctx.fillText(Math.round(c.hp/c.max*100)+"%",x+104,y+23);if(c.type==="cargo"){ctx.fillStyle="#b08e41";for(let k=0;k<(c.cargo||0);k++)rr(x+16+k*24,y+40,18,14,3,true,false)}else if(c.type==="turret"){ctx.fillStyle="#b8c9dc";ctx.fillRect(x+66,y+27,8,20);ctx.fillRect(x+61,y+21,18,8);ctx.fillStyle="#74b7ff";ctx.globalAlpha=.45;ctx.beginPath();ctx.arc(x+70,y+25,4,0,Math.PI*2);ctx.fill();ctx.globalAlpha=1}else if(c.type==="engine"){ctx.fillStyle="#79a7ff";ctx.globalAlpha=.20;ctx.fillRect(x+18,y+18,20,45);ctx.globalAlpha=1;for(let s=0;s<3;s++){const py=y-11-((performance.now()/110+s*20)%28);ctx.fillStyle="rgba(220,232,245,.32)";ctx.beginPath();ctx.arc(x+28,py,5-s,0,Math.PI*2);ctx.fill()}}});const py=laneY(S.roof?"roof":"floor",base);ctx.fillStyle="#7cabff";ctx.shadowColor="rgba(122,172,255,.45)";ctx.shadowBlur=10;rr(S.px,py,22,34,6,true,false);ctx.shadowBlur=0;ctx.fillStyle="#dcebff";ctx.fillRect(S.px+5,py+8,12,3);ctx.font="10px system-ui";ctx.fillText("YOU",S.px-1,py-6);S.enemies.forEach(en=>{const yy=laneY(en.lane,base);ctx.fillStyle=en.type==="thief"?"#a67aff":en.type==="clinger"?"#ff9a60":"#e36d6d";ctx.shadowColor="rgba(255,130,130,.35)";ctx.shadowBlur=8;rr(en.x,yy,20,30,6,true,false);ctx.shadowBlur=0;if(en.flash>0){ctx.fillStyle="rgba(255,255,255,"+Math.min(.85,en.flash)+")";rr(en.x,yy,20,30,6,true,false)}});S.projectiles.forEach(p=>{ctx.strokeStyle=p.owner==="turret"?"rgba(112,190,255,.45)":"rgba(255,220,120,.45)";ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(p.x-p.vx*.035,p.y);ctx.lineTo(p.x,p.y);ctx.stroke();ctx.fillStyle=p.owner==="turret"?"#81c2ff":"#ffe08c";ctx.beginPath();ctx.arc(p.x,p.y,3,0,Math.PI*2);ctx.fill()});S.effects.forEach(f=>{if(f.type==="float"){ctx.globalAlpha=Math.max(0,f.life/.8);ctx.fillStyle=f.color;ctx.font="bold 12px system-ui";ctx.fillText(f.text,f.x,f.y)}else{ctx.globalAlpha=Math.max(0,f.life/.35);ctx.fillStyle=f.color;ctx.fillRect(f.x,f.y,2,2)}});ctx.globalAlpha=1;ctx.restore();ctx.restore();hud()}
+function spawn(){let type="boarder",q=Math.random();if(S.round>=2&&q<.24)type="thief";else if(S.round>=3&&q>.84)type="clinger";const lane=type==="clinger"?"roof":"floor";S.enemies.push({type,lane,x:Math.random()<.5?0:Math.max(0,tw()-30),hp:type==="boarder"?2:3,atk:0,flash:0})}
+function damageEnemy(en,dmg,sourceX,knock=0){en.hp-=dmg;en.flash=1;en.x+=knock;addFloat(en.x,120,"-"+dmg,"#fff0b0");addSpark(en.x,130,"#ffd47c");hitShake(2)}
+function attack(){if(!S.running||S.attackCd>0)return;S.attackCd=weaponCooldown();const wl=weaponLevel(),lane=S.roof?"roof":"floor",r=weaponRange();if(wl<2){let best=null,bd=999;for(const en of S.enemies){if(en.lane!==lane)continue;const dx=(en.x-S.px)*S.facing;if(dx>=-8&&dx<r&&Math.abs(en.x-S.px)<bd){best=en;bd=Math.abs(en.x-S.px)}}if(best){damageEnemy(best,weaponDamage(),S.px,S.facing*(wl===1?28:18));if(best.hp<=0){S.money+=40*S.mult;addFloat(best.x,108,"+$40","#7be093")}}else setEvent("近战没打到：靠近敌人再挥击。");S.effects.push({type:"swing",x:S.px+11,y:lane==="roof"?180:280,life:.20})}else{const y=lane==="roof"?165:275;S.projectiles.push({owner:"player",lane,x:S.px+11+S.facing*12,y,vx:S.facing*(wl===3?540:430),life:r/(wl===3?540:430),damage:weaponDamage()});addSpark(S.px+11+S.facing*15,y,"#ffe49a");hitShake(.7)}}
+function updateProjectiles(dt){for(const p of S.projectiles){p.x+=p.vx*dt;p.life-=dt;for(const en of S.enemies){if(en.hp<=0||en.lane!==p.lane)continue;if(Math.abs(en.x-p.x)<12){damageEnemy(en,p.damage,p.x,Math.sign(p.vx)*8);p.life=0;if(en.hp<=0){S.money+=(p.owner==="turret"?25:40)*S.mult;addFloat(en.x,108,p.owner==="turret"?"+$25":"+$40","#7be093")}break}}}S.projectiles=S.projectiles.filter(p=>p.life>0);S.enemies=S.enemies.filter(e=>e.hp>0)}
+function turretStep(dt,base){S.turretCd-=dt;if(S.turretCd>0)return;const turrets=S.cars.map((c,i)=>({c,i})).filter(o=>o.c.type==="turret"&&o.c.hp>0);if(!turrets.length)return;for(const o of turrets){const tx=o.i*150+78;let target=null,dist=999;for(const en of S.enemies){const d=Math.abs(en.x-tx);if(d<=S.turretRange&&d<dist){target=en;dist=d}}if(target){S.turretCd=1.05;const lane=target.lane;S.projectiles.push({owner:"turret",lane,x:tx,y:lane==="roof"?165:275,vx:Math.sign(target.x-tx||1)*360,life:S.turretRange/360,damage:1});addSpark(tx,lane==="roof"?165:275,"#8dccff");return}}}
+function ai(dt){S.enemies.forEach(en=>{en.flash=Math.max(0,en.flash-dt*4);let ti=carIndexAt(S.px),tx=S.px;if(en.type==="thief"){let found=-1;for(let i=S.cars.length-1;i>=0;i--)if(S.cars[i].type==="cargo"&&(S.cars[i].cargo||0)>0){found=i;break}if(found>=0){ti=found;tx=ti*150+78}}if(en.type==="clinger"){ti=Math.max(1,Math.min(S.cars.length-1,carIndexAt(en.x)));tx=ti*150+76}const sp=en.type==="thief"?46:30;if(Math.abs(en.x-tx)>12)en.x+=Math.sign(tx-en.x)*sp*dt;else{en.atk+=dt;if(en.atk>1){en.atk=0;if(en.type==="thief"){const c=S.cars[ti];if(c&&c.type==="cargo"&&(c.cargo||0)>0){c.cargo--;S.money=Math.max(0,S.money-250*S.mult);setEvent("THIEF 抢走一箱货物！");addFloat(en.x,120,"-$250","#ffb0b0");hitShake(2.5)}}else{const c=S.cars[ti];if(c){const dmg=en.type==="clinger"?7:4;c.hp=Math.max(0,c.hp-dmg);addFloat(ti*150+48,120,"-"+dmg,"#ffb0b0");hitShake(en.type==="clinger"?4:2.5);if(ti===0&&c.hp<=0)lose("ENGINE DESTROYED");else if(en.type==="clinger")setEvent("CLINGER 正在撕裂车体！")}}}}})}
+function updateEffects(dt){for(const f of S.effects){f.life-=dt;if(f.type==="float")f.y-=28*dt;else if(f.type==="spark"){f.x+=f.vx*dt;f.y+=f.vy*dt;f.vy+=180*dt}}S.effects=S.effects.filter(f=>f.life>0)}
+function update(dt){if(!S.running){updateEffects(dt);return}S.time-=dt;S.spawn+=dt;S.attackCd=Math.max(0,S.attackCd-dt);if(S.move){S.facing=S.move;S.px=Math.max(0,Math.min(tw()-24,S.px+S.move*120*dt))}if(S.spawn>Math.max(.9,3.15-S.round*.18)){S.spawn=0;spawn()}ai(dt);turretStep(dt);updateProjectiles(dt);updateEffects(dt);S.enemies=S.enemies.filter(e=>e.hp>0&&e.x>-80&&e.x<tw()+80);if(S.time<=0)finish()}
 function loop(ts){const dt=Math.min(.05,(ts-(S.last||ts))/1000);S.last=ts;update(dt);draw();requestAnimationFrame(loop)}requestAnimationFrame(loop);
-function startRound(){S.running=true;S.time=45+Math.min(24,(S.round-1)*3);S.spawn=0;S.last=0;document.getElementById("modal").style.display="none";setEvent("Round "+S.round+"：守住列车。")}window.startRound=startRound;
+function startRound(){S.running=true;S.time=45+Math.min(24,(S.round-1)*3);S.spawn=0;S.last=0;document.getElementById("modal").style.display="none";setEvent("Round "+S.round+"："+weaponName()+" · "+(weaponLevel()<2?"先靠近再攻击。":"黄线就是你的最大射程。"))}
 function finish(){S.running=false;S.money+=Math.round((900+S.round*500)*S.mult);showRoundhouse()}
-function showRoundhouse(){document.getElementById("modal").style.display="flex";document.getElementById("mt").textContent="ROUND COMPLETE";document.getElementById("ms").textContent="列车回到 Roundhouse。现在离开就能保住收益。";document.getElementById("intro").style.display="none";document.getElementById("roundUi").style.display="block";document.getElementById("cash").style.display="block";document.getElementById("more").style.display="block";document.getElementById("start").style.display="none";document.getElementById("rm").textContent=cash(S.money);document.getElementById("rx").textContent="×"+(S.mult*1.28).toFixed(2);buildChoices()}
-function buildChoices(){const root=document.getElementById("choices");root.innerHTML="";const cycle=["battery","workshop","turret","cargo","passenger"],a=(S.round-1)%cycle.length,p=[cycle[a],cycle[(a+1)%cycle.length]];if(!p.includes(S.selected))S.selected=p[0];p.forEach(type=>{let d=document.createElement("div");d.className="choice"+(S.selected===type?" sel":"");d.innerHTML="<b>"+carDefs[type][0]+"</b> — "+hints[type];d.onclick=()=>{S.selected=type;buildChoices()};root.appendChild(d)})}
-function oneMore(){S.round++;S.mult*=1.28;const type=S.selected,def=carDefs[type],c={type,hp:def[1],max:def[1]};if(type==="cargo")c.cargo=4;S.cars.push(c);S.px=52;S.enemies=[];S.roof=false;document.getElementById("mt").textContent="ROUNDHOUSE";document.getElementById("ms").textContent=carDefs[type][0]+" 已接入。点击开始下一轮。";document.getElementById("roundUi").style.display="none";document.getElementById("cash").style.display="none";document.getElementById("more").style.display="none";const st=document.getElementById("start");st.style.display="block";st.textContent="START ROUND "+S.round;setEvent("准备开始 Round "+S.round+"。")}window.oneMore=oneMore;
-document.getElementById("cash").onclick=()=>{S.running=false;document.getElementById("mt").textContent="CASHED OUT";document.getElementById("ms").innerHTML="最终兑现："+cash(S.money)+"<br>你有没有一瞬间想继续？";document.getElementById("roundUi").style.display="none";document.getElementById("cash").style.display="none";document.getElementById("more").style.display="none";};
+function showRoundhouse(){document.getElementById("modal").style.display="flex";document.getElementById("mt").textContent="ROUND COMPLETE";document.getElementById("ms").textContent="现在离开就保住收益；继续会升级装备并让列车更难守。";document.getElementById("intro").style.display="none";document.getElementById("roundUi").style.display="block";document.getElementById("cash").style.display="block";document.getElementById("more").style.display="block";document.getElementById("start").style.display="none";document.getElementById("rm").textContent=cash(S.money);document.getElementById("rx").textContent="×"+(S.mult*1.28).toFixed(2);document.getElementById("rw").textContent=nextWeaponText();buildChoices()}
+function buildChoices(){const root=document.getElementById("choices");root.innerHTML="";let pool=["battery","workshop","cargo","passenger"];const hasTurret=S.cars.some(c=>c.type==="turret");if(S.round>=3&&!hasTurret)pool.push("turret");const a=(S.round-1)%pool.length,p=[pool[a],pool[(a+1)%pool.length]];if(!p.includes(S.selected))S.selected=p[0];for(const type of p){const d=document.createElement("div");d.className="choice"+(S.selected===type?" sel":"");d.innerHTML="<b>"+carDefs[type][0]+"</b> — "+hints[type];d.addEventListener("click",()=>{S.selected=type;buildChoices()});root.appendChild(d)}}
+function oneMore(){S.round++;S.mult*=1.28;const type=S.selected,def=carDefs[type],c={type,hp:def[1],max:def[1]};if(type==="cargo")c.cargo=4;S.cars.push(c);S.px=52;S.enemies=[];S.projectiles=[];S.roof=false;document.getElementById("mt").textContent="ROUNDHOUSE";document.getElementById("ms").textContent=carDefs[type][0]+" 已接入。装备升级为 "+weaponName()+"。";document.getElementById("roundUi").style.display="none";document.getElementById("cash").style.display="none";document.getElementById("more").style.display="none";const st=document.getElementById("start");st.style.display="block";st.textContent="START ROUND "+S.round;setEvent("准备开始 Round "+S.round+" · "+weaponName())}
 function lose(reason){S.running=false;document.getElementById("modal").style.display="flex";document.getElementById("mt").textContent="RUN OVER";document.getElementById("ms").innerHTML=reason+"<br>失去未兑现收益 "+cash(S.money);document.getElementById("intro").style.display="none";document.getElementById("roundUi").style.display="none";document.getElementById("cash").style.display="none";document.getElementById("more").style.display="none";document.getElementById("start").style.display="none"}
-function shoot(){if(!S.running)return;let bi=-1,bd=999;S.enemies.forEach((e,i)=>{const d=Math.abs(e.x-S.px);if(d<bd){bd=d;bi=i}});if(bi>=0&&bd<210){S.enemies[bi].hp--;S.enemies[bi].flash=1;addFloat(S.enemies[bi].x,120,"hit","#fff4c2");if(S.enemies[bi].hp<=0){S.money+=40*S.mult;addFloat(S.enemies[bi].x,110,"+$40","#7be093");S.enemies.splice(bi,1)}}else setEvent("没有敌人在射程内。")}function fix(){if(!S.running)return;const i=carIndexAt(S.px),c=S.cars[i],bonus=S.cars.some(x=>x.type==="workshop"&&x.hp>0)?18:10;c.hp=Math.min(c.max,c.hp+bonus);addFloat(i*150+55,105,"+"+bonus,"#94f1ad");setEvent("修理 CAR "+(i+1)+" +"+bonus+" HP")}
+function fix(){if(!S.running)return;const i=carIndexAt(S.px),c=S.cars[i],bonus=S.cars.some(x=>x.type==="workshop"&&x.hp>0)?18:10;c.hp=Math.min(c.max,c.hp+bonus);addFloat(i*150+55,105,"+"+bonus,"#94f1ad");setEvent("修理 CAR "+(i+1)+" +"+bonus+" HP")}
 function prevent(ev){ev.preventDefault();ev.stopPropagation()}
-function bindHold(id,dir){const el=document.getElementById(id);const down=ev=>{prevent(ev);S.move=dir;el.classList.add("active")};const up=ev=>{prevent(ev);if(S.move===dir)S.move=0;el.classList.remove("active")};["pointerdown","touchstart","mousedown"].forEach(n=>el.addEventListener(n,down,{passive:false}));["pointerup","pointercancel","pointerleave","touchend","touchcancel","mouseup"].forEach(n=>el.addEventListener(n,up,{passive:false}))}
-function bindTap(id,fn){const el=document.getElementById(id);const down=ev=>{prevent(ev);el.classList.add("active");fn()};const up=ev=>{prevent(ev);el.classList.remove("active")};["pointerdown","touchstart","mousedown"].forEach(n=>el.addEventListener(n,down,{passive:false}));["pointerup","pointercancel","pointerleave","touchend","touchcancel","mouseup"].forEach(n=>el.addEventListener(n,up,{passive:false}))}
-bindHold("L",-1);bindHold("R",1);bindTap("fire",shoot);bindTap("fix",fix);bindTap("roof",()=>{if(S.running)S.roof=!S.roof});
-["contextmenu","selectstart","dragstart","gesturestart"].forEach(n=>document.addEventListener(n,e=>{e.preventDefault()}, {passive:false}));document.addEventListener("touchmove",e=>{if(e.target===cv||e.target.closest("button"))e.preventDefault()},{passive:false});
+function bindHold(id,dir){const el=document.getElementById(id);el.addEventListener("pointerdown",ev=>{prevent(ev);try{el.setPointerCapture(ev.pointerId)}catch{}S.move=dir;el.classList.add("active")},{passive:false});const up=ev=>{prevent(ev);if(S.move===dir)S.move=0;el.classList.remove("active")};["pointerup","pointercancel","lostpointercapture"].forEach(n=>el.addEventListener(n,up,{passive:false}))}
+function bindTap(id,fn){const el=document.getElementById(id);el.addEventListener("pointerdown",ev=>{prevent(ev);try{el.setPointerCapture(ev.pointerId)}catch{}el.classList.add("active");fn()},{passive:false});const up=ev=>{prevent(ev);el.classList.remove("active")};["pointerup","pointercancel","lostpointercapture"].forEach(n=>el.addEventListener(n,up,{passive:false}))}
+bindHold("L",-1);bindHold("R",1);bindTap("attack",attack);bindTap("fix",fix);bindTap("roof",()=>{if(S.running)S.roof=!S.roof});
+document.getElementById("start").addEventListener("click",startRound);document.getElementById("more").addEventListener("click",oneMore);document.getElementById("cash").addEventListener("click",()=>{S.running=false;document.getElementById("mt").textContent="CASHED OUT";document.getElementById("ms").innerHTML="最终兑现："+cash(S.money)+"<br>你有没有一瞬间想继续？";document.getElementById("roundUi").style.display="none";document.getElementById("cash").style.display="none";document.getElementById("more").style.display="none";});
+document.getElementById("fullscreenTip").addEventListener("click",()=>{document.getElementById("modal").style.display="flex";document.getElementById("mt").textContent="iPhone 真全屏";document.getElementById("ms").innerHTML="Safari 本身不能由网页强制隐藏顶栏。<br><br>请点 Safari 的 <b>分享</b> → <b>添加到主屏幕</b>，然后从桌面上的 ROUNDHOUSE 图标启动。它会以独立全屏模式打开。";document.getElementById("intro").style.display="none";document.getElementById("roundUi").style.display="none";document.getElementById("cash").style.display="none";document.getElementById("more").style.display="none";const st=document.getElementById("start");st.style.display="block";st.textContent=S.running?"返回游戏":"START RUN";st.onclick=()=>{document.getElementById("modal").style.display="none";if(!S.running)startRound()}});
+["contextmenu","selectstart","dragstart","gesturestart"].forEach(n=>document.addEventListener(n,e=>e.preventDefault(),{passive:false}));document.addEventListener("touchmove",e=>{if(e.target.closest&&e.target.closest("button"))e.preventDefault()},{passive:false});
+const standalone=window.matchMedia&&window.matchMedia("(display-mode: standalone)").matches||window.navigator.standalone===true;if(standalone){document.getElementById("fullscreenTip").style.display="none";document.getElementById("pwaNote").textContent="当前已在独立全屏模式运行。"}
 draw();hud();
 </script>
-</body></html>
+</body>
+</html>
