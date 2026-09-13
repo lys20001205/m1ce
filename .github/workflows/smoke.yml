@@ -27,3 +27,12 @@ jobs:
 
       - name: Run mobile browser smoke test
         run: python tests/browser_smoke.py
+
+      - name: Upload smoke screenshot
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: roundhouse-browser-smoke
+          path: artifacts/
+          if-no-files-found: ignore
+          retention-days: 7
