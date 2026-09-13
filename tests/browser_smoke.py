@@ -48,11 +48,18 @@ async def run_browser(p,name):
         a=Image.open(io.BytesIO(normal)).convert('RGB');b=Image.open(io.BytesIO(angled)).convert('RGB')
         diff=ImageChops.difference(a,b);checks['3d_view_angle_changes_pixels']=sum(1 for px in diff.getdata() if sum(px)>55)>1500
         await page.click('#angle')
-        await page.evaluate('window.__RH_TEST.game().pause(false);window.__RH_TEST.forcePlayer(4.2);window.__RH_TEST.game().attack()')
-        await page.wait_for_timeout(100)
-        checks['weapon_arm_animates']=await page.evaluate('Math.abs(window.__RH_TEST.view().playerRig.userData.arm.rotation.z+.2) > .03')
+        # Sample exact simulation times; slow CI wall-clock waits can miss a short swing.
+        poses=await page.evaluate("""() => {
+            const api=window.__RH_TEST,g=api.game(),view=api.view();
+            g.pause(false);api.forcePlayer(4.2);g.player.cooldown=0;
+            g.attack();view.render(0);const first=view.playerRig.userData.arm.rotation.z;
+            api.step(.12);g.pause(true);view.render(0);
+            return {first,second:view.playerRig.userData.arm.rotation.z,swing:g.player.swing};
+        }""")
+        result['melee_poses']=poses
+        checks['weapon_arm_animates']=abs(poses['first']-poses['second'])>.25 and 0<poses['swing']<.36
         await page.screenshot(path=str(ART/f'{name}-melee.png'))
-        await page.evaluate('let g=window.__RH_TEST.game();g.round=3;g.player.cooldown=0;g.attack();window.__RH_TEST.view().render(.016)')
+        await page.evaluate('let g=window.__RH_TEST.game();g.pause(false);g.round=3;g.player.cooldown=0;g.attack();window.__RH_TEST.view().render(.016)')
         socket=await page.evaluate('({actual:window.__RH_TEST.view().muzzle(),bullet:window.__RH_TEST.game().lastMuzzle})');result['muzzle']=socket
         checks['bullet_matches_model_socket']=abs(socket['actual']['x']-socket['bullet']['x'])<.02 and abs(socket['actual']['y']-socket['bullet']['y'])<.02 and abs(socket['actual']['z']-socket['bullet']['z'])<.02
         await page.evaluate('window.__RH_TEST.forceRoute(.32);window.__RH_TEST.forcePlayer(12,true)');await page.wait_for_timeout(180)
@@ -81,7 +88,9 @@ async def run_browser(p,name):
         await page.click('#cash');await page.wait_for_timeout(100)
         s=await page.evaluate('window.__RH_DEBUG.snapshot()');checks['cashout_stores_bank']=s['bank']>0 and s['money']==0
         await page.click('#restart');await page.wait_for_timeout(120)
-        checks['restart_keeps_bank']=(await page.evaluate('window.__RH_DEBUG.snapshot()'))['bank']==s['bank']
+        restart=await page.evaluate('window.__RH_DEBUG.snapshot()')
+        checks['restart_keeps_bank']=restart['bank']==s['bank']
+        checks['restart_immediate_camera_visible']=15<restart['playerScreenX']<restart['canvasCss'][0]-15 and 5<restart['playerScreenY']<restart['canvasCss'][1]-5
         checks['no_page_or_console_errors']=not errors
         result['final']=await page.evaluate('window.__RH_DEBUG.snapshot()')
     except Exception as e:

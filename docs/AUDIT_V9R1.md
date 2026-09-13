@@ -22,11 +22,15 @@ Baseline: d93b3702a6ee507f76afa5d93d148c480506b5da. Scope: browser only; no S&bo
 
 Build emits assets/train-cutaway.json, assets/crew-robot.json and assets/cargo-crate.json. These contain vertex positions, normals, materials and articulated nodes and are fetched by ObjectLoader at runtime. Scene-critical architecture is authored in tools/build.mjs and src/view.js. Camera-angle control shows actual depth. Renderer dependency is pinned to Three.js 0.180.0 and published locally, not fetched from a CDN by players.
 
+## Model export regressions caught by browser tests
+
+The first WebGL run exposed missing transforms for non-merged wheel and arm nodes. The exporter now updates matrices before serialization. Five model round-trip tests verify pivots, wheel rotations, both-facing muzzle sockets, real depth and the missing near wall. Animation checks sample two exact simulation-time poses instead of relying on a short wall-clock wait on a slow CI GPU. Restart and continue synchronize the camera immediately, preventing a stale view of the previous train.
+
 ## Verification boundary
 
-17 deterministic tests cover route start, pause, health, ladders, carrying, same-lane combat, telegraphing, spatial crane hit, tunnel, projectiles, cargo recovery, boost, cashout, defeat and persistence. Browser suite runs the built site over HTTP in Chromium and WebKit, with screenshots and JSON at mobile sizes 812x332, 844x390 and 932x430. Actual iPhone/PWA GPU behavior still needs device testing; emulated WebKit is not an iPhone.
+18 deterministic rule tests plus 5 model serialization tests cover route start, pause, health, ladders, carrying, same-lane combat, telegraphing, spatial crane hit, tunnel, projectiles, cargo recovery, boost, cashout, defeat, persistence and broken Workshop interactions. Browser suite runs the built site over HTTP in Chromium and WebKit, with screenshots and JSON at mobile sizes 812x332, 844x390 and 932x430. Actual iPhone/PWA GPU behavior still needs device testing; emulated WebKit is not an iPhone.
 
-The development container could not create a WebGL context. Local rules were executed; real rendering acceptance is performed on the GitHub validation runner and is not inferred from local state flags.
+The development container could not create a WebGL context. Local rules and model round-trip tests were executed; real rendering acceptance is performed on the GitHub validation runner and is not inferred from local state flags. Consult the workflow artifact for the final pass/fail result.
 
 ## Temporary telemetry
 
