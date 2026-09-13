@@ -10,8 +10,8 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="ROUNDHOUSE">
 <link rel="manifest" href="./manifest.webmanifest">
-<title>ROUNDHOUSE Mobile v7</title>
-<link rel="stylesheet" href="./style.css?v=7">
+<title>ROUNDHOUSE Mobile v8</title>
+<link rel="stylesheet" href="./style.css?v=8">
 </head>
 <body>
 <div id="app">
@@ -19,7 +19,7 @@
   <div id="hud">
     <div class="h brand"><small>GAME</small><b>ROUNDHOUSE</b></div>
     <div class="h"><small>ROUND</small><b id="r">1</b></div>
-    <div class="h"><small>CASH</small><b id="m">$1,000</b></div>
+    <div class="h"><small>UNBANKED</small><b id="m">$1,000</b></div>
     <div class="h"><small>MULT</small><b id="x">×1.00</b></div>
     <div class="h"><small>CARS</small><b id="c">2</b></div>
     <div class="h"><small>ENGINE</small><b id="e">100%</b></div>
@@ -46,7 +46,7 @@
   <div id="modal">
     <div class="card">
       <h1 id="mt">ROUNDHOUSE</h1>
-      <div class="sub" id="ms">v7：修复 PWA 重影/双列车，镜头始终跟随玩家；弹道从手部发射，近战加入扳手挥击；测试日志自动上传。</div>
+      <div class="sub" id="ms">v8：PWA 画面向下扩展；Cash Out 会存入 BANK，并可在 Garage 购买永久许可证与重抽券。</div>
       <div class="row" id="intro">
         <div class="mini"><b>Round 1</b><br>WRENCH：短距离近战，需要跑到敌人身边。</div>
         <div class="mini"><b>Round 2</b><br>HEAVY WRENCH：更远、更重。</div>
@@ -55,18 +55,25 @@
       <div id="roundUi" style="display:none">
         <div class="row"><div class="mini">当前收益：<b id="rm"></b></div><div class="mini">下一倍率：<b id="rx"></b></div><div class="mini">下一武器：<b id="rw"></b></div></div>
         <div id="choices"></div>
+        <button id="reroll" type="button" class="shopBtn" style="display:none">REROLL</button>
+      </div>
+      <div id="garageUi" style="display:none">
+        <div class="row"><div class="mini"><b>BANKED CREDITS</b><br><span id="bankValue">$0</span></div><div class="mini"><b>原则</b><br>买“选择空间”，不直接买永久伤害。</div></div>
+        <div id="garageShop"></div>
       </div>
       <div class="warn" id="pwaNote">想真正全屏：用 Safari 打开 → 分享 → 添加到主屏幕 → 从桌面图标启动。</div>
       <div class="actions">
         <button id="cash" type="button" style="display:none">CASH OUT</button>
         <button class="start" id="start" type="button">START RUN</button>
         <button class="danger" id="more" type="button" style="display:none">ONE MORE ROUND</button>
+        <button class="start" id="garageBtn" type="button" style="display:none">RETURN TO GARAGE</button>
+        <button class="start" id="newRun" type="button" style="display:none">START NEW RUN</button>
       </div>
     </div>
   </div>
 </div>
-<script src="./app-core.js?v=7"></script>
-<script src="./app-game.js?v=7"></script>
-<script src="./app-init.js?v=7"></script>
+<script src="./app-core.js?v=8"></script>
+<script src="./app-game.js?v=8"></script>
+<script src="./app-init.js?v=8"></script>
 </body>
 </html>
