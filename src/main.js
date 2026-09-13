@@ -3,7 +3,7 @@ import {View} from './view.js';
 import {Telemetry} from './telemetry.js';
 const $=id=>document.getElementById(id);let game,view,telemetry,input={move:0,attack:false,repair:false},last=0,lastStatus='',selected='battery',frameError=false,bankWritable=true;
 function readBank(){try{const n=Number(localStorage.getItem('roundhouse_bank')||0);return Number.isFinite(n)&&n>=0?n:0}catch{return 0}}
-function snapshot(){return{...game?.snapshot(),...view?.snapshot(),session:telemetry?.session,standalone:!!navigator.standalone||matchMedia('(display-mode: standalone)').matches,errors:telemetry?.errors||0}}
+function snapshot(){return{...game?.snapshot(),...(view?.loaded===3?view.snapshot():{modelsLoaded:0}),session:telemetry?.session,standalone:!!navigator.standalone||matchMedia('(display-mode: standalone)').matches,errors:telemetry?.errors||0}}
 telemetry=new Telemetry(snapshot);game=new Game({bank:readBank(),emit:(type,data)=>telemetry.log(type,data)});
 function clearInput(){input={move:0,attack:false,repair:false};pressed.clear();document.querySelectorAll('.active').forEach(e=>e.classList.remove('active'))}
 function fatal(error){clearInput();game.pause(true);frameError=true;$('modal').hidden=true;$('portrait').hidden=true;telemetry.log('runtime_error',{message:String(error?.message||error).slice(0,150)});$('fatal').hidden=false;$('fatal').textContent='3D 运行暂停：'+String(error?.message||error)+'\n日志已保留。请刷新重试；此版本不会退回二维假模型。'}

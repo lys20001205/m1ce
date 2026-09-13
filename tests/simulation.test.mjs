@@ -18,3 +18,4 @@ test('cashout only from completed route, exactly once',()=>{const g=fresh();asse
 test('fatal damage takes priority over arrival, no double settlement',()=>{const g=fresh();g.t=.99999;g.cars[0].hp=0;g.step(.05);assert.equal(g.status,'lost');assert.equal(g.bank,0);assert.equal(g.money,0)})
 test('continuing preserves hull damage, appends actual car and restarts departure',()=>{const g=fresh();g.cars[0].hp=120;g.finish();g.more('battery');assert.equal(g.cars.length,3);assert.equal(g.cars[0].hp,120);g.start();assert.equal(g.phase,'depart');assert.equal(g.t,0)})
 test('bank persists in new-run constructor',()=>{const g=new Game({bank:4123});assert.equal(g.bank,4123);g.start();g.fail();assert.equal(g.bank,4123)})
+test('destroyed workshop cannot sell healing',()=>{const g=fresh();g.cars.push(car('workshop'));g.player.x=20;g.player.hp=50;g.cars[2].hp=0;g.interact();assert.equal(g.player.hp,50);assert.equal(g.money,1000)})

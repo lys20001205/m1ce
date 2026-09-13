@@ -1,0 +1,7 @@
+import test from 'node:test';import assert from 'node:assert/strict';import fs from 'node:fs';import * as T from 'three';
+const load=name=>new T.ObjectLoader().parse(JSON.parse(fs.readFileSync('dist/assets/'+name+'.json','utf8')));
+test('serialized arm pivot is retained',()=>{const o=load('crew-robot'),a=o.getObjectByName('WeaponArm');assert.deepEqual(a.position.toArray(),[.22,1.05,.22])});
+test('muzzle socket round trip right/left matches simulation',()=>{for(const face of [-1,1]){const o=load('crew-robot');o.position.set(4.2,1.12,.65);o.rotation.y=face<0?Math.PI:0;o.scale.setScalar(1.07);o.updateMatrixWorld(true);const v=o.getObjectByName('Muzzle').getWorldPosition(new T.Vector3());assert(Math.abs(v.x-(4.2+face*1.08605))<1e-6);assert(Math.abs(v.y-2.2435)<1e-6);assert(Math.abs(v.z-(.65+face*.2354))<1e-6)}});
+test('wheel coordinates and cylinder rotation retained',()=>{const train=load('train-cutaway'),w=train.children.filter(o=>o.name==='Wheel');assert.equal(w.length,4);assert(w.every(o=>Math.abs(o.position.x)>2&&Math.abs(o.position.z)>1));assert(Math.abs(w[0].children[0].rotation.x-Math.PI/2)<1e-6)});
+test('cargo model has depth and no textures/external images',()=>{const o=load('cargo-crate'),box=new T.Box3().setFromObject(o);assert(box.max.z-box.min.z>.65);assert.equal(o.toJSON().images,undefined)});
+test('camera side wall absent at torso height',()=>{const o=load('train-cutaway');o.updateMatrixWorld(true);const ray=new T.Raycaster(new T.Vector3(1,2.3,10),new T.Vector3(0,0,-1),.1,9.5);assert.equal(ray.intersectObject(o,true).length,0)});

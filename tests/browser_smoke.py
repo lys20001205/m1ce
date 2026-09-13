@@ -13,9 +13,14 @@ async def run_browser(p,name):
         page=await browser.new_page(viewport={'width':844,'height':390},device_scale_factor=2,is_mobile=True,has_touch=True)
         page.on('pageerror',lambda e:errors.append(str(e)))
         page.on('console',lambda m:errors.append(m.text) if m.type=='error' else None)
+        async def slow_model(route):
+            await asyncio.sleep(1.8)
+            await route.continue_()
+        await page.route('**/crew-robot.json',slow_model)
         await page.goto('http://127.0.0.1:8765/?test=1',wait_until='networkidle')
         await page.wait_for_function('window.__RH_DEBUG?.snapshot().modelsLoaded === 3',timeout=30000)
         s=await page.evaluate('window.__RH_DEBUG.snapshot()');result['boot']=s
+        checks['slow_model_loading_no_errors']=not errors
         checks['actual_webgl2']=s['renderer']=='WebGL2'
         checks['external_model_files_loaded']=s['modelsLoaded']==3
         checks['3d_mesh_depth']=s['modelDepth']>3
@@ -37,6 +42,7 @@ async def run_browser(p,name):
         await page.wait_for_timeout(200)
         normal=await page.screenshot(path=str(ART/f'{name}-yard.png'))
         checks['interior_not_occluded']=not await page.evaluate('window.__RH_DEBUG.occlusion()')
+        checks['wheels_have_position']=await page.evaluate('window.__RH_TEST.view().carTemplate.children.filter(n=>n.name==="Wheel").every(n=>Math.abs(n.position.x)>2)')
         await page.click('#angle');await page.wait_for_timeout(200)
         angled=await page.screenshot(path=str(ART/f'{name}-angled.png'))
         a=Image.open(io.BytesIO(normal)).convert('RGB');b=Image.open(io.BytesIO(angled)).convert('RGB')
@@ -48,7 +54,7 @@ async def run_browser(p,name):
         await page.screenshot(path=str(ART/f'{name}-melee.png'))
         await page.evaluate('let g=window.__RH_TEST.game();g.round=3;g.player.cooldown=0;g.attack();window.__RH_TEST.view().render(.016)')
         socket=await page.evaluate('({actual:window.__RH_TEST.view().muzzle(),bullet:window.__RH_TEST.game().lastMuzzle})');result['muzzle']=socket
-        checks['bullet_matches_model_socket']=abs(socket['actual']['x']-socket['bullet']['x'])<.02 and abs(socket['actual']['y']-socket['bullet']['y'])<.02
+        checks['bullet_matches_model_socket']=abs(socket['actual']['x']-socket['bullet']['x'])<.02 and abs(socket['actual']['y']-socket['bullet']['y'])<.02 and abs(socket['actual']['z']-socket['bullet']['z'])<.02
         await page.evaluate('window.__RH_TEST.forceRoute(.32);window.__RH_TEST.forcePlayer(12,true)');await page.wait_for_timeout(180)
         await page.screenshot(path=str(ART/f'{name}-crane-warning.png'))
         await page.evaluate('window.__RH_TEST.forceRoute(.37);let g=window.__RH_TEST.game();g.player.x=g.craneX;window.__RH_TEST.step(.03)')

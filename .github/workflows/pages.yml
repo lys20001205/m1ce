@@ -25,6 +25,7 @@ jobs:
       - run: npm ci --ignore-scripts
       - run: npm test
       - run: npm run build
+      - run: node --test tests/model_roundtrip.test.mjs
       - uses: actions/setup-python@v6
         with:
           python-version: '3.13'
