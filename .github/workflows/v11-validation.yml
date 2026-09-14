@@ -1,0 +1,63 @@
+name: ROUNDHOUSE V11 validation (no deployment)
+on:
+  push:
+    branches: [roundhouse/v11]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: roundhouse-v11-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      LIBGL_ALWAYS_SOFTWARE: '1'
+      WEBKIT_DISABLE_DMABUF_RENDERER: '1'
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Source snapshot
+        run: |
+          mkdir -p artifacts
+          git archive --format=tar HEAD > artifacts/source.tar
+          git rev-parse HEAD > artifacts/commit.txt
+      - run: npm ci --ignore-scripts
+      - name: Unit and syntax
+        run: |
+          set -o pipefail
+          for f in src/*.js; do node --check "$f"; done
+          npm test | tee artifacts/unit.txt
+      - run: npm run build
+      - name: Model serialization
+        run: node --test tests/model_roundtrip.test.mjs
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.13'
+      - name: Browsers
+        run: |
+          pip install playwright==1.56.0 pillow==12.0.0
+          python -m playwright install --with-deps chromium webkit
+      - name: Actual browser regressions
+        run: xvfb-run -a python tests/browser_smoke.py
+      - name: V11 browser gates
+        run: |
+          if test -f tests/browser_v11.py; then
+            xvfb-run -a python tests/browser_v11.py
+          fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: v11-validation
+          path: artifacts/
+          retention-days: 14
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: v11-site
+          path: dist/
+          retention-days: 14
