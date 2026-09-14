@@ -1,5 +1,5 @@
 // V10 playtest values, not measured completion-rate claims. One source for tuning.
-export const BUILD = 'V11-H-TRAIN-20260914';
+export const BUILD = 'V11-I-AUDIO-20260914';
 export const B = Object.freeze({
   walk: 5.1, roofSpeed: 1.25, carrySpeed: 2.8,
   repairTime: 1.8, repairHP: 28, repairRadius: 1.9, repairCooldown: .3,
