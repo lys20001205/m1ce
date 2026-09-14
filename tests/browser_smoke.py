@@ -1,4 +1,5 @@
 """HTTP + actual WebGL in both engines. Deterministic scenario time is separate from CI GPU speed."""
+import os,shutil
 import asyncio,json,subprocess,sys,io,os
 from pathlib import Path
 from PIL import Image,ImageChops
@@ -11,7 +12,7 @@ async def run_browser(p,name):
         if name=='chromium':
             kw['args']=['--no-sandbox','--use-angle=swiftshader','--enable-unsafe-swiftshader']
             if os.getenv('RH_CHROMIUM'):kw['executable_path']=os.environ['RH_CHROMIUM']
-        browser=await getattr(p,name).launch(**kw)
+        browser=await getattr(p,name).launch(**({**kw,'executable_path':os.environ['CHROMIUM_PATH']} if name=='chromium' and os.environ.get('CHROMIUM_PATH') else kw))
         page=await browser.new_page(viewport={'width':844,'height':390},device_scale_factor=2,is_mobile=True,has_touch=True)
         page.on('pageerror',lambda e:errors.append(str(e)))
         page.on('console',lambda m:errors.append(m.text) if m.type=='error' else None)
@@ -101,7 +102,7 @@ async def run_browser(p,name):
         await page.evaluate('window.__RH_TEST.game().pause(false);window.__RH_TEST.step(8)')
         checks['deadline_failure_has_reason']=await page.evaluate('window.__RH_TEST.game().status==="lost"&&window.__RH_TEST.game().failReason==="engine_timeout"')
         # Cargo recovery feedback and no duplicate credit.
-        cargo=await page.evaluate("""() => {const a=window.__RH_TEST;a.reset();a.forcePlayer(4.2);const g=a.game(),e=g.spawn('thief',12.4,false);e.climb=0;a.step(1);const before=g.money;g.hitEnemy(e,99);g.hitEnemy(e,99);g.pause(true);a.view().render(0);return {before,after:g.money,saved:g.total.cargoSaved,cargo:g.cars[1].cargo};}""")
+        cargo=await page.evaluate("""() => {const a=window.__RH_TEST;a.reset();a.forcePlayer(4.2);const g=a.game();for(let i=0;i<3;i++)g.createCargo(250,'stored',{carIndex:1,secured:true});const e=g.spawn('thief',12.4,false);e.climb=0;a.step(1);const before=g.money;g.hitEnemy(e,99);g.hitEnemy(e,99);g.pause(true);a.view().render(0);return {before,after:g.money,saved:g.total.cargoSaved,cargo:g.cars[1].cargo};}""")
         checks['cargo_recovery_feedback_and_accounting']=cargo=={'before':1000,'after':1050,'saved':250,'cargo':3}
         await page.evaluate('window.__RH_TEST.reset();window.__RH_TEST.forceCars(12);window.__RH_TEST.forceRoute(.9)')
         visible=True;result['camera_samples']=[]

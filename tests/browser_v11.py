@@ -1,4 +1,5 @@
 """V11-B real route/car UI and three rendered gate/turntable cases."""
+import os,shutil
 import asyncio,json,subprocess,sys,io
 from PIL import Image,ImageChops
 from pathlib import Path
@@ -7,7 +8,7 @@ ART=Path('artifacts');ART.mkdir(exist_ok=True)
 async def run(p,name):
  kw={'headless':True}
  if name=='chromium':kw['args']=['--no-sandbox','--use-angle=swiftshader','--enable-unsafe-swiftshader']
- browser=await getattr(p,name).launch(**kw);report={'browser':name,'checks':{},'routes':[]};errors=[]
+ browser=await getattr(p,name).launch(**({**kw,'executable_path':os.environ['CHROMIUM_PATH']} if name=='chromium' and os.environ.get('CHROMIUM_PATH') else kw));report={'browser':name,'checks':{},'routes':[]};errors=[]
  try:
   for route,angle in [('industrial',-.42),('freight',0),('tunnel',.42)]:
    page=await browser.new_page(viewport={'width':844,'height':390},is_mobile=True,has_touch=True)
@@ -65,7 +66,7 @@ async def main():
  try:
   await asyncio.sleep(.5)
   async with async_playwright() as p:
-   results=[await run(p,n) for n in ['chromium','webkit']]
+   results=[await run(p,n) for n in os.environ.get('RH_BROWSERS','chromium,webkit').split(',')]
   if not all(results):raise SystemExit(1)
  finally:server.terminate();server.wait(timeout=5)
 asyncio.run(main())

@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {Game,car,FLOOR,ROOF,LENGTH,B,stationX} from '../src/sim.js';
 import {V11} from '../src/balance.js';
 function advance(g,t,input={}){for(let i=0;i<Math.round(t/.025);i++)g.step(.025,input);}
-function fresh(options={}){const g=new Game(options);g.chooseRoute('industrial');g.chooseCar('cargo');g.start();return g;}
+function fresh(options={}){const g=new Game(options);g.chooseRoute('industrial');g.chooseCar('cargo');for(let i=0;i<3;i++)g.createCargo(250,'stored',{carIndex:1,secured:true});g.start();return g;}
 function dock(g){g.finish();advance(g,B.arrivalTime);}
 function stall(g,x=5.8){g.player.x=x;g.damageCar(0,g.cars[0].hp,'test');}
 const near=(a,b)=>assert(Math.abs(a-b)<1e-5,`${a} != ${b}`);
@@ -45,7 +45,7 @@ test('no scripted fault in first two rounds or while player is weak',()=>{for(co
 test('difficulty does not punish larger bank or current wallet',()=>{const a=fresh(),b=fresh({bank:9999999});a.t=b.t=.22;a.phase=b.phase='yard';b.money=9999999;advance(a,10);advance(b,10);assert.deepEqual(a.enemies,b.enemies);assert.deepEqual(a.director.snapshot(a),b.director.snapshot(b));});
 test('arrival releases for four seconds; pause and settlement guards work',()=>{const g=fresh();assert(!g.cashout());assert(g.finish());assert.equal(g.status,'arriving');assert(!g.cashout());advance(g,2);assert.equal(g.status,'arriving');g.pause(true);advance(g,5);assert.equal(g.status,'arriving');g.pause(false);advance(g,2);assert.equal(g.status,'complete');const cash=g.money;assert(g.cashout());assert(!g.cashout());assert.equal(g.bank,cash);assert.equal(g.money,0);});
 test('stalled train cannot sneak into arrival or cashout',()=>{const g=fresh();g.t=.99999;stall(g);g.step(.05);assert.equal(g.status,'running');assert(!g.finish());assert(!g.cashout());advance(g,8);assert.equal(g.status,'lost');assert.equal(g.bank,0);});
-test('fatal player damage still wins over arrival',()=>{const g=fresh();g.t=.99999;g.hurt(200,'boarder');g.step(.05);assert.equal(g.status,'lost');assert.equal(g.bank,0);});
+test('V11 fatal player damage starts respawn without banking or failing the live engine',()=>{const g=fresh();g.t=.5;g.hurt(200,'boarder');g.step(.05);assert.equal(g.player.lifeState,'DEAD_WAITING_RESPAWN');assert.equal(g.status,'running');assert.equal(g.bank,0);});
 test('continuing preserves hull, resets lap not run stats, restarts departure',()=>{const g=fresh();g.cars[0].hp=120;g.inc('cargoSaved',250);dock(g);assert(g.more());g.chooseRoute('freight');g.chooseCar('battery');assert.equal(g.cars.length,3);assert.equal(g.cars[0].hp,120);assert.equal(g.lap.cargoSaved,0);assert.equal(g.total.cargoSaved,250);g.chooseRoute('industrial');g.chooseCar('cargo');g.start();assert.equal(g.phase,'depart');assert.equal(g.t,0);});
 test('bank preserved in failure and restart constructors',()=>{const g=fresh({bank:4123});g.fail();assert.equal(g.bank,4123);const next=new Game({bank:g.bank});assert.equal(next.bank,4123);});
 test('broken workshop cannot charge for healing',()=>{const g=fresh();g.cars.push(car('workshop'));g.player.x=20;g.player.hp=50;g.cars[2].hp=0;g.interact();assert.equal(g.player.hp,50);assert.equal(g.money,1000);});

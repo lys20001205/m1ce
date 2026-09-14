@@ -89,6 +89,8 @@ document.addEventListener('visibilitychange',()=>{clearInput();if(document.hidde
 $('game').addEventListener('webglcontextlost',e=>{e.preventDefault();fatal(new Error('WebGL context lost，请重新载入'));});addEventListener('error',e=>fatal(new Error(e.message)));addEventListener('unhandledrejection',e=>fatal(e.reason));
 function ui(){
   const engine=game.engineState,job=game.repairJob,warn=game.hazardInfo(),threat=game.director.snapshot(game),stolen=game.enemies.filter(e=>e.hp>0&&e.carry);
+  $('cargoHud').textContent='CARGO '+game.cargoUsed+' / '+game.cargoCapacity;
+  $('lifePanel').hidden=game.alive||game.status!=='running';$('lifePanel').textContent=(game.event==='TRAIN LOST'?'TRAIN LOST':'PLAYER DOWN')+' · RESPAWN '+game.player.respawnRemaining.toFixed(1);
   $('round').textContent=String(game.round).padStart(2,'0');$('money').textContent=Math.round(game.money).toLocaleString();$('health').textContent=Math.ceil(game.cars[0].hp/game.cars[0].max*100)+'% / '+Math.ceil(game.player.hp);$('health').dataset.state=engine;
   $('weapon').textContent=game.weapon;$('attack').textContent=game.round>=3?'射击':'挥击';$('phase').textContent=game.practice?'抢修演练 / 不结算':game.status==='arriving'?'安全回站 / 转盘锁定':game.engineState==='stalled'?'动力停机 / 路线暂停':({dock:'机库准备',depart:'出库 / 转盘对轨',yard:'工业装卸区',crane:'机械臂',approach:'隧道预告',tunnel:'低净空隧道',return:'返回机库'}[game.phase]||game.phase);
   $('fill').style.width=game.t*100+'%';$('pause').textContent=game.paused?'继续':'暂停';
@@ -103,7 +105,7 @@ function ui(){
   }
   $('event').textContent=message;$('event').dataset.state=game.rescue?'stalled':engine;$('viewport').dataset.health=game.player.hp<=20?'critical':'normal';
   $('speedPanel').hidden=game.status!=='running'||!game.atConsole||!game.consoleOpen;document.querySelectorAll('[data-speed]').forEach(b=>{b.classList.toggle('selected',b.dataset.speed===game.speedMode);b.disabled=game.engineState==='stalled'||b.dataset.speed==='FAST'&&game.batteryCharge<=0;});
-  $('layer').textContent=game.player.roof?'下车内':'上车顶';$('interact').textContent=game.player.carry?'放货':game.cars[game.currentCar].type==='engine'?'SPEED':game.cars[game.currentCar].type==='cargo'?'搬货':'交互';
+  $('layer').textContent=game.playerLayer==='DEPOT'?'RETURN':game.player.roof?'下车内':'上车顶';$('interact').textContent=game.playerLayer==='DEPOT'?(game.player.carry?'RETURN':'PICKUP'):game.player.roof?(game.player.carry?'LOAD':'DEPOT'):game.player.carry?'放货':game.cars[game.currentCar].type==='engine'?'SPEED':game.cars[game.currentCar].type==='cargo'?'搬货':'交互';
   $('repairPanel').hidden=!job;$('repairFill').style.width=job?Math.min(100,job.progress/job.duration*100)+'%':'0%';$('repairText').textContent=job?(job.emergency?'紧急重启':'维修 '+String(job.car+1).padStart(2,'0'))+' · '+Math.min(100,Math.floor(job.progress/job.duration*100))+'%':'';
   const notice=game.notices.at(-1);$('success').hidden=!notice;$('centerStack').dataset.repair=job?'true':'false';$('successTitle').textContent=notice?.title||'';$('successDetail').textContent=notice?.detail||'';
   $('centerHint').hidden=!!job||!!notice;$('centerHint').textContent=game.status==='arriving'?'安全回站 · '+Math.max(0,B.arrivalTime-game.arrivalElapsed).toFixed(1)+'s':input.repair?game.repairHint:game.player.roof?'车顶移动 +25% · 提前留意净空':'近设备长按修理 · 黄梯切层';
@@ -117,6 +119,6 @@ if(new URLSearchParams(location.search).has('test'))window.__RH_TEST={
   step:(seconds,controls={})=>{for(let left=seconds;left>1e-8;left-=.025)game.step(Math.min(.025,left),controls);view.render(.016);ui();},
   forceRoute:t=>{game.t=t;game.elapsed=Math.max(game.elapsed,3);game.phase=phaseAt(t,game.route);},
   forceCars:n=>{while(game.cars.length<Math.min(12,n)){const d=DEFS.cargo;game.cars.push({type:'cargo',hp:d.hp,max:d.hp,cargo:3});}view.rebuildCars();},
-  forcePlayer:(x,roof=false)=>{game.player.x=clamp(x,.4,game.length-.4);game.player.roof=roof;game.player.y=roof?ROOF:FLOOR;view.cameraX=game.player.x;view.render(.016);},
+  forcePlayer:(x,roof=false)=>{game.player.x=clamp(x,.4,game.length-.4);game.player.roof=roof;game.player.y=roof?ROOF:FLOOR;game.player.layer=roof?'ROOF':'INTERIOR';game.player.z=.65;view.cameraX=game.player.x;view.render(.016);},
   reset:()=>{clearInput();game=new Game({seed:314159,emit});view.game=game;view.rebuildCars();view.cameraX=3;lastStatus='';last=0;$('modal').hidden=true;game.chooseRoute('industrial');game.chooseCar('cargo');game.start();view.render(0);ui();return true;}
 };

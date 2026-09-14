@@ -88,11 +88,12 @@ export class RouteWorld {
    for(const x of [-11.6,11.6]){v.box(group,x,5.7,-1.8,.18,3.2,.18,0x8fa7ab);v.box(group,x,7.35,-1.8,.7,.15,.45,ART[route].accent);}
    const bridge=v.box(group,0,4,3.25,2.5,.24,2.6,0x8ba2a4);bridge.name='Roof-Depot-Bridge';
    const cargo=new T.Group();group.add(cargo);this.root.add(group);
-   this.depots.push({id:route+'-'+i,marker,group,bridge,cargo,crates:[]});
+   const crates=[];for(let k=0;k<V11.routes[route].crates;k++){const m=v.crateTemplate.clone(true);cargo.add(m);crates.push(m);}
+   this.depots.push({id:route+'-'+i,marker,group,bridge,cargo,crates});
   });
  }
  update(){
-  const g=this.view.game,focus=g.player.x,route=g.route||g.previousRoute||'industrial';this.select(route);
+  const g=this.view.game,focus=g.alive?g.player.x:V11.respawnX,route=g.route||g.previousRoute||'industrial';this.select(route);
   const hub=ringPose(g.t,0);this.hub.position.set(g.length*.5+hub.x,0,hub.z);this.hub.rotation.y=-hub.angle;
   this.hub.visible=Math.hypot(hub.x-focus,hub.z)<V11.world.farCull;
   this.visibleSegments=0;this.nearSegments=0;
@@ -103,7 +104,8 @@ export class RouteWorld {
    if(s.group.visible)this.visibleSegments++;if(s.group.visible&&s.near.visible)this.nearSegments++;
   }
   for(const d of this.depots){const p=depotPose(g.t,d.marker);d.group.position.set(p.x,0,p.z);d.group.rotation.y=-((d.marker-g.t)*Math.PI*2);
-   d.group.visible=Math.hypot(p.x-focus,p.z)<V11.world.nearCull;d.bridge.visible=p.connection<V11.depot.connectionLimit;
+   d.group.visible=Math.hypot(p.x-focus,p.z)<V11.world.nearCull;d.bridge.visible=p.connection<V11.depot.connectionLimit&&p.x>=.4&&p.x<=g.length-.4;
+   const cargo=g.cargoCrates.filter(c=>c.location==='depot'&&c.depotId===d.id);d.crates.forEach((m,i)=>{m.visible=i<cargo.length;if(cargo[i])m.position.set(cargo[i].x,4.12,0);});
   }
   const travel=g.t*2*Math.PI*V11.world.radius,base=Math.floor(focus/18)*18;
   this.tangent.position.x=base;const s=this.scratch;
