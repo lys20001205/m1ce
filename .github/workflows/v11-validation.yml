@@ -55,7 +55,7 @@ jobs:
       - name: Stage-specific browser gates
         run: |
           if test -f tests/browser_v11.py; then
-            xvfb-run -a python tests/browser_v11.py
+            for suite in tests/browser_v11*.py; do xvfb-run -a python "$suite"; done
           fi
       - name: Persist validated engineering changes only to work branch
         if: success() && steps.stage.outputs.applied == 'true'
@@ -74,7 +74,7 @@ jobs:
           git rev-parse HEAD > artifacts/commit.txt
           git diff --binary HEAD > artifacts/uncommitted.patch
           tar --exclude=__pycache__ -cf artifacts/source.tar src tests tools docs .github package.json package-lock.json index.html style.css manifest.webmanifest README.md .gitignore ASSET_SOURCES.md
-          tar -czf artifacts/three-dependency.tar.gz node_modules/three
+          if test -d node_modules/three; then tar -czf artifacts/three-dependency.tar.gz node_modules/three; fi
       - uses: actions/upload-artifact@v4
         if: always()
         with:
