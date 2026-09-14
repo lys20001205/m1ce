@@ -1,5 +1,5 @@
 // V10 playtest values, not measured completion-rate claims. One source for tuning.
-export const BUILD = 'V11-G-COMBAT-20260914';
+export const BUILD = 'V11-H-TRAIN-20260914';
 export const B = Object.freeze({
   walk: 5.1, roofSpeed: 1.25, carrySpeed: 2.8,
   repairTime: 1.8, repairHP: 28, repairRadius: 1.9, repairCooldown: .3,
@@ -19,6 +19,7 @@ export const intervalFor = round => V11.spawnIntervals[Math.min(V11.spawnInterva
 
 // V11 contract tuning. Kept separate during the validated V10 -> V11 handover.
 export const V11 = Object.freeze({
+  carHP:{engine:180,cargo:110,battery:100,workshop:120},poweredRepairThreshold:.25,workshopFaultTime:1.2,
   duration:140,turntableSeconds:3,maxCars:12,step:.025,maxFrame:.10,
   speeds:Object.freeze({STOP:{speed:0,pressure:1.8},SLOW:{speed:.35,pressure:1.35},CRUISE:{speed:1,pressure:1},FAST:{speed:1.5,pressure:.8}}),
   caps:[3,4,5,6,7,8],spawnIntervals:[4.8,4.5,4.1,3.8,3.5,3.2],

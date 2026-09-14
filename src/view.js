@@ -1,6 +1,7 @@
 import * as T from '../vendor/three.module.min.js';
 import {LENGTH,FLOOR,ROOF,clamp,B} from './sim.js?v=11';
 import {Feedback3D} from './feedback3d.js?v=11';
+import {Stations3D} from './stations3d.js';
 import {ActorPresentation} from './actors3d.js';
 import {RouteWorld} from './routeworld.js';
 import {V11} from './balance.js';
@@ -15,7 +16,7 @@ export class View {
   this.crane=new T.Group();this.scene.add(this.crane);this.box(this.crane,0,4.5,-4,1,9,1,0xdaa13e);this.box(this.crane,0,7,-1.5,.75,.60,6,0xeac15e);this.cyl(this.crane,0,6.1,.6,.10,1.7,0x93a7ae);this.box(this.crane,0,5.22,.6,2.35,.48,1.2,0xe2aa3e);for(let k=-2;k<=2;k++)this.box(this.crane,k*.42,4.95,1.2,.22,.06,.05,0x3e3830);
   this.lamps=new T.PointLight(0xccecff,15,13,1.5);this.train.add(this.lamps);this.lamps.position.set(3,3,.1);
   this.rangeLine=new T.Line(new T.BufferGeometry().setFromPoints([new T.Vector3(),new T.Vector3(2,0,0)]),new T.LineDashedMaterial({color:0xf5c678,dashSize:.18,gapSize:.13,transparent:true,opacity:.68}));this.train.add(this.rangeLine);
-  this.bulletGroup=new T.Group();this.train.add(this.bulletGroup);this.particles=new T.Group();this.train.add(this.particles);this.projectileGeometry=new T.BoxGeometry(.38,.065,.07);this.particleGeometry=new T.BoxGeometry(.075,.075,.075);this.actorPresentation=new ActorPresentation(this);this.juice=new Feedback3D(this);this.resize();
+  this.bulletGroup=new T.Group();this.train.add(this.bulletGroup);this.particles=new T.Group();this.train.add(this.particles);this.projectileGeometry=new T.BoxGeometry(.38,.065,.07);this.particleGeometry=new T.BoxGeometry(.075,.075,.075);this.stations=new Stations3D(this);this.actorPresentation=new ActorPresentation(this);this.juice=new Feedback3D(this);this.resize();
  }
  mat(c){if(!this.matCache.has(c))this.matCache.set(c,new T.MeshStandardMaterial({color:c,roughness:.84,metalness:.10}));return this.matCache.get(c)}
  box(g,x,y,z,sx,sy,sz,c){this.cube??=new T.BoxGeometry(1,1,1);const m=new T.Mesh(this.cube,this.mat(c));m.position.set(x,y,z);m.scale.set(sx,sy,sz);m.castShadow=true;m.receiveShadow=true;g.add(m);return m}
@@ -26,7 +27,7 @@ export class View {
  if(c.type==='battery')for(const x of [-2.3,-1.2,1.5]){this.box(props,x,1.95,-.85,.8,1.7,.65,0x366458);this.box(props,x,2.47,-.5,.55,.08,.04,0xb0f0bf)}
  if(c.type==='workshop'){this.box(props,-1.8,1.8,-.7,2.7,.18,1.0,0xc9a266);for(const x of [-2.8,-.8])this.box(props,x,1.4,-.7,.15,.7,.6,0x718e96);this.box(props,-1.5,2.02,-.7,.8,.25,.4,0x497486)}
  const crates=[];if(c.type==='cargo')for(let k=0;k<7;k++){const cr=this.crateTemplate.clone(true);cr.position.set(-2.7+(k%3)*1.2,1.1+Math.floor(k/3)*.76,-.68);props.add(cr);crates.push(cr)}
- const hp=this.box(m,0,1.22,1.64,5,.06,.045,0x8cdaa1);hp.castShadow=false;const tag=document.createElement('div');tag.className='tag';tags.appendChild(tag);this.cars.push({m,crates,hp,tag})});
+ const hp=this.box(m,0,1.22,1.64,5,.06,.045,0x8cdaa1);hp.castShadow=false;const tag=document.createElement('div');tag.className='tag';tags.appendChild(tag);this.stations.decorate(m,c);this.cars.push({m,crates,hp,tag})});
  const r=Math.max(12,this.game.length*.58);this.platform.scale.set(r,.18,r);this.rim.scale.set(r/13,r/13,1);this.dock.position.x=this.game.length*.5;
  }
  resize(){const r=this.canvas.getBoundingClientRect();this.w=Math.max(1,r.width);this.h=Math.max(1,r.height);this.renderer.setSize(this.w,this.h,false);this.syncs++;this.log('viewport',{css:[this.w,this.h],backing:[this.canvas.width,this.canvas.height]})}
@@ -36,7 +37,7 @@ export class View {
   const routeRunning=g.status==='running'&&!g.paused&&g.speed>0;this.routeWorld.update();const atDock=g.status==='ready'||g.phase==='dock';this.crane.visible=g.phase==='crane';this.crane.position.x=g.craneX;this.crane.position.y=g.t<(V11.routes[g.route]?.crane?.[1]??0)?1.2:0;
   const rotation=g.phase==='depart'?g.turntableAngle*(1-clamp((g.t-.04)/.06,0,1)):g.phase==='dock'?g.turntableAngle:0;this.train.rotation.y=rotation;const pivot=g.length*.5;this.train.position.set(pivot*(1-Math.cos(rotation)),0,pivot*Math.sin(rotation));this.deck.rotation.y=rotation;
   const travel=g.t*2*Math.PI*V11.world.radius;
-  this.ground.position.x=focus;this.cars.forEach(({m,crates,hp,tag},i)=>{const c=g.cars[i];m.visible=Math.abs(m.position.x-focus)<42;hp.scale.x=5*Math.max(.01,c.hp/c.max);crates.forEach((o,k)=>o.visible=k<c.cargo);m.traverse(o=>{if(o.name==='Wheel'&&routeRunning)o.rotation.z=-travel*2});tag.textContent=String(i+1).padStart(2,'0')+' '+({engine:'动力',cargo:'货物',battery:'供电',workshop:'维修'}[c.type])+' '+Math.round(c.hp/c.max*100)+'%'});
+  this.ground.position.x=focus;this.cars.forEach(({m,crates,hp,tag},i)=>{const c=g.cars[i];this.stations.update(m,c);m.visible=Math.abs(m.position.x-focus)<42;hp.scale.x=5*Math.max(.01,c.hp/c.max);crates.forEach((o,k)=>o.visible=k<c.cargo);m.traverse(o=>{if(o.name==='Wheel'&&routeRunning)o.rotation.z=-travel*2});tag.textContent=String(i+1).padStart(2,'0')+' '+({engine:'动力',cargo:'货物',battery:'供电',workshop:'维修'}[c.type])+' '+Math.round(c.hp/c.max*100)+'%'});
   this.poseRobot(this.playerRig,p,dt);this.playerRig.visible=g.alive;
   const floorCrates=g.cargoCrates.filter(c=>c.location==='floor');this.floorCrates.forEach(m=>m.visible=false);for(let i=0;i<floorCrates.length;i++){let m=this.floorCrates[i];if(!m){m=this.crateTemplate.clone(true);this.floorCrates.push(m);this.actorGroup.add(m);}m.visible=true;m.position.set(floorCrates[i].x,FLOOR,.65);} const ids=new Set(g.enemies.map(e=>e.id));for(const [id,m] of this.enemyModels)if(!ids.has(id)){this.actorGroup.remove(m);this.enemyPool.push(m);this.enemyModels.delete(id)}
   for(const e of g.enemies){let m=this.enemyModels.get(e.id);if(!m){m=this.enemyPool.pop()||this.makeRobot(true);this.enemyModels.set(e.id,m);this.actorGroup.add(m)}this.poseRobot(m,{...e,face:e.face,swing:e.wind>0?.36-e.wind*.4:0},dt,true);if(e.type!=='clinger'&&e.climb>0)m.position.y-=e.climb*1.5;m.scale.setScalar(e.flash>0?1.10:1);m.userData.gun.visible=false;m.userData.wrench.visible=!e.carry;this.actorPresentation.enemy(m,e)}
