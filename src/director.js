@@ -1,11 +1,11 @@
-import {B,capFor,reserveFor,intervalFor} from './balance.js?v=10';
+import {B,capFor,reserveFor,intervalFor} from './balance.js?v=11';
 // Admission control, not a hidden rubber-band damage system. Existing enemies are never deleted.
 export class Director {
   constructor(){this.clock=0;this.rest=0;this.faultUsed=false;this.fault=null;this.maxLoad=0;this.spawns=0;this.distressOffered=false;}
   enemyLoad(g){return g.enemies.filter(e=>e.hp>0).length;}
   load(g){return this.enemyLoad(g)+reserveFor(g.round);}
   recover(g,reason,seconds=B.recoveryTime){this.rest=Math.max(this.rest,seconds);this.clock=0;g.tell('recovery_started',{reason,seconds});}
-  effectiveCap(g){const weak=g.engineState==='critical'||g.player.hp<=20;return Math.max(reserveFor(g.round)+1,capFor(g.round)-(weak?1:0));}
+  effectiveCap(g){const weak=g.engineState==='critical'||g.player.hp<=20;return Math.max(reserveFor(g.round)+1,capFor(g.round)+(g.repeatPressure||0)-(weak?1:0));}
   canSpawn(g){return this.load(g)+1<=this.effectiveCap(g) && this.enemyLoad(g)<16;}
   cancelFault(g,reason){if(!this.fault)return;this.fault=null;g.tell('fault_resolved',{reason});this.recover(g,'engine_fault');}
   step(g,dt){
@@ -36,7 +36,7 @@ export class Director {
     }
   }
   snapshot(g){const actualHazard=['crane','approach','tunnel'].includes(g.phase)?reserveFor(g.round):0;return{
-    cap:capFor(g.round),effectiveCap:this.effectiveCap(g),enemies:this.enemyLoad(g),reserved:reserveFor(g.round),load:this.load(g),
+    cap:capFor(g.round)+(g.repeatPressure||0),effectiveCap:this.effectiveCap(g),enemies:this.enemyLoad(g),reserved:reserveFor(g.round),load:this.load(g),
     actual:this.enemyLoad(g)+Math.max(actualHazard,this.fault?2:0),maxLoad:this.maxLoad,
     rest:this.rest,fault:this.fault?{time:this.fault.time,active:this.fault.active}:null,
     relief:this.rest>0||g.engineState==='stalled'

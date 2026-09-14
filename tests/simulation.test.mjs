@@ -2,12 +2,12 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {Game,car,FLOOR,ROOF,LENGTH,B,stationX} from '../src/sim.js';
 function advance(g,t,input={}){for(let i=0;i<Math.round(t/.025);i++)g.step(.025,input);}
-function fresh(options={}){const g=new Game(options);g.start();return g;}
+function fresh(options={}){const g=new Game(options);g.chooseRoute('industrial');g.chooseCar('cargo');g.start();return g;}
 function dock(g){g.finish();advance(g,B.arrivalTime);}
 function stall(g,x=5.8){g.player.x=x;g.damageCar(0,g.cars[0].hp,'test');}
 const near=(a,b)=>assert(Math.abs(a-b)<1e-5,`${a} != ${b}`);
 
-test('departure starts at zero and cannot double-start',()=>{const g=new Game();advance(g,5);assert.equal(g.t,0);g.start();assert.equal(g.phase,'depart');assert.equal(g.start(),false);});
+test('departure starts at zero and cannot double-start',()=>{const g=new Game();advance(g,5);assert.equal(g.t,0);g.chooseRoute('industrial');g.chooseCar('cargo');g.start();assert.equal(g.phase,'depart');assert.equal(g.start(),false);});
 test('pause freezes route, enemies, rescue, repair and recovery',()=>{const g=fresh();stall(g);advance(g,.5,{repair:true});g.director.rest=4;g.pause(true);const s=g.snapshot();advance(g,3,{move:1,attack:true,repair:true});assert.deepEqual(g.snapshot(),s);});
 test('normal repair is a channel, not a click or per-frame heal',()=>{const g=fresh();g.player.x=stationX(0);g.cars[0].hp=80;advance(g,1,{repair:true});assert.equal(g.cars[0].hp,80);advance(g,.8,{repair:true});assert.equal(g.cars[0].hp,108);assert.equal(g.snapshot().engineHp,108);advance(g,.15,{repair:true});assert.equal(g.cars[0].hp,108);});
 test('repair requires station proximity and stays on the ground',()=>{const g=fresh();g.cars[0].hp=80;g.player.x=.4;advance(g,2,{repair:true});assert.equal(g.cars[0].hp,80);g.player.x=5.8;g.player.roof=true;advance(g,2,{repair:true});assert.equal(g.cars[0].hp,80);});
@@ -45,7 +45,7 @@ test('difficulty does not punish larger bank or current wallet',()=>{const a=fre
 test('arrival releases for four seconds; pause and settlement guards work',()=>{const g=fresh();assert(!g.cashout());assert(g.finish());assert.equal(g.status,'arriving');assert(!g.cashout());advance(g,2);assert.equal(g.status,'arriving');g.pause(true);advance(g,5);assert.equal(g.status,'arriving');g.pause(false);advance(g,2);assert.equal(g.status,'complete');const cash=g.money;assert(g.cashout());assert(!g.cashout());assert.equal(g.bank,cash);assert.equal(g.money,0);});
 test('stalled train cannot sneak into arrival or cashout',()=>{const g=fresh();g.t=.99999;stall(g);g.step(.05);assert.equal(g.status,'running');assert(!g.finish());assert(!g.cashout());advance(g,8);assert.equal(g.status,'lost');assert.equal(g.bank,0);});
 test('fatal player damage still wins over arrival',()=>{const g=fresh();g.t=.99999;g.hurt(200,'boarder');g.step(.05);assert.equal(g.status,'lost');assert.equal(g.bank,0);});
-test('continuing preserves hull, resets lap not run stats, restarts departure',()=>{const g=fresh();g.cars[0].hp=120;g.inc('cargoSaved',250);dock(g);assert(g.more('battery'));assert.equal(g.cars.length,3);assert.equal(g.cars[0].hp,120);assert.equal(g.lap.cargoSaved,0);assert.equal(g.total.cargoSaved,250);g.start();assert.equal(g.phase,'depart');assert.equal(g.t,0);});
+test('continuing preserves hull, resets lap not run stats, restarts departure',()=>{const g=fresh();g.cars[0].hp=120;g.inc('cargoSaved',250);dock(g);assert(g.more());g.chooseRoute('freight');g.chooseCar('battery');assert.equal(g.cars.length,3);assert.equal(g.cars[0].hp,120);assert.equal(g.lap.cargoSaved,0);assert.equal(g.total.cargoSaved,250);g.chooseRoute('industrial');g.chooseCar('cargo');g.start();assert.equal(g.phase,'depart');assert.equal(g.t,0);});
 test('bank preserved in failure and restart constructors',()=>{const g=fresh({bank:4123});g.fail();assert.equal(g.bank,4123);const next=new Game({bank:g.bank});assert.equal(next.bank,4123);});
 test('broken workshop cannot charge for healing',()=>{const g=fresh();g.cars.push(car('workshop'));g.player.x=20;g.player.hp=50;g.cars[2].hp=0;g.interact();assert.equal(g.player.hp,50);assert.equal(g.money,1000);});
 test('practice is explicit and cannot bank or continue into a real run',()=>{const g=fresh({bank:4000,practice:true});stall(g);advance(g,3,{repair:true});assert.equal(g.status,'practice_complete');assert.equal(g.bank,4000);assert(!g.cashout());assert(!g.more('cargo'));assert.equal(g.snapshot().mode,'practice');});

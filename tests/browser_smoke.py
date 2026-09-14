@@ -21,7 +21,7 @@ async def run_browser(p,name):
         await page.goto('http://127.0.0.1:8765/?test=1',wait_until='networkidle')
         await page.wait_for_function('window.__RH_DEBUG?.snapshot().modelsLoaded === 3',timeout=30000)
         s=await page.evaluate('window.__RH_DEBUG.snapshot()');result['boot']=s
-        checks['build_is_v10']=s['build'].startswith('V10-')
+        checks['build_is_v11']=s['build'].startswith('V11-')
         checks['slow_model_loading_no_errors']=not errors
         checks['actual_webgl2']=s['renderer']=='WebGL2'
         checks['external_model_files_loaded']=s['modelsLoaded']==3
@@ -29,7 +29,7 @@ async def run_browser(p,name):
         checks['triangles_submitted']=s['triangles']>2000
         checks['no_2d_fallback']=await page.evaluate('document.querySelector("canvas").getContext("2d") === null')
         checks['nothing_starts_under_modal']=s['routeT']==0 and s['status']=='ready'
-        await page.click('#start');await page.wait_for_timeout(400)
+        await page.click('[data-route=industrial]');await page.click('[data-car=cargo]');await page.click('#start');await page.wait_for_timeout(400)
         checks['departure_not_skipped']=(await page.evaluate('window.__RH_DEBUG.snapshot()'))['phase']=='depart'
         await page.screenshot(path=str(ART/f'{name}-departure.png'))
         before=await page.evaluate('window.__RH_DEBUG.snapshot()')
@@ -140,7 +140,7 @@ async def run_browser(p,name):
         checks['restart_keeps_bank']=restart['bank']==s['bank']
         checks['restart_immediate_camera_visible']=15<restart['playerScreenX']<restart['canvasCss'][0]-15 and 5<restart['playerScreenY']<restart['canvasCss'][1]-5
         # Practice is reachable through the real menu and cannot change bank storage.
-        await page.evaluate('window.__RH_TEST.game().fail("test")');await page.wait_for_timeout(100)
+        await page.click('[data-route=industrial]');await page.click('[data-car=cargo]');await page.click('#start');await page.evaluate('window.__RH_TEST.game().fail("test")');await page.wait_for_timeout(100)
         oldbank=await page.evaluate('localStorage.getItem("roundhouse_bank")')
         await page.click('#practice')
         checks['practice_label_and_mode']=await page.evaluate('window.__RH_DEBUG.snapshot().mode==="practice"')

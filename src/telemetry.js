@@ -1,4 +1,4 @@
-import {BUILD} from './sim.js?v=10';
+import {BUILD} from './sim.js?v=11';
 // Temporary public test channel. No credentials, names, full URLs or input text.
 const URL='https://ntfy.sh/roundhouse-log-f333c88ded8549f084c70bd5cceb0a7f';
 export class Telemetry {

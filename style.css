@@ -10,3 +10,5 @@
 /* Holding through restart must not hide its confirmation under the next repair. */
 #centerStack[data-repair="true"] #success small{display:none}
 #centerStack[data-repair="true"] #success b{font-size:10px;margin-top:2px}
+
+#routeChoices{display:flex;gap:8px;margin:8px 0}#routeChoices button{flex:1;text-align:left}#routeChoices small{display:block;color:#adc1c8;font-size:10px;margin-top:5px;line-height:1.5}
