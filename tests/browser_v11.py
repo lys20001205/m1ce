@@ -50,14 +50,29 @@ async def run(p,name):
    await page.evaluate('(()=>{const a=window.__RH_TEST,g=a.game();g.pause(false);a.step(1);g.pause(true)})()')
    s2=await page.evaluate('window.__RH_DEBUG.snapshot()')
    report['checks'][route+'_stop_world_still']=s2['routeT']==stopped['routeT'] and s2['landmarks']==stopped['landmarks'] and s2['speedMode']=='STOP'
-   await page.evaluate('window.__RH_TEST.game().pause(false)');await page.click('#interact');await page.click('[data-speed=FAST]')
+   await page.evaluate('window.__RH_TEST.game().pause(false)')
+   # Live enemies may interrupt an interaction. Retry real input only; never clear stun/HP/enemies.
+   attempts=[]
+   for _ in range(6):
+    visible=await page.locator('#speedPanel').is_visible()
+    if visible:break
+    await page.click('#interact');await page.wait_for_timeout(180)
+    attempts.append(await page.evaluate('(()=>{const g=__RH_TEST.game();return {x:g.player.x,stun:g.player.stun,alive:g.alive,status:g.status,paused:g.paused,console:g.consoleOpen,atConsole:g.atConsole}})()'))
+   report.setdefault('consoleAttempts',{})[route]=attempts
+   report['checks'][route+'_console_interaction_admitted']=await page.locator('#speedPanel').is_visible()
+   await page.click('[data-speed=FAST]',timeout=3000)
    await page.evaluate('window.__RH_TEST.game().pause(true)')
    report['checks'][route+'_console_fast']=await page.evaluate('window.__RH_DEBUG.snapshot().speedMode==="FAST"')
    await page.close()
   pictures=[Image.open(ART/f'{name}-{r}-ring-before.png').convert('RGB') for r in ['industrial','freight','tunnel']]
   report['checks']['routes_visibly_differ']=all(sum(1 for px in ImageChops.difference(pictures[i],pictures[i+1]).getdata() if sum(px)>60)>3000 for i in range(2))
   report['checks']['no_page_errors']=not errors
- except Exception as e:report['exception']=str(e);report['checks']['completed_suite']=False
+ except Exception as e:
+  report['exception']=str(e);report['checks']['completed_suite']=False
+  try:
+   report['failureState']=await page.evaluate('__RH_DEBUG.snapshot()');report['failureEvents']=await page.evaluate('__RH_DEBUG.logs().slice(-30)')
+   await page.screenshot(path=str(ART/f'{name}-v11-failure.png'))
+  except Exception:pass
  finally:await browser.close()
  report['errors']=errors;report['passed']=all(report['checks'].values());(ART/f'{name}-v11-report.json').write_text(json.dumps(report,indent=2));print(json.dumps(report),flush=True)
  return report['passed']
