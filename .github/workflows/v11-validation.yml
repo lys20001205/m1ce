@@ -10,6 +10,9 @@ concurrency:
   cancel-in-progress: true
 jobs:
   validate:
+    if: github.ref == 'refs/heads/roundhouse/v11'
+    permissions:
+      contents: write
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
@@ -21,11 +24,14 @@ jobs:
         with:
           node-version: '22'
           cache: npm
-      - name: Source snapshot
+      - name: Apply bounded engineering stage on work branch
+        id: stage
         run: |
           mkdir -p artifacts
-          git archive --format=tar HEAD > artifacts/source.tar
-          git rev-parse HEAD > artifacts/commit.txt
+          if test -f tools/v11_stage.py; then
+            python tools/v11_stage.py
+            echo 'applied=true' >> "$GITHUB_OUTPUT"
+          fi
       - run: npm ci --ignore-scripts
       - name: Unit and syntax
         run: |
@@ -34,7 +40,9 @@ jobs:
           npm test | tee artifacts/unit.txt
       - run: npm run build
       - name: Model serialization
-        run: node --test tests/model_roundtrip.test.mjs
+        run: |
+          set -o pipefail
+          node --test tests/model_roundtrip.test.mjs | tee artifacts/model-tests.txt
       - uses: actions/setup-python@v6
         with:
           python-version: '3.13'
@@ -44,11 +52,29 @@ jobs:
           python -m playwright install --with-deps chromium webkit
       - name: Actual browser regressions
         run: xvfb-run -a python tests/browser_smoke.py
-      - name: V11 browser gates
+      - name: Stage-specific browser gates
         run: |
           if test -f tests/browser_v11.py; then
             xvfb-run -a python tests/browser_v11.py
           fi
+      - name: Persist validated engineering changes only to work branch
+        if: success() && steps.stage.outputs.applied == 'true'
+        run: |
+          test "$GITHUB_REF" = 'refs/heads/roundhouse/v11'
+          git config user.name 'ROUNDHOUSE validation'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git rm tools/v11_stage.py
+          git add src tests tools/build.mjs package.json package-lock.json index.html style.css docs
+          git commit -m 'V11: persist validated engineering stage; no deployment'
+          git push origin HEAD:refs/heads/roundhouse/v11
+      - name: Capture source and exact validation provenance
+        if: always()
+        run: |
+          mkdir -p artifacts
+          git rev-parse HEAD > artifacts/commit.txt
+          git diff --binary HEAD > artifacts/uncommitted.patch
+          tar --exclude=__pycache__ -cf artifacts/source.tar src tests tools docs .github package.json package-lock.json index.html style.css manifest.webmanifest README.md .gitignore ASSET_SOURCES.md
+          tar -czf artifacts/three-dependency.tar.gz node_modules/three
       - uses: actions/upload-artifact@v4
         if: always()
         with:
