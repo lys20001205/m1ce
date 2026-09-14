@@ -11,7 +11,7 @@ async def run(p,name):
         page=await browser.new_page(viewport={'width':844,'height':390},is_mobile=True,has_touch=True)
         page.on('pageerror',lambda e:errors.append(str(e)))
         await page.goto('http://127.0.0.1:8770/?test=1',wait_until='networkidle')
-        await page.wait_for_function('__RH_DEBUG?.snapshot().modelsLoaded===3')
+        await page.wait_for_function('window.__RH_DEBUG?.snapshot().modelsLoaded===3')
         await page.click('[data-route=freight]');await page.click('[data-car=cargo]');await page.click('#start')
         await page.evaluate('(()=>{const a=__RH_TEST,g=a.game();a.forceRoute(.1);a.forcePlayer(3);const e=g.spawn("boarder",4,false);e.climb=0;g.pause(true)})()')
         # One held pointer drives the normal input map and repeated production attacks.
@@ -32,7 +32,8 @@ async def run(p,name):
         report['checks']['armory_world_not_paused']=await page.evaluate(f'!__RH_TEST.game().paused&&__RH_TEST.game().t>{start}')
         report['models']=[]
         for slot,weapon in [('melee','knife'),('melee','axe'),('ranged','handgun'),('ranged','smg'),('ranged','rifle')]:
-            await page.click('[data-armory='+slot+']')
+            await page.locator('[data-armory='+slot+']').tap()
+            await page.wait_for_function("__RH_TEST.game()["+json.dumps(slot)+"]?.id==="+json.dumps(weapon),timeout=3000)
             await page.evaluate('__RH_TEST.view().render(0)')
             state=await page.evaluate('(()=>{const g=__RH_TEST.game(),d=__RH_TEST.view().playerRig.userData;return {melee:g.melee.id,ranged:g.ranged?.id||null,scrap:g.scrap,meleeModels:Object.entries(d.meleeModels).filter(([k,m])=>m.visible).map(([k])=>k),rangedModels:Object.entries(d.rangedModels).filter(([k,m])=>m.visible).map(([k])=>k)}})()')
             report['models'].append(state)
@@ -52,12 +53,12 @@ async def run(p,name):
         await page.screenshot(path=str(ART/f'{name}-dual-weapon-fire.png'))
         report['checks']['mobile_keyboard_legend_hidden']=not await page.locator('#keyboardLegend').is_visible()
         desktop=await browser.new_page(viewport={'width':1280,'height':720})
-        await desktop.goto('http://127.0.0.1:8770/?test=1',wait_until='networkidle');await desktop.wait_for_function('__RH_DEBUG?.snapshot().modelsLoaded===3')
+        await desktop.goto('http://127.0.0.1:8770/?test=1',wait_until='networkidle');await desktop.wait_for_function('window.__RH_DEBUG?.snapshot().modelsLoaded===3')
         report['checks']['desktop_legend_matches_bindings']=await desktop.evaluate('(()=>{const text=document.getElementById("keyboardLegend").textContent;return !document.getElementById("keyboardLegend").hidden&&text.includes("MELEE J / SPACE")&&text.includes("RANGED K")&&text.includes("EMERGENCY BRAKE B")})()')
         await desktop.close();report['checks']['no_page_errors']=not errors
     except Exception as e:
         report['exception']=str(e);report['checks']['completed_suite']=False
-        try:report['failureState']=await page.evaluate('__RH_DEBUG.snapshot()');await page.screenshot(path=str(ART/f'{name}-combat-failure.png'))
+        try:report['failureState']=await page.evaluate('__RH_DEBUG.snapshot()');report['failureEvents']=await page.evaluate('__RH_DEBUG.logs().slice(-40)');await page.screenshot(path=str(ART/f'{name}-combat-failure.png'))
         except Exception:pass
     finally:await browser.close()
     report['errors']=errors;report['passed']=all(report['checks'].values());(ART/f'{name}-combat-report.json').write_text(json.dumps(report,indent=2));print(json.dumps(report),flush=True);return report['passed']

@@ -1,5 +1,5 @@
 // V10 playtest values, not measured completion-rate claims. One source for tuning.
-export const BUILD = 'V11-F-ENEMIES-20260914';
+export const BUILD = 'V11-G-COMBAT-20260914';
 export const B = Object.freeze({
   walk: 5.1, roofSpeed: 1.25, carrySpeed: 2.8,
   repairTime: 1.8, repairHP: 28, repairRadius: 1.9, repairCooldown: .3,
@@ -26,7 +26,7 @@ export const V11 = Object.freeze({
   firstSpecialWeight:.28,cargoThiefWeight:.6,enemyLimit:16,enemyBoardingSeconds:.7,enemyLadderSeconds:1.2,thiefEscapeWarning:4.6,
   cargoSlots:3,playerMaxHP:100,respawnSeconds:5,respawnFraction:.6,spawnProtection:2,hitProtection:.6,
   engineCharge:100,batteryCharge:100,fastDrain:12,consoleX:5.8,consoleRadius:1.9,armoryX:1.7,armoryRadius:1.35,respawnX:3,
-  stopQuota:6,reinforcementReward:.25,workshopHeal:20,workshopCost:120,kitSpeed:2,
+  stopQuota:6,reinforcementReward:.25,stopRegionProgress:.1,depotEncounterDistance:55,workshopHeal:20,workshopCost:120,kitSpeed:2,
   prep:{reroll:{cost:3000,max:3},repairKit:{cost:5000,max:1},intel:{cost:4000,max:1}},
   world:{radius:220,segments:40,nearCull:105,farCull:400,lod:65,dpr:1.6},
   depot:{anchorX:12.45,z:-5.8,width:24,depth:4,boardRadius:2.4,connectionLimit:28,crateRadius:1.2,bridgeRadius:2.5,crateXs:[-7,-3,1,5,9]},
@@ -42,12 +42,14 @@ export const V11 = Object.freeze({
     saboteur:{hp:40,scrap:4,speed:1.6,damage:20,systemDamage:20,windup:1.4,recovery:1.3,reach:1.2,knockback:.8,stun:1},
     bruiser:{hp:140,scrap:6,speed:.85,damage:24,systemDamage:24,windup:1.5,recovery:1.4,reach:1.65,knockback:.15,stun:.3,wrenchArmor:.45}
   },
+  combat:{enemyStun:.32,enemyFlash:.18,meleeTargets:2,behindSlack:.3,bulletRadius:.28,rangedFlash:.12,popLifetime:.9},
+  rig:{scale:1.07,armX:.22,armY:1.05,armZ:.22},
   weapons:{
     wrench:{cost:0,damage:22,cooldown:.52,active:.16,duration:.36,range:1.85,knockback:.45},
     knife:{cost:10,damage:16,cooldown:.25,active:.07,duration:.20,range:1.6,knockback:.20},
     axe:{cost:20,damage:54,cooldown:.88,active:.32,duration:.66,range:2.25,knockback:1.10},
-    handgun:{cost:12,damage:23,cooldown:.42,range:12,velocity:35,knockback:.25},
-    smg:{cost:24,damage:12,cooldown:.12,range:13,velocity:42,knockback:.10},
-    rifle:{cost:40,damage:80,cooldown:1.05,range:24,velocity:60,knockback:.65}
+    handgun:{cost:12,damage:23,cooldown:.42,range:12,velocity:35,knockback:.25,muzzle:.795},
+    smg:{cost:24,damage:12,cooldown:.12,range:13,velocity:42,knockback:.10,muzzle:1.05},
+    rifle:{cost:40,damage:80,cooldown:1.05,range:24,velocity:60,knockback:.65,muzzle:1.33}
   }
 });

@@ -67,7 +67,7 @@ async def run_browser(p,name):
         }""")
         result['melee_poses']=poses;checks['weapon_arm_animates']=abs(poses['first']-poses['second'])>.25 and 0<poses['swing']<.36
         await page.screenshot(path=str(ART/f'{name}-melee.png'))
-        socket=await page.evaluate("""() => {let g=window.__RH_TEST.game();g.pause(false);g.round=3;g.player.cooldown=0;g.attack();window.__RH_TEST.view().render(0);return {actual:window.__RH_TEST.view().muzzle(),bullet:g.lastMuzzle};}""")
+        socket=await page.evaluate("""() => {let g=window.__RH_TEST.game();g.pause(false);g.round=3;g.scrap=42;const x=g.player.x;g.player.x=1.7;g.openArmory();g.buyWeapon('melee');g.buyWeapon('melee');g.buyWeapon('ranged');g.player.x=x;g.armoryOpen=false;g.rangedAttack();window.__RH_TEST.view().render(0);return {actual:window.__RH_TEST.view().muzzle(),bullet:g.lastMuzzle};}""")
         result['muzzle']=socket
         checks['bullet_matches_model_socket']=all(abs(socket['actual'][k]-socket['bullet'][k])<.02 for k in ['x','y','z'])
         await page.evaluate('window.__RH_TEST.forceRoute(.32);window.__RH_TEST.forcePlayer(12,true)');await page.wait_for_timeout(100)
@@ -102,8 +102,8 @@ async def run_browser(p,name):
         await page.evaluate('window.__RH_TEST.game().pause(false);window.__RH_TEST.step(8)')
         checks['deadline_failure_has_reason']=await page.evaluate('window.__RH_TEST.game().status==="lost"&&window.__RH_TEST.game().failReason==="engine_timeout"')
         # Cargo recovery feedback and no duplicate credit.
-        cargo=await page.evaluate("""() => {const a=window.__RH_TEST;a.reset();a.forcePlayer(4.2);const g=a.game();for(let i=0;i<3;i++)g.createCargo(250,'stored',{carIndex:1,secured:true});const e=g.spawn('thief',12.4,false);e.climb=0;a.step(1);const before=g.money;g.hitEnemy(e,99);g.hitEnemy(e,99);g.pause(true);a.view().render(0);return {before,after:g.money,saved:g.total.cargoSaved,cargo:g.cars[1].cargo};}""")
-        checks['cargo_recovery_feedback_and_accounting']=cargo=={'before':1000,'after':1050,'saved':250,'cargo':3}
+        cargo=await page.evaluate("""() => {const a=window.__RH_TEST;a.reset();a.forcePlayer(4.2);const g=a.game();for(let i=0;i<3;i++)g.createCargo(250,'stored',{carIndex:1,secured:true});const e=g.spawn('thief',12.4,false);e.climb=0;a.step(1);const before=g.money;g.hitEnemy(e,99);g.hitEnemy(e,99);g.pause(true);a.view().render(0);return {before,after:g.money,saved:g.total.cargoSaved,cargo:g.cars[1].cargo,scrap:g.scrap};}""")
+        checks['cargo_recovery_feedback_and_accounting']=cargo=={'before':1000,'after':1000,'saved':250,'cargo':3,'scrap':3}
         await page.evaluate('window.__RH_TEST.reset();window.__RH_TEST.forceCars(12);window.__RH_TEST.forceRoute(.9)')
         visible=True;result['camera_samples']=[]
         for x in [.5,20,60,97]:

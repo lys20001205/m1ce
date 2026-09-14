@@ -3,6 +3,37 @@ import {V11} from './balance.js';
 // Model dressing and animation only. Enemy decisions and damage never live here.
 export class ActorPresentation {
   constructor(view){this.view=view;}
+  decoratePlayer(rig){
+    const v=this.view,d=rig.userData;
+    d.gunArm=d.arm;d.gunArm.name='RangedArm';
+    const rear=d.gunArm.clone(true);rear.name='MeleeArm';rear.position.z=-V11.rig.armZ;
+    rear.remove(rear.getObjectByName('Sidearm'));rig.add(rear);d.arm=rear;
+    const wrench=rear.getObjectByName('Wrench');d.wrench.visible=false;
+    const knife=new T.Group(),axe=new T.Group();knife.name='Knife';axe.name='Axe';rear.add(knife,axe);
+    v.box(knife,.49,0,0,.26,.10,.10,0x34454c);v.box(knife,.74,0,0,.34,.085,.045,0xdbe3df);
+    v.box(axe,.56,0,0,.74,.075,.08,0x775b43);v.box(axe,.88,.08,0,.24,.46,.10,0xc1d0d2);
+    d.meleeModels={wrench,knife,axe};d.rangedModels={handgun:d.gun};
+    for(const type of ['smg','rifle']){
+      const gun=new T.Group();gun.name=type==='smg'?'SMG':'HighDamageRifle';d.gunArm.add(gun);d.rangedModels[type]=gun;
+      const spec=V11.weapons[type];
+      v.box(gun,.64,0,0,.48,.16,.16,type==='smg'?0x4a6975:0x607361);
+      v.box(gun,.58,-.18,0,.11,.30,.10,0x283c46);
+      if(type==='smg')v.box(gun,.97,0,0,.16,.09,.10,0x9baab0);
+      else{v.box(gun,1.13,0,0,.40,.08,.09,0xb3bbac);v.box(gun,.30,-.03,0,.30,.18,.14,0x70694e);v.box(gun,.70,.16,0,.28,.10,.11,0x273943);}
+      const socket=new T.Object3D();socket.name='Muzzle';socket.position.x=spec.muzzle;gun.add(socket);
+    }
+    d.wrench=wrench;d.activeMuzzle=d.rangedModels.handgun.getObjectByName('Muzzle');
+  }
+  player(rig,p){
+    const d=rig.userData,g=this.view.game,repair=!!g.repairJob,carried=!!p.carry;
+    for(const [id,m] of Object.entries(d.meleeModels))m.visible=!carried&&id===(repair?'wrench':g.melee.id);
+    for(const [id,m] of Object.entries(d.rangedModels))m.visible=!carried&&!repair&&id===g.ranged?.id;
+    const duration=p.meleeAttack?.duration||g.meleeStats.duration;
+    d.arm.rotation.z=p.swing>0?1.20-(1-p.swing/duration)*2.3:-.20;
+    if(repair)d.arm.rotation.z=-.3+Math.sin(g.elapsed*16)*.18;
+    d.gunArm.rotation.z=0;d.activeMuzzle=(d.rangedModels[g.ranged?.id||'handgun']).getObjectByName('Muzzle');
+    rig.scale.setScalar(V11.rig.scale);
+  }
   decorateEnemy(rig){
     const v=this.view,kits={};
     for(const type of Object.keys(V11.enemies)){const group=new T.Group();group.name='EnemyKit-'+type;rig.add(group);kits[type]=group;}

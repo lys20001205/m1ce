@@ -3,6 +3,7 @@ import {B,V11,stationX} from './balance.js?v=11';
 // Small, pooled scene cues. Does not own damage, timers or rewards.
 export class Feedback3D {
   constructor(view){
+    this.labels=Array.from({length:12},()=>{const el=document.createElement('span');el.className='combatPop';el.hidden=true;document.getElementById('feedbackPops').append(el);return el;});
     this.view=view;this.group=new T.Group();view.train.add(this.group);
     this.beacon=new T.Mesh(new T.SphereGeometry(.16,8,6),new T.MeshBasicMaterial({color:0x98e5bd}));this.beacon.position.set(stationX(0),2.78,.70);this.group.add(this.beacon);
     this.smoke=Array.from({length:6},()=>{const m=new T.Mesh(new T.IcosahedronGeometry(.16,0),new T.MeshBasicMaterial({color:0x9faeb2,transparent:true,opacity:.22,depthWrite:false}));this.group.add(m);return m;});
@@ -11,6 +12,10 @@ export class Feedback3D {
     this.spawnRing=new T.Mesh(new T.TorusGeometry(.70,.035,6,28),view.mat(0x93e5ee));this.spawnRing.rotation.x=Math.PI/2;this.group.add(this.spawnRing);
     this.speedStreaks=new T.InstancedMesh(view.cube,view.mat(0x90b7bd),18);this.speedStreaks.frustumCulled=false;this.group.add(this.speedStreaks);this.speedScratch=new T.Object3D();
     this.station=new T.Mesh(new T.ConeGeometry(.10,.24,6),new T.MeshBasicMaterial({color:0xeac481}));this.station.rotation.z=Math.PI;this.group.add(this.station);
+  }
+  updateLabels(){
+    const g=this.view.game,fx=g.effects.filter(e=>e.text&&['scrap','buy'].includes(e.type)).slice(-this.labels.length);
+    this.labels.forEach((el,i)=>{const f=fx[i];el.hidden=!f;if(!f)return;const p=this.view.project(f.x,f.y+(1-f.life/f.max)*1.8,.65);el.textContent=f.text;el.style.left=p.x+'px';el.style.top=p.y+'px';el.style.opacity=Math.min(1,f.life/.2);});
   }
   update(){
     const {game:g,reducedMotion:reduced}=this.view,t=g.elapsed;
