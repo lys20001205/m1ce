@@ -2,7 +2,7 @@ import {Game,BUILD,B,DEFS,LENGTH,FLOOR,ROOF,phaseAt,clamp,stationX} from './sim.
 import {View} from './view.js?v=11';
 import {Telemetry} from './telemetry.js?v=11';
 import {AudioCues} from './audio.js?v=11';
-import {ROUTES} from './content.js';
+import {ROUTES,SPEED_MODES} from './content.js';
 const $=id=>document.getElementById(id);
 let game,view,telemetry,input={move:0,attack:false,repair:false},last=0,lastStatus='',selected='battery',frameError=false,bankWritable=true;
 const pressed=new Map(),audio=new AudioCues();
@@ -22,9 +22,11 @@ for(const id of ['L','R','attack','fix']){
   el.addEventListener('pointerup',release);el.addEventListener('pointercancel',release);el.addEventListener('lostpointercapture',()=>{for(const [k,v] of pressed)if(v===id)pressed.delete(k);refreshInputs();el.classList.remove('active');});
 }
 const keys={a:'L',ArrowLeft:'L',d:'R',ArrowRight:'R',j:'attack',' ':'attack',e:'fix'};
-addEventListener('keydown',e=>{if(e.target?.tagName==='INPUT'||game.paused||game.status!=='running')return;const k=keys[e.key];if(k){e.preventDefault();pressed.set('key'+e.key,k);refreshInputs();}if(e.key==='w'&&!e.repeat)game.layer();if(e.key==='f'&&!e.repeat)game.interact();});
+addEventListener('keydown',e=>{if(e.target?.tagName==='INPUT'||game.paused||game.status!=='running')return;const k=keys[e.key];if(k){e.preventDefault();pressed.set('key'+e.key,k);refreshInputs();}if(e.key==='w'&&!e.repeat)game.layer();if(e.key==='f'&&!e.repeat)game.interact();if(e.key==='b'&&!e.repeat)game.emergencyStop();});
 addEventListener('keyup',e=>{pressed.delete('key'+e.key);refreshInputs();});
 for(const type of ['contextmenu','selectstart','dragstart'])$('app').addEventListener(type,e=>{if(!e.target.closest('pre'))e.preventDefault();});
+for(const mode of SPEED_MODES){const b=document.createElement('button');b.dataset.speed=mode;b.textContent=mode;b.onclick=()=>game.setSpeed(mode);$('speedChoices').append(b);}
+$('brake').onclick=()=>game.emergencyStop();
 $('layer').onclick=()=>game.layer();$('interact').onclick=()=>game.interact();
 $('angle').onclick=()=>{if(!view)return;view.inspect=!view.inspect;$('angle').textContent=view.inspect?'侧视':'斜视';};
 $('sound').textContent=audio.enabled?'声音开':'静音';$('sound').onclick=async()=>{$('sound').textContent=await audio.toggle()?'声音开':'静音';};
@@ -90,7 +92,7 @@ function ui(){
   $('round').textContent=String(game.round).padStart(2,'0');$('money').textContent=Math.round(game.money).toLocaleString();$('health').textContent=Math.ceil(game.cars[0].hp/game.cars[0].max*100)+'% / '+Math.ceil(game.player.hp);$('health').dataset.state=engine;
   $('weapon').textContent=game.weapon;$('attack').textContent=game.round>=3?'射击':'挥击';$('phase').textContent=game.practice?'抢修演练 / 不结算':game.status==='arriving'?'安全回站 / 转盘锁定':game.engineState==='stalled'?'动力停机 / 路线暂停':({dock:'机库准备',depart:'出库 / 转盘对轨',yard:'工业装卸区',crane:'机械臂',approach:'隧道预告',tunnel:'低净空隧道',return:'返回机库'}[game.phase]||game.phase);
   $('fill').style.width=game.t*100+'%';$('pause').textContent=game.paused?'继续':'暂停';
-  $('progress').textContent=game.rescue?'抢救剩余 '+game.rescue.remaining.toFixed(1)+' 秒':warn?(warn.kind==='crane'?'扫顶':'入隧道')+'约 '+warn.seconds.toFixed(1)+' 秒':threat.rest>0?'新威胁暂停 '+threat.rest.toFixed(1)+'s':threat.relief?'危急减压中':'机库 → 工业区 → 隧道 → 返回';
+  $('progress').textContent=game.rescue?'抢救剩余 '+game.rescue.remaining.toFixed(1)+' 秒':warn?(warn.kind==='crane'?'扫顶':'入隧道')+'约 '+warn.seconds.toFixed(1)+' 秒':threat.rest>0?'新威胁暂停 '+threat.rest.toFixed(1)+'s':threat.relief?'危急减压中':(ROUTES[game.route]?.name||'ROUNDHOUSE')+' · '+game.speedMode+' · CHARGE '+Math.round(game.batteryCharge)+' / '+game.batteryCapacity;
   let message=game.event;
   if(game.status==='running'){
     if(game.rescue){const d=game.player.x-stationX(0);message='动力停机 · '+game.rescue.remaining.toFixed(1)+'s ｜ '+(Math.abs(d)>B.repairRadius?(d>0?'← ':'→ ')+'前往 01 控制柜，长按修理':'控制柜已在身旁：长按修理 3 秒');}
@@ -100,19 +102,20 @@ function ui(){
     else if(game.director.fault)message=game.director.fault.active?'01 冷却故障正在损伤动力车：完成一次维修可停止':'01 冷却故障预警：'+Math.max(0,B.faultLead-game.director.fault.time).toFixed(1)+' 秒后开始损伤';
   }
   $('event').textContent=message;$('event').dataset.state=game.rescue?'stalled':engine;$('viewport').dataset.health=game.player.hp<=20?'critical':'normal';
-  $('layer').textContent=game.player.roof?'下车内':'上车顶';$('interact').textContent=game.player.carry?'放货':game.cars[game.currentCar].type==='engine'?'增压':game.cars[game.currentCar].type==='cargo'?'搬货':'交互';
+  $('speedPanel').hidden=game.status!=='running'||!game.atConsole||!game.consoleOpen;document.querySelectorAll('[data-speed]').forEach(b=>{b.classList.toggle('selected',b.dataset.speed===game.speedMode);b.disabled=game.engineState==='stalled'||b.dataset.speed==='FAST'&&game.batteryCharge<=0;});
+  $('layer').textContent=game.player.roof?'下车内':'上车顶';$('interact').textContent=game.player.carry?'放货':game.cars[game.currentCar].type==='engine'?'SPEED':game.cars[game.currentCar].type==='cargo'?'搬货':'交互';
   $('repairPanel').hidden=!job;$('repairFill').style.width=job?Math.min(100,job.progress/job.duration*100)+'%':'0%';$('repairText').textContent=job?(job.emergency?'紧急重启':'维修 '+String(job.car+1).padStart(2,'0'))+' · '+Math.min(100,Math.floor(job.progress/job.duration*100))+'%':'';
   const notice=game.notices.at(-1);$('success').hidden=!notice;$('centerStack').dataset.repair=job?'true':'false';$('successTitle').textContent=notice?.title||'';$('successDetail').textContent=notice?.detail||'';
   $('centerHint').hidden=!!job||!!notice;$('centerHint').textContent=game.status==='arriving'?'安全回站 · '+Math.max(0,B.arrivalTime-game.arrivalElapsed).toFixed(1)+'s':input.repair?game.repairHint:game.player.roof?'车顶移动 +25% · 提前留意净空':'近设备长按修理 · 黄梯切层';
   if(game.status!==lastStatus){lastStatus=game.status;if(['complete','lost','cashed','practice_complete'].includes(game.status))showEnd();if(game.status==='arriving')clearInput();}
 }
-function frame(ts){if(frameError)return;try{const dt=last?Math.min(.05,(ts-last)/1000):0;last=ts;audio.update(game);game.step(dt,input);view.render(dt);ui();requestAnimationFrame(frame);}catch(e){fatal(e);}}
+function frame(ts){if(frameError)return;try{const raw=last?ts-last:0,dt=Math.min(.05,raw/1000);last=ts;view.recordFrame(raw);audio.update(game);game.step(dt,input);view.render(dt);ui();requestAnimationFrame(frame);}catch(e){fatal(e);}}
 try{view=new View($('game'),game,(t,d)=>telemetry.log(t,d));view.reducedMotion=$('reduced').checked;await view.init();$('start').disabled=false;$('practice').disabled=false;$('start').textContent='从机库发车';showHub();$('event').textContent=game.event;resize();requestAnimationFrame(frame);}catch(e){fatal(e);}
 window.__RH_DEBUG={snapshot,logs:()=>telemetry.events,renderer:()=>view.snapshot(),occlusion:()=>view.occlusion(),pixels:()=>view.pixels()};
 if(new URLSearchParams(location.search).has('test'))window.__RH_TEST={
   game:()=>game,view:()=>view,input:()=>({...input}),
   step:(seconds,controls={})=>{for(let left=seconds;left>1e-8;left-=.025)game.step(Math.min(.025,left),controls);view.render(.016);ui();},
-  forceRoute:t=>{game.t=t;game.phase=phaseAt(t);},
+  forceRoute:t=>{game.t=t;game.elapsed=Math.max(game.elapsed,3);game.phase=phaseAt(t,game.route);},
   forceCars:n=>{while(game.cars.length<Math.min(12,n)){const d=DEFS.cargo;game.cars.push({type:'cargo',hp:d.hp,max:d.hp,cargo:3});}view.rebuildCars();},
   forcePlayer:(x,roof=false)=>{game.player.x=clamp(x,.4,game.length-.4);game.player.roof=roof;game.player.y=roof?ROOF:FLOOR;view.cameraX=game.player.x;view.render(.016);},
   reset:()=>{clearInput();game=new Game({seed:314159,emit});view.game=game;view.rebuildCars();view.cameraX=3;lastStatus='';last=0;$('modal').hidden=true;game.chooseRoute('industrial');game.chooseCar('cargo');game.start();view.render(0);ui();return true;}

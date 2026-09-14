@@ -1,5 +1,6 @@
 """V11-B real route/car UI and three rendered gate/turntable cases."""
-import asyncio,json,subprocess,sys
+import asyncio,json,subprocess,sys,io
+from PIL import Image,ImageChops
 from pathlib import Path
 from playwright.async_api import async_playwright
 ART=Path('artifacts');ART.mkdir(exist_ok=True)
@@ -15,6 +16,7 @@ async def run(p,name):
    await page.wait_for_function('window.__RH_DEBUG?.snapshot().modelsLoaded===3')
    report['checks'][route+'_three_choices']=await page.locator('[data-route]').count()==3
    report['checks'][route+'_car_not_first']=not await page.locator('#choices').is_visible()
+   boot=await page.evaluate('window.__RH_DEBUG.snapshot()');report['checks'][route+'_gates_framed']=all(0<x['screen'][0]<boot['canvasCss'][0] and 0<x['screen'][1]<boot['canvasCss'][1] for x in boot['gateScreens'])
    await page.screenshot(path=str(ART/f'{name}-{route}-hub.png'))
    await page.click('[data-route='+route+']');await page.click('[data-car=cargo]');await page.click('#start')
    # Step the real simulation deterministically to the end of the turntable animation.
@@ -24,7 +26,35 @@ async def run(p,name):
    report['checks'][route+'_target_angle']=abs(s['turntableAngle']-angle)<.015
    report['checks'][route+'_real_meshes']=s['renderer']=='WebGL2' and s['triangles']>2000
    await page.screenshot(path=str(ART/f'{name}-{route}-turntable.png'))
+
+   # Same meshes move continuously under the real simulation; no route-phase scene swap.
+   await page.evaluate('(()=>{const a=window.__RH_TEST,g=a.game();g.pause(false);a.forcePlayer(5.8);a.forceRoute(.24);g.setSpeed("CRUISE");g.pause(true);a.view().render(0)})()')
+   before=await page.evaluate('window.__RH_DEBUG.snapshot()')
+   image1=await page.locator('canvas').screenshot(path=str(ART/f'{name}-{route}-ring-before.png'))
+   await page.evaluate('(()=>{const a=window.__RH_TEST,g=a.game();g.pause(false);a.step(2);g.pause(true);a.view().render(0)})()')
+   after=await page.evaluate('window.__RH_DEBUG.snapshot()')
+   image2=await page.locator('canvas').screenshot(path=str(ART/f'{name}-{route}-ring-after.png'))
+   diff=ImageChops.difference(Image.open(io.BytesIO(image1)).convert('RGB'),Image.open(io.BytesIO(image2)).convert('RGB'))
+   changed=sum(1 for px in diff.getdata() if sum(px)>60)
+   lm1=before['landmarks'][1];lm2=after['landmarks'][1]
+   report['checks'][route+'_landmark_geometry_moves']=lm1['id']==lm2['id'] and lm2['world'][0]>lm1['world'][0]+10
+   report['checks'][route+'_landmark_projected_movement']=abs(lm2['screen'][0]-lm1['screen'][0])>10
+   report['checks'][route+'_continuous_world_pixel_diff']=changed>1000
+   report['checks'][route+'_one_ring_and_lod']=after['loadedRouteWorlds']==1 and 0<after['routeSegmentsNear']<after['routeSegmentsVisible']<=after['routeSegmentsTotal']
+   report.setdefault('ringEvidence',[]).append({'route':route,'before':lm1,'after':lm2,'changedPixels':changed,'renderer':after})
+   # STOP is issued via the real global button; neither landmarks nor progress then move.
+   await page.evaluate('window.__RH_TEST.game().pause(false)');await page.click('#brake');await page.wait_for_timeout(800)
+   await page.evaluate('window.__RH_TEST.game().pause(true)')
+   stopped=await page.evaluate('window.__RH_DEBUG.snapshot()')
+   await page.evaluate('(()=>{const a=window.__RH_TEST,g=a.game();g.pause(false);a.step(1);g.pause(true)})()')
+   s2=await page.evaluate('window.__RH_DEBUG.snapshot()')
+   report['checks'][route+'_stop_world_still']=s2['routeT']==stopped['routeT'] and s2['landmarks']==stopped['landmarks'] and s2['speedMode']=='STOP'
+   await page.evaluate('window.__RH_TEST.game().pause(false)');await page.click('#interact');await page.click('[data-speed=FAST]')
+   await page.evaluate('window.__RH_TEST.game().pause(true)')
+   report['checks'][route+'_console_fast']=await page.evaluate('window.__RH_DEBUG.snapshot().speedMode==="FAST"')
    await page.close()
+  pictures=[Image.open(ART/f'{name}-{r}-ring-before.png').convert('RGB') for r in ['industrial','freight','tunnel']]
+  report['checks']['routes_visibly_differ']=all(sum(1 for px in ImageChops.difference(pictures[i],pictures[i+1]).getdata() if sum(px)>60)>3000 for i in range(2))
   report['checks']['no_page_errors']=not errors
  except Exception as e:report['exception']=str(e);report['checks']['completed_suite']=False
  finally:await browser.close()

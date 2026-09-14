@@ -1,4 +1,4 @@
-import {B,capFor,reserveFor,intervalFor} from './balance.js?v=11';
+import {B,V11,capFor,reserveFor,intervalFor} from './balance.js?v=11';
 // Admission control, not a hidden rubber-band damage system. Existing enemies are never deleted.
 export class Director {
   constructor(){this.clock=0;this.rest=0;this.faultUsed=false;this.fault=null;this.maxLoad=0;this.spawns=0;this.distressOffered=false;}
@@ -22,13 +22,13 @@ export class Director {
     const relief=this.rest>0 || g.engineState==='stalled';
     if(g.practice || relief){this.clock=0;return;}
     // A maintenance fault is advertised, finite, and reserved away from environmental hazards.
-    const headroom=(.30-g.t)*100/B.boostScale;
+    const headroom=((V11.routes[g.route]?.crane?.[0]??V11.routes[g.route]?.tunnel?.[0]??1)-g.t)*V11.duration/V11.speeds.FAST.speed;
     if(g.round>=3 && g.phase==='yard' && !this.faultUsed && !this.fault && headroom>B.faultLead+B.faultTime+1 && g.cars[0].hp/g.cars[0].max>.5 && g.player.hp>40){
       this.faultUsed=true;this.fault={time:0,tick:0,active:false};
       g.tell('engine_fault_warning',{lead:B.faultLead});g.event='01 动力车冷却故障：3 秒后开始损伤，完成维修可提前止损。';
     }
-    if(!['yard','crane','tunnel'].includes(g.phase)){this.clock=0;return;}
-    this.clock+=dt;
+    if(g.elapsed<V11.turntableSeconds&&g.t===0){this.clock=0;return;}
+    this.clock+=dt*V11.speeds[g.speedMode].pressure;
     if(this.clock>=intervalFor(g.round) && this.canSpawn(g)){
       this.clock=0;const cargoCars=g.cars.filter(c=>c.type==='cargo').length;
       const type=g.round===1?'boarder':g.rand()<Math.min(.5,.28+.1*Math.max(0,cargoCars-1))?'thief':'boarder';

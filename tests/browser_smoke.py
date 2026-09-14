@@ -71,7 +71,7 @@ async def run_browser(p,name):
         checks['bullet_matches_model_socket']=all(abs(socket['actual'][k]-socket['bullet'][k])<.02 for k in ['x','y','z'])
         await page.evaluate('window.__RH_TEST.forceRoute(.32);window.__RH_TEST.forcePlayer(12,true)');await page.wait_for_timeout(100)
         await page.screenshot(path=str(ART/f'{name}-crane-warning.png'))
-        hazard=await page.evaluate("""() => {const a=window.__RH_TEST,g=a.game();a.forceRoute(.37);g.player.invul=0;g.player.x=g.craneX;a.step(.03);const hit=g.player.hp<100;a.forceRoute(.59);a.forcePlayer(12,true);g.player.invul=0;a.step(.03);return {hit,roof:g.player.roof};}""")
+        hazard=await page.evaluate("""() => {const a=window.__RH_TEST,g=a.game();a.forceRoute(.43);g.player.invul=0;g.player.x=g.craneX;a.step(.03);const hit=g.player.hp<100;g.route='tunnel';a.forceRoute(.39);a.forcePlayer(12,true);g.player.invul=0;a.step(.03);return {hit,roof:g.player.roof};}""")
         checks['crane_spatial_collision']=hazard['hit'];checks['tunnel_enforces_clearance']=not hazard['roof']
         await page.screenshot(path=str(ART/f'{name}-tunnel.png'))
         # Reset before rescue. Damage here is test-only, never a forced near-death in a normal run.

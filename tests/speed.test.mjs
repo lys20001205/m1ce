@@ -1,0 +1,12 @@
+import test from 'node:test';import assert from 'node:assert/strict';
+import {Game,car,DURATION} from '../src/sim.js';import {V11} from '../src/balance.js';
+const make=()=>{const g=new Game();g.chooseRoute('freight');g.chooseCar('cargo');g.start();g.elapsed=3;g.player.x=5.8;g.t=.1;g.phase='yard';return g;};
+const tick=(g,t)=>{for(let i=0;i<Math.round(t/.025);i++)g.step(.025);};
+const near=(a,b)=>assert(Math.abs(a-b)<1e-6,`${a} != ${b}`);
+test('STOP has zero progress and speed ratios integrate through the route owner',()=>{for(const mode of Object.keys(V11.speeds)){const g=make();assert(g.setSpeed(mode));const before=g.t;tick(g,1);near(g.t-before,V11.speeds[mode].speed/DURATION);}});
+test('STOP and SLOW generate more pressure than CRUISE using the director clock',()=>{const clocks={};for(const mode of Object.keys(V11.speeds)){const g=make();g.setSpeed(mode);tick(g,1);clocks[mode]=g.director.clock;}near(clocks.STOP,1.8);near(clocks.SLOW,1.35);near(clocks.CRUISE,1);near(clocks.FAST,.8);});
+test('emergency stop is available at the far end and on the roof, resuming requires Engine',()=>{const g=make();g.cars.push(car('workshop'));g.player.x=22;g.player.roof=true;assert(g.emergencyStop());assert.equal(g.speedMode,'STOP');assert(!g.setSpeed('CRUISE'));tick(g,1);assert.equal(g.speedMode,'STOP');g.player.x=5.8;assert(!g.setSpeed('SLOW'));g.player.roof=false;assert(g.setSpeed('SLOW'));});
+test('ordinary speed selection is unavailable from the wrong engine location',()=>{const g=make();g.player.x=.5;assert(!g.setSpeed('FAST'));g.player.x=5.8;assert(g.setSpeed('FAST'));});
+test('a single sustained setting persists after walking away, including STOP',()=>{const g=make();g.setSpeed('SLOW');g.player.x=14;tick(g,3);assert.equal(g.speedMode,'SLOW');g.emergencyStop();tick(g,3);assert.equal(g.speedMode,'STOP');});
+test('docking and the next route refill every operational battery source',()=>{const g=make();g.cars.push(car('battery'));g.boostCharge=2;g.cars[2].charge=5;g.finish();tick(g,4);g.more();assert.equal(g.batteryCharge,200);});
+test('turntable rotates without advancing the ring before departure',()=>{const g=new Game();g.chooseRoute('tunnel');g.chooseCar('battery');g.start();tick(g,2.9);assert.equal(g.t,0);assert(g.turntableAngle>0);tick(g,.2);assert(g.t>0);});
