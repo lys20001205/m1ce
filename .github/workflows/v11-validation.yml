@@ -32,6 +32,10 @@ jobs:
             python tools/v11_stage.py
             echo 'applied=true' >> "$GITHUB_OUTPUT"
           fi
+          if test -f tools/v11_followup.py; then
+            python tools/v11_followup.py
+            echo 'applied=true' >> "$GITHUB_OUTPUT"
+          fi
       - run: npm ci --ignore-scripts
       - name: Unit and syntax
         run: |
@@ -63,7 +67,7 @@ jobs:
           test "$GITHUB_REF" = 'refs/heads/roundhouse/v11'
           git config user.name 'ROUNDHOUSE validation'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git rm tools/v11_stage.py
+          git rm --ignore-unmatch tools/v11_stage.py tools/v11_followup.py
           git add src tests tools/build.mjs package.json package-lock.json index.html style.css docs
           git commit -m 'V11: persist validated engineering stage; no deployment'
           git push origin HEAD:refs/heads/roundhouse/v11
