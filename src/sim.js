@@ -15,10 +15,10 @@ const stats=()=>({clutchSaves:0,clutchRepairs:0,cargoSaved:0,cargoLost:0,critica
 export class Game {
   constructor({emit=()=>{},bank=0,seed=314159,practice=false}={}){
     this.emit=emit;this.seed=seed>>>0;this.initialSeed=this.seed;this.bank=bank;this.practice=practice;
-    this.round=1;this.money=1000;this.cars=[car('engine')];
+    this.round=1;this.scrap=0;this.meleeTier=1;this.rangedTier=0;this.money=1000;this.cars=[car('engine')];
     this.cargoCrates=[];this.depots=[];this.terminalDestroyed=false;
     this.route=null;this.previousRoute=null;this.hubStage='route';this.repeatPressure=0;this.turntableFrom=0;this.selectedCar=null;
-    this.player={x:V11.respawnX,y:FLOOR,z:.65,roof:false,layer:LAYER.INTERIOR,lifeState:LIFE.ALIVE,respawnRemaining:0,respawnAt:0,protection:0,hp:100,face:1,carry:false,swing:0,swingHit:false,cooldown:0,stun:0,invul:0};
+    this.player={x:V11.respawnX,y:FLOOR,z:.65,roof:false,layer:LAYER.INTERIOR,lifeState:LIFE.ALIVE,respawnRemaining:0,respawnAt:0,protection:0,deathReason:null,deathLayer:null,deathCount:0,hp:100,face:1,carry:false,swing:0,swingHit:false,cooldown:0,stun:0,invul:0};
     this.speedMode='CRUISE';this.consoleOpen=false;this.phase='dock';this.status='ready';this.t=0;this.elapsed=0;this.enemies=[];this.projectiles=[];this.effects=[];this.notices=[];this.nextId=1;
     this.craneHits=new Set();this.throttle=0;this.boostCharge=100;this.repCd=0;this.repairJob=null;this.repairHint='靠近设备，长按修理。';
     this.paused=false;this.settled=false;this.lastMuzzle=null;this.totalKills=0;this.creditsSpent=0;this.engineState='normal';this.rescue=null;this.rescueSerial=0;this.engineShield=0;
@@ -106,6 +106,7 @@ export class Game {
     if(!this.alive||this.status!=='running')return false;
     const p=this.player,onDepot=this.playerLayer===LAYER.DEPOT;
     this.dropDeathCargo(onDepot);this.cancelRepair('death');this.consoleOpen=false;this.armoryOpen=false;
+    p.deathReason=reason;p.deathLayer=this.playerLayer;p.deathCount++;
     p.hp=0;p.lifeState=LIFE.DEAD;p.respawnRemaining=V11.respawnSeconds;p.respawnAt=this.elapsed+V11.respawnSeconds;
     p.swing=0;p.protection=0;p.invul=0;
     if(reason==='train_lost'){this.tell('train_lost',{depot:p.depotId});this.event='TRAIN LOST';}
@@ -117,7 +118,10 @@ export class Game {
     if(p.lifeState===LIFE.DEAD){
       if(this.terminalDestroyed){this.fail('engine_timeout');return;}
       p.respawnRemaining=Math.max(0,p.respawnAt-this.elapsed);
-      if(p.respawnRemaining<=1e-8){
+      // A rescue expiry in this simulation step wins over a simultaneous respawn.
+      // Player death never creates, resets or extends the engine rescue clock.
+      const engineExpires=this.engineState==='stalled'&&this.rescue&&this.rescue.remaining<=dt+1e-8;
+      if(p.respawnRemaining<=1e-8&&!engineExpires){
         p.lifeState=LIFE.RESPAWNING;this.setPlayerLayer(LAYER.INTERIOR);
         Object.assign(p,{x:V11.respawnX,hp:V11.playerMaxHP*V11.respawnFraction,carry:false,stun:0,cooldown:0,swing:0,invul:0,protection:V11.spawnProtection});
         p.lifeState=LIFE.PROTECTED;this.tell('respawn_complete',{x:p.x,hp:p.hp,layer:LAYER.INTERIOR,protection:p.protection});this.feedback('respawn',p.x,p.y+1);
@@ -322,8 +326,10 @@ export class Game {
   step(dt,input={}){
     dt=Number.isFinite(dt)?clamp(dt,0,.05):0;if(dt<=0||this.paused)return;
     if(this.status==='arriving'){this.arrivalElapsed+=dt;this.elapsed+=dt;this.lifeStep(dt);this.effectsStep(dt);if(this.arrivalElapsed+1e-8>=B.arrivalTime)this.completeArrival();return;}
+    // The four-second dock does not erase a remaining death countdown.
+    if(['complete','cashed'].includes(this.status)){this.elapsed+=dt;this.lifeStep(dt);this.effectsStep(dt);return;}
     if(this.status!=='running')return;
-    this.syncSystems();const p=this.player;this.elapsed+=dt;this.lifeStep(dt);this.effectsStep(dt);
+    this.syncSystems();const p=this.player;if(p.hp<=0&&this.alive)this.killPlayer('hp_zero');this.elapsed+=dt;this.lifeStep(dt);this.effectsStep(dt);
     if(['critical','stalled'].includes(this.engineState)||p.hp<=20)this.inc('criticalSeconds',dt);
     this.repCd=Math.max(0,this.repCd-dt);this.engineShield=Math.max(0,this.engineShield-dt);this.throttle=Math.max(0,this.throttle-dt);p.cooldown=Math.max(0,p.cooldown-dt);p.invul=Math.max(0,p.invul-dt);p.stun=Math.max(0,p.stun-dt);
     const dir=this.alive?clamp(Number(input.move)||0,-1,1):0;
@@ -356,7 +362,7 @@ export class Game {
     this.lastRound={...this.lap,reward,engineHP:this.cars[0].hp,playerHP:this.player.hp};this.tell('round_complete',{money:this.money,...this.lastRound});this.event='回站完成。现在可以放心兑现，也可以带着当前车况继续。';
   }
   more(){
-    if(this.status!=='complete'||this.practice)return false;
+    if(this.status!=='complete'||this.practice||!this.alive)return false;
     this.turntableFrom=this.routeAngle;this.previousRoute=this.route;this.route=null;this.hubStage='route';this.selectedCar=null;this.round++;this.t=0;this.speedMode='CRUISE';this.consoleOpen=false;this.phase='dock';this.status='ready';this.craneHits.clear();
     Object.assign(this.player,{hp:Math.min(100,this.player.hp+25),roof:false,layer:LAYER.INTERIOR,lifeState:LIFE.ALIVE,protection:0,respawnRemaining:0,z:.65,y:FLOOR,x:3,swing:0,carry:false,stun:0,invul:0,cooldown:0});
     this.speedMode='CRUISE';this.consoleOpen=false;this.throttle=0;this.boostCharge=V11.engineCharge;for(const c of this.cars)if(c.type==='battery')c.charge=100;
@@ -367,5 +373,5 @@ export class Game {
   fail(reason='engine_timeout'){if(this.status!=='running')return;this.cancelRepair('failure');if(this.player.lifeState===LIFE.DEAD)this.tell('respawn_cancel_engine_failure',{remaining:this.player.respawnRemaining});this.terminalDestroyed=true;this.player.lifeState=LIFE.FAILED;this.player.respawnRemaining=0;this.status='lost';this.failReason=reason;this.lostAmount=this.money;this.tell('run_failed',{lost:this.money,reason,lastDamage:this.lastDamageSource,stats:this.total});this.money=0;}
   risk(){const score=this.round+1+(1-this.cars[0].hp/this.cars[0].max)*4+(1-this.player.hp/100)*2+Math.max(0,this.cars.length-4)*.25;return score<3?'LOW':score<5?'MEDIUM':score<8?'HIGH':'EXTREME';}
   hazardInfo(){const c=V11.routes[this.route]||V11.routes.industrial;for(const kind of ['crane','tunnel']){const h=c[kind];if(h&&this.t>=h[0]&&this.t<h[1])return {kind,seconds:Math.max((kind==='crane'?B.craneLead:B.tunnelLead)-this.warningAge(kind),(h[1]-this.t)*DURATION/Math.max(.1,this.speed))};}return null;}
-  snapshot(){return{build:BUILD,playerLayer:this.playerLayer,playerLifeState:this.player.lifeState,respawnRemaining:this.player.respawnRemaining,spawnProtection:this.player.protection,terminalDestroyed:this.terminalDestroyed,cargoUsed:this.cargoUsed,cargoCapacity:this.cargoCapacity,cargoValue:this.cargoValue,heldCargo:this.heldCargo?{id:this.heldCargo.id,value:this.heldCargo.value}:null,route:this.route,speedMode:this.speedMode,routeProgress:this.t,batteryCharge:this.batteryCharge,batteryCapacity:this.batteryCapacity,hubStage:this.hubStage,repeatPressure:this.repeatPressure,turntableAngle:this.turntableAngle,seed:this.initialSeed,mode:this.practice?'practice':'run',round:this.round,phase:this.phase,status:this.status,running:this.status==='running',paused:this.paused,routeT:this.t,elapsed:this.elapsed,px:this.player.x,playerY:this.player.y,roof:this.player.roof,facing:this.player.face,playerHp:this.player.hp,engineHp:this.cars[0].hp,engineState:this.engineState,rescue:this.rescue?{...this.rescue}:null,repair:this.repairJob?{...this.repairJob}:null,cars:this.cars.map(c=>c.type),batteryState:this.batteryBand,enemyCount:this.enemies.length,projectileCount:this.projectiles.length,weapon:this.weapon,range:this.range,money:this.money,bank:this.bank,craneX:this.craneX,lastMuzzle:this.lastMuzzle,threat:this.director.snapshot(this),stats:{...this.total},lap:{...this.lap},hazard:this.hazardInfo(),risk:this.risk(),failReason:this.failReason,arrivalElapsed:this.arrivalElapsed};}
+  snapshot(){return{build:BUILD,scrap:this.scrap,meleeTier:this.meleeTier,rangedTier:this.rangedTier,deathReason:this.player.deathReason,deathLayer:this.player.deathLayer,deathCount:this.player.deathCount,playerLayer:this.playerLayer,playerLifeState:this.player.lifeState,respawnRemaining:this.player.respawnRemaining,spawnProtection:this.player.protection,terminalDestroyed:this.terminalDestroyed,cargoUsed:this.cargoUsed,cargoCapacity:this.cargoCapacity,cargoValue:this.cargoValue,heldCargo:this.heldCargo?{id:this.heldCargo.id,value:this.heldCargo.value}:null,route:this.route,speedMode:this.speedMode,routeProgress:this.t,batteryCharge:this.batteryCharge,batteryCapacity:this.batteryCapacity,hubStage:this.hubStage,repeatPressure:this.repeatPressure,turntableAngle:this.turntableAngle,seed:this.initialSeed,mode:this.practice?'practice':'run',round:this.round,phase:this.phase,status:this.status,running:this.status==='running',paused:this.paused,routeT:this.t,elapsed:this.elapsed,px:this.player.x,playerY:this.player.y,roof:this.player.roof,facing:this.player.face,playerHp:this.player.hp,engineHp:this.cars[0].hp,engineState:this.engineState,rescue:this.rescue?{...this.rescue}:null,repair:this.repairJob?{...this.repairJob}:null,cars:this.cars.map(c=>c.type),batteryState:this.batteryBand,enemyCount:this.enemies.length,projectileCount:this.projectiles.length,weapon:this.weapon,range:this.range,money:this.money,bank:this.bank,craneX:this.craneX,lastMuzzle:this.lastMuzzle,threat:this.director.snapshot(this),stats:{...this.total},lap:{...this.lap},hazard:this.hazardInfo(),risk:this.risk(),failReason:this.failReason,arrivalElapsed:this.arrivalElapsed};}
 }

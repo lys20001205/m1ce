@@ -10,19 +10,19 @@ const active=()=>['running','arriving'].includes(game.status);
 function readBank(){try{const n=Number(localStorage.getItem('roundhouse_bank')||0);return Number.isFinite(n)&&n>=0?n:0;}catch{return 0;}}
 function seed(){const a=new Uint32Array(1);try{crypto.getRandomValues(a);return a[0];}catch{return Date.now()>>>0;}}
 function snapshot(){return{...game?.snapshot(),...(view?.loaded===3?view.snapshot():{modelsLoaded:0}),session:telemetry?.session,standalone:!!navigator.standalone||matchMedia('(display-mode: standalone)').matches,errors:telemetry?.errors||0};}
-function emit(type,data){telemetry?.log(type,data);audio.event(type);}
+function emit(type,data){if(type==='player_death')clearInput();telemetry?.log(type,data);audio.event(type);}
 telemetry=new Telemetry(snapshot);game=new Game({bank:readBank(),seed:seed(),emit});
 function clearInput(){input={move:0,attack:false,repair:false};pressed.clear();document.querySelectorAll('.active').forEach(e=>e.classList.remove('active'));}
 function fatal(error){clearInput();game.pause(true);audio.silence();frameError=true;$('modal').hidden=true;$('portrait').hidden=true;telemetry.log('runtime_error',{message:String(error?.message||error).slice(0,150)});$('fatal').hidden=false;$('fatal').textContent='3D 运行暂停：'+String(error?.message||error)+'\n日志已保留。请重新载入；此版本不会切回二维画面。';}
 function refreshInputs(){let move=0,attack=false,repair=false;for(const key of pressed.values()){if(key==='L')move=-1;if(key==='R')move=1;if(key==='attack')attack=true;if(key==='fix')repair=true;}if(input.repair&&!repair)game.cancelRepair('released');input={move,attack,repair};}
 for(const id of ['L','R','attack','fix']){
   const el=$(id);
-  el.addEventListener('pointerdown',e=>{e.preventDefault();if(game.paused||game.status!=='running')return;el.setPointerCapture(e.pointerId);pressed.set(e.pointerId,id);el.classList.add('active');refreshInputs();telemetry.log('input_down',{key:id,x:game.player.x});});
+  el.addEventListener('pointerdown',e=>{e.preventDefault();if(game.paused||game.status!=='running'||!game.alive)return;el.setPointerCapture(e.pointerId);pressed.set(e.pointerId,id);el.classList.add('active');refreshInputs();telemetry.log('input_down',{key:id,x:game.player.x});});
   const release=e=>{e.preventDefault();pressed.delete(e.pointerId);if(![...pressed.values()].includes(id))el.classList.remove('active');refreshInputs();telemetry.log('input_up',{key:id,x:game.player.x});};
   el.addEventListener('pointerup',release);el.addEventListener('pointercancel',release);el.addEventListener('lostpointercapture',()=>{for(const [k,v] of pressed)if(v===id)pressed.delete(k);refreshInputs();el.classList.remove('active');});
 }
 const keys={a:'L',ArrowLeft:'L',d:'R',ArrowRight:'R',j:'attack',' ':'attack',e:'fix'};
-addEventListener('keydown',e=>{if(e.target?.tagName==='INPUT'||game.paused||game.status!=='running')return;const k=keys[e.key];if(k){e.preventDefault();pressed.set('key'+e.key,k);refreshInputs();}if(e.key==='w'&&!e.repeat)game.layer();if(e.key==='f'&&!e.repeat)game.interact();if(e.key==='b'&&!e.repeat)game.emergencyStop();});
+addEventListener('keydown',e=>{if(e.target?.tagName==='INPUT'||game.paused||game.status!=='running'||!game.alive)return;const k=keys[e.key];if(k){e.preventDefault();pressed.set('key'+e.key,k);refreshInputs();}if(e.key==='w'&&!e.repeat)game.layer();if(e.key==='f'&&!e.repeat)game.interact();if(e.key==='b'&&!e.repeat)game.emergencyStop();});
 addEventListener('keyup',e=>{pressed.delete('key'+e.key);refreshInputs();});
 for(const type of ['contextmenu','selectstart','dragstart'])$('app').addEventListener(type,e=>{if(!e.target.closest('pre'))e.preventDefault();});
 for(const mode of SPEED_MODES){const b=document.createElement('button');b.dataset.speed=mode;b.textContent=mode;b.onclick=()=>game.setSpeed(mode);$('speedChoices').append(b);}
@@ -90,7 +90,8 @@ $('game').addEventListener('webglcontextlost',e=>{e.preventDefault();fatal(new E
 function ui(){
   const engine=game.engineState,job=game.repairJob,warn=game.hazardInfo(),threat=game.director.snapshot(game),stolen=game.enemies.filter(e=>e.hp>0&&e.carry);
   $('cargoHud').textContent='CARGO '+game.cargoUsed+' / '+game.cargoCapacity;
-  $('lifePanel').hidden=game.alive||game.status!=='running';$('lifePanel').textContent=(game.event==='TRAIN LOST'?'TRAIN LOST':'PLAYER DOWN')+' · RESPAWN '+game.player.respawnRemaining.toFixed(1);
+  $('lifePanel').hidden=game.alive||!['running','arriving','complete'].includes(game.status);$('lifePanel').textContent=(game.player.deathReason==='train_lost'?'TRAIN LOST':'PLAYER DOWN')+' · RESPAWN '+game.player.respawnRemaining.toFixed(1);
+  $('more').disabled=!game.alive;
   $('round').textContent=String(game.round).padStart(2,'0');$('money').textContent=Math.round(game.money).toLocaleString();$('health').textContent=Math.ceil(game.cars[0].hp/game.cars[0].max*100)+'% / '+Math.ceil(game.player.hp);$('health').dataset.state=engine;
   $('weapon').textContent=game.weapon;$('attack').textContent=game.round>=3?'射击':'挥击';$('phase').textContent=game.practice?'抢修演练 / 不结算':game.status==='arriving'?'安全回站 / 转盘锁定':game.engineState==='stalled'?'动力停机 / 路线暂停':({dock:'机库准备',depart:'出库 / 转盘对轨',yard:'工业装卸区',crane:'机械臂',approach:'隧道预告',tunnel:'低净空隧道',return:'返回机库'}[game.phase]||game.phase);
   $('fill').style.width=game.t*100+'%';$('pause').textContent=game.paused?'继续':'暂停';
