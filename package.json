@@ -3,7 +3,7 @@
   "version": "10.0.0",
   "type": "module",
   "scripts": {
-    "test": "node --test tests/simulation.test.mjs tests/difficulty.test.mjs tests/contracts.test.mjs tests/hub.test.mjs tests/speed.test.mjs tests/depot.test.mjs tests/life.test.mjs tests/enemies.test.mjs tests/combat.test.mjs tests/train_build.test.mjs tests/audio.test.mjs tests/dev.test.mjs",
+    "test": "node --test tests/simulation.test.mjs tests/difficulty.test.mjs tests/contracts.test.mjs tests/hub.test.mjs tests/speed.test.mjs tests/depot.test.mjs tests/life.test.mjs tests/enemies.test.mjs tests/combat.test.mjs tests/train_build.test.mjs tests/audio.test.mjs tests/dev.test.mjs tests/prep.test.mjs",
     "build": "node tools/build.mjs"
   },
   "dependencies": {

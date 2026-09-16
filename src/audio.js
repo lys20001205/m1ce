@@ -14,7 +14,7 @@ const CUES=Object.freeze({
 const EVENTS=Object.freeze({enemy_hit:'enemy_hit',enemy_kill:'enemy_death',cargo_pickup:'cargo_pickup',cargo_drop:'cargo_drop',
   scrap_gain:'scrap_gain',repair_complete:'repair',repair_started:'repair',engine_stalled:'engine_warning',engine_critical:'engine_warning',
   engine_recovered:'engine_restart',critical_enter:'engine_warning',engine_fault_warning:'engine_warning',route_select:'route_select',depart:'turntable',
-  armory_purchase:'armory_buy',cashout:'cashout',one_more_round:'one_more_round',round_complete:'round_complete',
+  armory_purchase:'armory_buy',prep_purchase:'armory_buy',cashout:'cashout',one_more_round:'one_more_round',round_complete:'round_complete',
   player_death:'player_death',train_lost:'train_lost',respawn_complete:'respawn'});
 export class AudioCues {
   constructor({emit=()=>{},enabled=true,contextFactory=null,hidden=()=>typeof document!=='undefined'&&document.hidden}={}){
