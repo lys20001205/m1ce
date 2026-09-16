@@ -1,4 +1,4 @@
-name: Validate and deploy ROUNDHOUSE 3D
+name: Validate and deploy ROUNDHOUSE V11
 on:
   push:
     branches: [master, v10-recovery]
@@ -12,7 +12,7 @@ concurrency:
 jobs:
   validate:
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    timeout-minutes: 25
     env:
       LIBGL_ALWAYS_SOFTWARE: '1'
       WEBKIT_DISABLE_DMABUF_RENDERER: '1'
@@ -41,22 +41,24 @@ jobs:
         run: |
           pip install playwright==1.56.0 pillow==12.0.0
           python -m playwright install --with-deps chromium webkit
-      - name: Actual WebGL and V10 mobile regressions
-        run: xvfb-run -a python tests/browser_smoke.py
+      - name: Actual WebGL and V11 browser regressions
+        run: |
+          xvfb-run -a python tests/browser_smoke.py
+          for suite in tests/browser_v11*.py; do xvfb-run -a python "$suite"; done
       - name: Upload evidence even on failure
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: v10-validation
+          name: v11-validation
           path: artifacts/
-          retention-days: 7
+          retention-days: 14
       - name: Upload built site for review
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: v10-site
+          name: v11-site
           path: dist/
-          retention-days: 7
+          retention-days: 14
       - name: Stage Pages only after successful tests
         if: github.ref == 'refs/heads/master'
         uses: actions/upload-pages-artifact@v4
