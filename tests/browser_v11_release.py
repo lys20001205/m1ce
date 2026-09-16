@@ -58,9 +58,10 @@ async def run(p,name):
         await tap(page,'#interact','__RH_TEST.game().playerLayer==="DEPOT"');await tap(page,'#interact','!!__RH_TEST.game().heldCargo');await tap(page,'#interact','__RH_TEST.game().playerLayer==="ROOF"');await tap(page,'#interact','__RH_TEST.game().cars[1].cargo===1')
         report['checks']['e2e_depot_load']=await page.evaluate('__RH_TEST.game().cargoValue===450&&__RH_TEST.game().cargoUsed===1')
 
-        # Second SLOW boarding: stay on the moving platform until TRAIN LOST occurs naturally.
+        # Second SLOW boarding: one real boarding input, then no extra interaction. The platform must carry the player away until production TRAIN LOST fires naturally.
         await page.evaluate('(()=>{const a=__RH_TEST,g=a.game();g.pause(true);a.forceRoute(.26);a.forcePlayer(5.8);g.pause(false);g.setSpeed("SLOW");g.pause(true);a.forcePlayer(12.45,true);g.pause(false)})()')
-        await tap(page,'#interact','__RH_TEST.game().playerLayer==="DEPOT"');await tap(page,'#interact','!!__RH_TEST.game().heldCargo')
+        await tap(page,'#interact','__RH_TEST.game().playerLayer==="DEPOT"')
+        report['checks']['e2e_slow_depot_board']=await page.evaluate('__RH_TEST.game().playerLayer==="DEPOT"&&__RH_TEST.game().speedMode==="SLOW"')
         await page.evaluate('(()=>{const a=__RH_TEST,g=a.game();for(let i=0;i<520&&g.alive;i++)a.step(.025);})()')
         lost=await page.evaluate('__RH_DEBUG.snapshot()');report['checks']['e2e_train_lost']=lost['playerLifeState']=='DEAD_WAITING_RESPAWN' and lost['deathReason']=='train_lost' and lost['heldCargo'] is None
         await page.evaluate('__RH_TEST.step(5.05)');respawn=await page.evaluate('__RH_DEBUG.snapshot()');report['checks']['e2e_respawn']=respawn['playerLayer']=='INTERIOR' and respawn['playerHp']==60 and respawn['playerLifeState']=='ALIVE_PROTECTED'
