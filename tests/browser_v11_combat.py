@@ -30,6 +30,9 @@ async def run(p,name):
         report['checks']['ranged_initially_locked']=await page.locator('[data-armory=ranged]').is_disabled()
         start=await page.evaluate('__RH_TEST.game().t');await page.wait_for_timeout(150)
         report['checks']['armory_world_not_paused']=await page.evaluate(f'!__RH_TEST.game().paused&&__RH_TEST.game().t>{start}')
+        # This case validates the live Armory, not Director combat. After proving world time advances,
+        # suppress unrelated admissions so a random Boarder cannot close the shop mid-purchase.
+        await page.evaluate('(()=>{const g=__RH_TEST.game();g.enemies=[];g.director.rest=999})()')
         report['models']=[]
         for slot,weapon in [('melee','knife'),('melee','axe'),('ranged','handgun'),('ranged','smg'),('ranged','rifle')]:
             await page.locator('[data-armory='+slot+']').tap()
