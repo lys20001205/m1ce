@@ -5,16 +5,19 @@ from playwright.async_api import async_playwright
 ART=Path('artifacts');ART.mkdir(exist_ok=True)
 
 async def tap_interact(page, predicate):
-    """Use the same touch path as the mobile UI and wait for the live state transition.
+    """Use the same touch path as the mobile UI and freeze immediately after success.
 
     WebKit can occasionally drop a synthetic mouse click on touch-mode pages while the
     viewport is settling. A real tap plus one bounded retry keeps this a rendered-input
-    test instead of bypassing the button handler through the gameplay API.
+    test instead of bypassing the button handler through the gameplay API. Freezing as
+    soon as the state transition is observed prevents wall-clock differences between
+    browsers from admitting unrelated combat while this Depot-only flow is inspected.
     """
     for _ in range(2):
         await page.locator('#interact').tap()
         try:
-            await page.wait_for_function(predicate, timeout=750)
+            await page.wait_for_function(predicate, timeout=1500)
+            await page.evaluate('__RH_TEST.game().pause(true)')
             return True
         except Exception:
             pass
@@ -40,12 +43,11 @@ async def run(p,name):
         await page.screenshot(path=str(ART/f'{name}-depot-enter.png'))
         await page.evaluate('__RH_TEST.game().pause(false)')
         picked=await tap_interact(page,'!!__RH_TEST.game().heldCargo')
-        await page.evaluate('__RH_TEST.game().pause(true)')
         report['checks']['pickup_has_identity']=picked and await page.evaluate('!!__RH_TEST.game().heldCargo')
         await page.evaluate('__RH_TEST.game().pause(false)')
         exited=await tap_interact(page,'__RH_TEST.game().playerLayer==="ROOF"')
+        if exited: await page.evaluate('__RH_TEST.game().pause(false)')
         loaded=await tap_interact(page,'__RH_TEST.game().cars[1].cargo===1&&!__RH_TEST.game().player.carry') if exited else False
-        await page.evaluate('__RH_TEST.game().pause(true)')
         report['checks']['bridge_and_roof_loading']=loaded and await page.evaluate('(()=>{const g=__RH_TEST.game();return g.playerLayer==="ROOF"&&g.cars[1].cargo===1&&g.cargoValue===450&&!g.player.carry})()')
         await page.screenshot(path=str(ART/f'{name}-depot-loaded.png'))
         await page.evaluate('(()=>{const a=__RH_TEST,g=a.game();g.pause(false);a.forcePlayer(5.8);g.setSpeed("SLOW");a.forcePlayer(12.45,true);g.interact();a.step(3/5.1,{move:-1});g.interact();g.pause(true)})()')
