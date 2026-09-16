@@ -67,8 +67,9 @@ async def run(p,name):
         await page.evaluate('__RH_TEST.step(5.05)');respawn=await page.evaluate('__RH_DEBUG.snapshot()');report['checks']['e2e_respawn']=respawn['playerLayer']=='INTERIOR' and respawn['playerHp']==60 and respawn['playerLifeState']=='ALIVE_PROTECTED'
 
         # Five actual melee inputs against one-hit fixtures earn the ten Scrap needed for Knife.
+        # Respawn preserves facing, so explicitly face each right-side fixture before the real attack input.
         for i in range(5):
-            await page.evaluate('(()=>{const a=__RH_TEST,g=a.game();g.enemies=[];g.player.cooldown=0;g.player.stun=0;g.pause(false);a.forcePlayer(3);const e=g.spawn("boarder",3.8,false);e.hp=1;})()')
+            await page.evaluate('(()=>{const a=__RH_TEST,g=a.game();g.enemies=[];g.player.cooldown=0;g.player.stun=0;g.player.face=1;g.pause(false);a.forcePlayer(3);const e=g.spawn("boarder",3.8,false);e.hp=1;})()')
             await page.keyboard.down('KeyJ');await wait_state(page,'__RH_TEST.input().attack===true');await page.evaluate('__RH_TEST.step(.22,__RH_TEST.input())');await page.keyboard.up('KeyJ')
         scrap=await page.evaluate('__RH_DEBUG.snapshot().scrap');report['checks']['e2e_scrap_from_kills']=scrap>=10
         await page.evaluate('__RH_TEST.game().enemies=[];__RH_TEST.forcePlayer(1.7)');await tap(page,'#interact','__RH_TEST.game().armoryOpen===true');await page.locator('[data-armory=melee]').tap();await wait_state(page,'__RH_DEBUG.snapshot().meleeWeapon==="knife"')
