@@ -13,8 +13,8 @@ export function phaseAt(t,route='industrial'){const c=V11.routes[route]||V11.rou
 export const LABELS={dock:'机库 / 准备',depart:'转盘对轨 / 出库',yard:'工业装卸区',crane:'机械臂区域',approach:'隧道预告',tunnel:'低净空隧道',return:'回库',complete:'回站完成',lost:'列车失守',cashed:'收益入库'};
 const stats=()=>({clutchSaves:0,clutchRepairs:0,cargoSaved:0,cargoLost:0,criticalSeconds:0,repairs:0,kills:0,hazardHits:0});
 export class Game {
-  constructor({emit=()=>{},bank=0,seed=314159,practice=false}={}){
-    this.emit=emit;this.seed=seed>>>0;this.initialSeed=this.seed;this.bank=bank;this.practice=practice;
+  constructor({emit=()=>{},bank=0,seed=314159,practice=false,dev=false}={}){
+    this.dev=!!dev;this.timeScale=1;this.emit=emit;this.seed=seed>>>0;this.initialSeed=this.seed;this.bank=bank;this.practice=practice;
     this.armoryOpen=false;this.stopRewardRegion=null;this.rewardEncounters=new Map();this.round=1;this.scrap=0;this.meleeTier=1;this.rangedTier=0;this.money=1000;this.cars=[car('engine')];
     this.cargoCrates=[];this.depots=[];this.terminalDestroyed=false;
     this.route=null;this.previousRoute=null;this.hubStage='route';this.repeatPressure=0;this.turntableFrom=0;this.selectedCar=null;
@@ -25,6 +25,54 @@ export class Game {
     this.director=new Director();this.lap=stats();this.total=stats();this.warnings={};this.segmentHits={crane:0,tunnel:0};this.clutchRepairAwarded=false;
     this.lowPlayerBand='normal';this.batteryBand='absent';this.arrivalElapsed=0;this.lastRound=null;this.failReason=null;this.lastDamageSource=null;
     this.event='从机库出发。修理需站在设备附近持续操作；成功后再决定是否继续。';
+  }
+  // Explicit DEV-only commands. No normal URL has a mutable reference or access to this gate.
+  devCommand(action,value){
+    if(!this.dev)return false;
+    const n=Number(value);
+    if(action==='start'){
+      if(this.status==='running'){this.pause(false);return true;}
+      if(this.status!=='ready')return false;
+      if(this.hubStage==='route')this.chooseRoute('industrial');
+      if(this.hubStage==='car')this.chooseCar(ROUTES[this.route].recommended);
+      return this.start();
+    }
+    if(action==='time'){if(![1,2,4].includes(n))return false;this.timeScale=n;}
+    else if(action==='round'){if(!Number.isInteger(n)||n<1||n>8)return false;this.round=n;}
+    else if(action==='route'){
+      if(!ROUTES[value]||!['ready','running'].includes(this.status))return false;
+      if(this.status==='ready'){this.hubStage='route';this.chooseRoute(value);}
+      else{this.route=value;this.prepareDepots();this.t=0;this.phase=phaseAt(0,value);this.elapsed=Math.max(3,this.elapsed);this.director=new Director();this.warnings={};this.craneHits.clear();this.tell('route_select',{route:value});}
+    }
+    else if(action==='jump'){
+      if(this.status!=='running')return false;const c=V11.routes[this.route];
+      const marker={depot:c.depots[0],crane:c.crane?.[0],tunnel:c.tunnel?.[0],return:.98}[value];if(marker===undefined)return false;
+      if(this.heldCargo&&this.playerLayer===LAYER.DEPOT)this.loseCargo(this.heldCargo,'dev_jump');
+      this.setPlayerLayer(LAYER.INTERIOR);this.player.x=V11.consoleX;this.t=marker;this.elapsed=Math.max(3,this.elapsed);this.phase=phaseAt(marker,this.route);this.warnings={};this.craneHits.clear();
+    }
+    else if(action==='car'){if(!['cargo','battery','workshop'].includes(value)||this.cars.length>=MAX_CARS)return false;this.cars.push(car(value));this.syncSystems();}
+    else if(action==='cargo'){
+      if(value==='fill'){
+        const amount=V11.routes[this.route||'industrial'].value;
+        for(let i=0;i<this.cars.length;i++){if(this.cars[i].type!=='cargo')continue;let count=this.cargoCrates.filter(c=>c.carIndex===i&&['stored','thief'].includes(c.location)).length;
+          while(count<V11.cargoSlots&&this.cargoUsed<this.cargoCapacity){this.createCargo(amount,'stored',{carIndex:i,secured:true});this.money+=amount;count++;}}
+      }else if(value==='clear'){for(const c of this.cargoCrates)if(['stored','player','floor','thief'].includes(c.location))this.loseCargo(c,'dev_clear');for(const e of this.enemies)e.carry=false;this.player.carry=false;this.syncCargo();}else return false;
+    }
+    else if(action==='scrap')this.scrap+=100;
+    else if(action==='tier'){this.meleeTier=3;this.tell('combat_tier_unlock',{tier:3});this.tell('ranged_unlock',{weapon:'handgun'});}
+    else if(action==='spawn'){if(!ENEMIES[value]||!this.spawn(value))return false;}
+    else if(action==='speed'){
+      if(!V11.speeds[value]||this.status!=='running'||this.engineState==='stalled')return false;
+      const from=this.speedMode;this.speedMode=value;this.rewardEncounter();this.tell('speed_change',{from,to:value,reason:'dev_console_override'});
+    }
+    else if(action==='engine'){
+      if(this.status!=='running'||!['20','stall'].includes(String(value)))return false;
+      this.engineShield=0;this.cars[0].hp=value==='stall'?0:this.cars[0].max*.2;this.syncSystems();
+    }
+    else if(action==='kill'){if(!this.killPlayer())return false;}
+    else if(action==='trainLost'){if(this.status!=='running'||!this.alive)return false;this.setPlayerLayer(LAYER.DEPOT);this.player.depotId=this.depots[0]?.id;this.killPlayer('train_lost');}
+    else return false;
+    this.tell('dev_action',{action,value:typeof value==='string'||typeof value==='number'?value:null});return true;
   }
   get alive(){return isAlive(this.player.lifeState);}
   get playerLayer(){return this.player.layer===LAYER.DEPOT?LAYER.DEPOT:this.player.roof?LAYER.ROOF:LAYER.INTERIOR;}
@@ -164,7 +212,7 @@ export class Game {
     if(this.batteryCharge<1e-8){this.boostCharge=0;this.speedMode='CRUISE';this.tell('speed_change',{from:'FAST',to:'CRUISE',reason:'battery_empty'});this.event='BATTERY EMPTY · AUTO CRUISE';}
   }
   rand(){this.seed=(Math.imul(1664525,this.seed)+1013904223)>>>0;return this.seed/4294967296;}
-  tell(type,data={}){this.emit(type,{round:this.round,phase:this.phase,mode:this.practice?'practice':'run',time:this.elapsed,...data});}
+  tell(type,data={}){this.emit(type,{round:this.round,phase:this.phase,mode:this.practice?'practice':'run',time:this.elapsed,...data,dev:this.dev});}
   inc(key,value=1){this.lap[key]+=value;this.total[key]+=value;}
   feedback(type,x,y,text=''){const life=['restart','repair','scrap','buy'].includes(type)?V11.combat.popLifetime:.45;this.effects.push({id:this.nextId++,type,x,y,text,life,max:life});if(this.effects.length>48)this.effects.shift();}
   notice(title,detail='',kind='success'){const n={id:this.nextId++,title,detail,kind,life:3.2};this.notices.push(n);if(this.notices.length>4)this.notices.shift();this.tell('success_feedback',{title,detail});}
@@ -504,5 +552,5 @@ export class Game {
   fail(reason='engine_timeout'){if(this.status!=='running')return;this.cancelRepair('failure');if(this.player.lifeState===LIFE.DEAD)this.tell('respawn_cancel_engine_failure',{remaining:this.player.respawnRemaining});this.terminalDestroyed=true;this.player.lifeState=LIFE.FAILED;this.player.respawnRemaining=0;this.status='lost';this.failReason=reason;this.lostAmount=this.money;this.tell('run_failed',{lost:this.money,reason,lastDamage:this.lastDamageSource,stats:this.total});this.money=0;this.resetCombat();}
   risk(){const score=this.round+1+(1-this.cars[0].hp/this.cars[0].max)*4+(1-this.player.hp/100)*2+Math.max(0,this.cars.length-4)*.25;return score<3?'LOW':score<5?'MEDIUM':score<8?'HIGH':'EXTREME';}
   hazardInfo(){const c=V11.routes[this.route]||V11.routes.industrial;for(const kind of ['crane','tunnel']){const h=c[kind];if(h&&this.t>=h[0]&&this.t<h[1])return {kind,seconds:Math.max((kind==='crane'?B.craneLead:B.tunnelLead)-this.warningAge(kind),(h[1]-this.t)*DURATION/Math.max(.1,this.speed))};}return null;}
-  snapshot(){return{build:BUILD,repairSpeed:this.repairSpeed,batterySupply:this.batterySupply,combatTier:this.combatTier,meleeWeapon:this.melee.id,rangedWeapon:this.ranged?.id||null,armoryOpen:this.armoryOpen,armoryOffers:{melee:this.armoryOffer('melee'),ranged:this.armoryOffer('ranged')},rewardEncounters:Object.fromEntries(this.rewardEncounters),scrap:this.scrap,meleeTier:this.meleeTier,rangedTier:this.rangedTier,deathReason:this.player.deathReason,deathLayer:this.player.deathLayer,deathCount:this.player.deathCount,playerLayer:this.playerLayer,playerLifeState:this.player.lifeState,respawnRemaining:this.player.respawnRemaining,spawnProtection:this.player.protection,terminalDestroyed:this.terminalDestroyed,cargoUsed:this.cargoUsed,cargoCapacity:this.cargoCapacity,cargoValue:this.cargoValue,heldCargo:this.heldCargo?{id:this.heldCargo.id,value:this.heldCargo.value}:null,route:this.route,speedMode:this.speedMode,routeProgress:this.t,batteryCharge:this.batteryCharge,batteryCapacity:this.batteryCapacity,hubStage:this.hubStage,repeatPressure:this.repeatPressure,turntableAngle:this.turntableAngle,seed:this.initialSeed,mode:this.practice?'practice':'run',round:this.round,phase:this.phase,status:this.status,running:this.status==='running',paused:this.paused,routeT:this.t,elapsed:this.elapsed,px:this.player.x,playerY:this.player.y,roof:this.player.roof,facing:this.player.face,playerHp:this.player.hp,engineHp:this.cars[0].hp,engineState:this.engineState,rescue:this.rescue?{...this.rescue}:null,repair:this.repairJob?{...this.repairJob}:null,cars:this.cars.map(c=>c.type),batteryState:this.batteryBand,enemyCount:this.enemies.length,enemyStates:this.enemies.map(e=>({id:e.id,type:e.type,state:e.state,targetKind:e.targetKind,targetCar:e.targetCar,wind:e.wind,hp:e.hp,x:e.x,y:e.y,roof:e.roof})),projectileCount:this.projectiles.length,weapon:this.weapon,range:this.range,money:this.money,bank:this.bank,craneX:this.craneX,lastMuzzle:this.lastMuzzle,threat:this.director.snapshot(this),stats:{...this.total},lap:{...this.lap},hazard:this.hazardInfo(),risk:this.risk(),failReason:this.failReason,arrivalElapsed:this.arrivalElapsed};}
+  snapshot(){return{build:BUILD,dev:this.dev,timeScale:this.timeScale,repairSpeed:this.repairSpeed,batterySupply:this.batterySupply,combatTier:this.combatTier,meleeWeapon:this.melee.id,rangedWeapon:this.ranged?.id||null,armoryOpen:this.armoryOpen,armoryOffers:{melee:this.armoryOffer('melee'),ranged:this.armoryOffer('ranged')},rewardEncounters:Object.fromEntries(this.rewardEncounters),scrap:this.scrap,meleeTier:this.meleeTier,rangedTier:this.rangedTier,deathReason:this.player.deathReason,deathLayer:this.player.deathLayer,deathCount:this.player.deathCount,playerLayer:this.playerLayer,playerLifeState:this.player.lifeState,respawnRemaining:this.player.respawnRemaining,spawnProtection:this.player.protection,terminalDestroyed:this.terminalDestroyed,cargoUsed:this.cargoUsed,cargoCapacity:this.cargoCapacity,cargoValue:this.cargoValue,heldCargo:this.heldCargo?{id:this.heldCargo.id,value:this.heldCargo.value}:null,route:this.route,speedMode:this.speedMode,routeProgress:this.t,batteryCharge:this.batteryCharge,batteryCapacity:this.batteryCapacity,hubStage:this.hubStage,repeatPressure:this.repeatPressure,turntableAngle:this.turntableAngle,seed:this.initialSeed,mode:this.practice?'practice':'run',round:this.round,phase:this.phase,status:this.status,running:this.status==='running',paused:this.paused,routeT:this.t,elapsed:this.elapsed,px:this.player.x,playerY:this.player.y,roof:this.player.roof,facing:this.player.face,playerHp:this.player.hp,engineHp:this.cars[0].hp,engineState:this.engineState,rescue:this.rescue?{...this.rescue}:null,repair:this.repairJob?{...this.repairJob}:null,cars:this.cars.map(c=>c.type),batteryState:this.batteryBand,enemyCount:this.enemies.length,enemyStates:this.enemies.map(e=>({id:e.id,type:e.type,state:e.state,targetKind:e.targetKind,targetCar:e.targetCar,wind:e.wind,hp:e.hp,x:e.x,y:e.y,roof:e.roof})),projectileCount:this.projectiles.length,weapon:this.weapon,range:this.range,money:this.money,bank:this.bank,craneX:this.craneX,lastMuzzle:this.lastMuzzle,threat:this.director.snapshot(this),stats:{...this.total},lap:{...this.lap},hazard:this.hazardInfo(),risk:this.risk(),failReason:this.failReason,arrivalElapsed:this.arrivalElapsed};}
 }

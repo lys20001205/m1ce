@@ -1,18 +1,22 @@
 import {Game,BUILD,B,DEFS,LENGTH,FLOOR,ROOF,phaseAt,clamp,stationX} from './sim.js?v=11';
 import {View} from './view.js?v=11';
 import {Telemetry} from './telemetry.js?v=11';
+import {runtimeMode,SimulationClock} from './runtime.js';
+import {SaveStore} from './save.js';
+import {DevTools} from './devtools.js';
 import {AudioCues} from './audio.js?v=11';
 import {ROUTES,SPEED_MODES,INPUT_BINDINGS_SSOT} from './content.js';
 const $=id=>document.getElementById(id);
+const mode=runtimeMode(location.search),save=new SaveStore({mode}),clock=new SimulationClock();let devtools=null;
 let game,view,telemetry,input={move:0,attack:false,ranged:false,repair:false},last=0,lastStatus='',selected='battery',frameError=false,bankWritable=true;
 const pressed=new Map(),audio=new AudioCues({emit:(type,data)=>telemetry?.log(type,data)});
-try{audio.enabled=localStorage.getItem('roundhouse_sound')!=='no';}catch{}
+try{audio.enabled=save.storage.getItem('roundhouse_sound')!=='no';}catch{}
 const active=()=>['running','arriving'].includes(game.status);
-function readBank(){try{const n=Number(localStorage.getItem('roundhouse_bank')||0);return Number.isFinite(n)&&n>=0?n:0;}catch{return 0;}}
+function readBank(){return save.read().bank;}
 function seed(){const a=new Uint32Array(1);try{crypto.getRandomValues(a);return a[0];}catch{return Date.now()>>>0;}}
-function snapshot(){return{...game?.snapshot(),...(view?.loaded===3?view.snapshot():{modelsLoaded:0}),audio:audio.snapshot(),session:telemetry?.session,standalone:!!navigator.standalone||matchMedia('(display-mode: standalone)').matches,errors:telemetry?.errors||0};}
+function snapshot(){return{...game?.snapshot(),...(view?.loaded===3?view.snapshot():{modelsLoaded:0}),audio:audio.snapshot(),clock:clock.snapshot(),test:mode.test,session:telemetry?.session,standalone:!!navigator.standalone||matchMedia('(display-mode: standalone)').matches,errors:telemetry?.errors||0};}
 function emit(type,data){if(type==='player_death')clearInput();telemetry?.log(type,data);audio.event(type,data);}
-telemetry=new Telemetry(snapshot);game=new Game({bank:readBank(),seed:seed(),emit});
+telemetry=new Telemetry(snapshot,{...mode,storage:save.storage});game=new Game({bank:readBank(),seed:seed(),emit,dev:mode.dev});
 function clearInput(){input={move:0,attack:false,ranged:false,repair:false};pressed.clear();document.querySelectorAll('.active').forEach(e=>e.classList.remove('active'));}
 function fatal(error){clearInput();game.pause(true);audio.silence();frameError=true;$('modal').hidden=true;$('portrait').hidden=true;telemetry.log('runtime_error',{message:String(error?.message||error).slice(0,150)});$('fatal').hidden=false;$('fatal').textContent='3D 运行暂停：'+String(error?.message||error)+'\n日志已保留。请重新载入；此版本不会切回二维画面。';}
 const actions={climb:()=>game.layer(),interact:()=>game.interact(),brake:()=>game.emergencyStop()};
@@ -40,14 +44,14 @@ $('closeArmory').onclick=()=>game.closeArmory();
 for(const type of ['contextmenu','selectstart','dragstart'])$('app').addEventListener(type,e=>{if(!e.target.closest('pre'))e.preventDefault();});
 for(const mode of SPEED_MODES){const b=document.createElement('button');b.dataset.speed=mode;b.textContent=mode;b.onclick=()=>game.setSpeed(mode);$('speedChoices').append(b);}
 $('angle').onclick=()=>{if(!view)return;view.inspect=!view.inspect;$('angle').textContent=view.inspect?'侧视':'斜视';};
-$('sound').textContent=audio.enabled?'声音开':'静音';$('sound').onclick=()=>{const on=audio.toggle();$('sound').textContent=on?'声音开':'静音';try{localStorage.setItem('roundhouse_sound',on?'yes':'no');}catch{}};
-$('reduced').checked=matchMedia('(prefers-reduced-motion: reduce)').matches;try{$('reduced').checked=localStorage.getItem('roundhouse_reduced_motion')==='yes'||$('reduced').checked;}catch{}
-$('reduced').onchange=e=>{if(view)view.reducedMotion=e.target.checked;try{localStorage.setItem('roundhouse_reduced_motion',e.target.checked?'yes':'no');}catch{}};
+$('sound').textContent=audio.enabled?'声音开':'静音';$('sound').onclick=()=>{const on=audio.toggle();$('sound').textContent=on?'声音开':'静音';try{save.storage.setItem('roundhouse_sound',on?'yes':'no');}catch{}};
+$('reduced').checked=matchMedia('(prefers-reduced-motion: reduce)').matches;try{$('reduced').checked=save.storage.getItem('roundhouse_reduced_motion')==='yes'||$('reduced').checked;}catch{}
+$('reduced').onchange=e=>{if(view)view.reducedMotion=e.target.checked;try{save.storage.setItem('roundhouse_reduced_motion',e.target.checked?'yes':'no');}catch{}};
 $('pause').onclick=()=>{if(!active())return;clearInput();game.pause(!game.paused);if(game.paused)audio.silence();else audio.unlock();};
 $('telemetry').checked=telemetry.enabled;$('telemetry').onchange=e=>telemetry.consent(e.target.checked);
 $('start').onclick=()=>{audio.unlock('start');if(game.start()){$('modal').hidden=true;last=0;lastStatus='running';audio.active=true;}};
 function replaceGame(practice=false){
-  clearInput();game=new Game({bank:game.bank,seed:seed(),practice,emit});view.game=game;view.rebuildCars();view.cameraX=game.player.x;lastStatus='';last=0;$('modal').hidden=true;if(practice){game.chooseRoute('industrial');game.chooseCar('cargo');game.start();}else showHub();audio.active=true;audio.unlock();
+  clearInput();game=new Game({bank:game.bank,seed:seed(),practice,emit,dev:mode.dev});view.game=game;view.rebuildCars();view.cameraX=game.player.x;lastStatus='';last=0;$('modal').hidden=true;if(practice){game.chooseRoute('industrial');game.chooseCar('cargo');game.start();}else showHub();audio.active=true;audio.unlock();
   if(practice){game.phase='yard';game.t=.2;game.player.x=stationX(0);game.damageCar(0,game.cars[0].hp,'practice');game.event='抢修演练：你已站在控制柜旁，长按修理 3 秒。演练不结算、不写存款。';}
   view.render(0);ui();
 }
@@ -58,7 +62,7 @@ function choices(){
   for(const type of ['battery','workshop','cargo']){const b=document.createElement('button');b.textContent=DEFS[type].name;const small=document.createElement('small');small.textContent=descriptions[type];b.appendChild(small);b.className=type===selected?'selected':'';b.dataset.car=type;b.onclick=()=>{selected=type;if(game.chooseCar(type)){view.rebuildCars();showHub();}};root.appendChild(b);}
 }
 $('more').onclick=()=>{if(game.more()){clearInput();showHub();view.cameraX=game.player.x;view.render(0);last=0;lastStatus='ready';}};
-$('cash').onclick=()=>{if(game.cashout()){try{localStorage.setItem('roundhouse_bank',String(game.bank));bankWritable=true;}catch{bankWritable=false;}showEnd();}};
+$('cash').onclick=()=>{if(game.cashout()){bankWritable=save.write(game);showEnd();}};
 
 function showHub(){
   $('modal').hidden=false;$('brief').hidden=true;$('endTitle').textContent='ROUNDHOUSE';
@@ -126,17 +130,18 @@ function ui(){
   $('centerHint').hidden=!!job||!!notice;$('centerHint').textContent=game.status==='arriving'?'安全回站 · '+Math.max(0,B.arrivalTime-game.arrivalElapsed).toFixed(1)+'s':input.repair?game.repairHint:game.player.roof?'车顶移动 +25% · 提前留意净空':'近设备长按修理 · 黄梯切层';
   if(game.status!==lastStatus){lastStatus=game.status;if(['complete','lost','cashed','practice_complete'].includes(game.status))showEnd();if(game.status==='arriving')clearInput();}
 }
-function frame(ts){if(frameError)return;try{const raw=last?ts-last:0,dt=Math.min(.05,raw/1000);last=ts;view.recordFrame(raw);audio.update(game);game.step(dt,input);view.render(dt);ui();requestAnimationFrame(frame);}catch(e){fatal(e);}}
+function frame(ts){if(frameError)return;try{const raw=last?ts-last:0,dt=Math.min(.05,raw/1000);last=ts;view.recordFrame(raw);clock.advance(game,raw/1000,input);audio.update(game);view.render(dt);ui();devtools?.update(ts);requestAnimationFrame(frame);}catch(e){fatal(e);}}
 try{view=new View($('game'),game,(t,d)=>telemetry.log(t,d));view.reducedMotion=$('reduced').checked;await view.init();$('start').disabled=false;$('practice').disabled=false;$('start').textContent='从机库发车';showHub();$('event').textContent=game.event;resize();requestAnimationFrame(frame);}catch(e){fatal(e);}
 addEventListener('pageshow',()=>audio.restore('pageshow'));
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)audio.restore('visible');});
 for(const type of ['pointerdown','keydown'])addEventListener(type,()=>{if(audio.context&&audio.context.state!=='running')audio.unlock('recovery_gesture');},{capture:true});
+devtools=mode.dev?new DevTools({game:()=>game,audio,view:()=>view,clock,start:()=>{audio.unlock('dev_start');if(['lost','cashed','practice_complete'].includes(game.status))replaceGame(false);if(game.devCommand('start')){$('modal').hidden=true;lastStatus='';clock.reset();return true;}return false;},changed:()=>{clearInput();if(view.carCount!==game.cars.length)view.rebuildCars();if(game.status==='ready')showHub();ui();}}):null;
 window.__RH_DEBUG={snapshot,logs:()=>telemetry.events,renderer:()=>view.snapshot(),occlusion:()=>view.occlusion(),pixels:()=>view.pixels()};
 if(new URLSearchParams(location.search).has('test'))window.__RH_TEST={
-  game:()=>game,view:()=>view,audio:()=>audio,input:()=>({...input}),
+  game:()=>game,view:()=>view,audio:()=>audio,clock:()=>clock,save:()=>save,input:()=>({...input}),
   step:(seconds,controls={})=>{for(let left=seconds;left>1e-8;left-=.025)game.step(Math.min(.025,left),controls);view.render(.016);ui();},
   forceRoute:t=>{game.t=t;game.elapsed=Math.max(game.elapsed,3);game.phase=phaseAt(t,game.route);},
   forceCars:n=>{while(game.cars.length<Math.min(12,n)){const d=DEFS.cargo;game.cars.push({type:'cargo',hp:d.hp,max:d.hp,cargo:3});}view.rebuildCars();},
   forcePlayer:(x,roof=false)=>{game.player.x=clamp(x,.4,game.length-.4);game.player.roof=roof;game.player.y=roof?ROOF:FLOOR;game.player.layer=roof?'ROOF':'INTERIOR';game.player.z=.65;view.cameraX=game.player.x;view.render(.016);},
-  reset:()=>{clearInput();game=new Game({seed:314159,emit});view.game=game;view.rebuildCars();view.cameraX=3;lastStatus='';last=0;$('modal').hidden=true;game.chooseRoute('industrial');game.chooseCar('cargo');game.start();view.render(0);ui();return true;}
+  reset:()=>{clearInput();game=new Game({seed:314159,emit,dev:mode.dev});view.game=game;view.rebuildCars();view.cameraX=3;lastStatus='';last=0;$('modal').hidden=true;game.chooseRoute('industrial');game.chooseCar('cargo');game.start();view.render(0);ui();return true;}
 };
