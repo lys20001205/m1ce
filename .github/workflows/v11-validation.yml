@@ -10,11 +10,8 @@ concurrency:
   cancel-in-progress: true
 jobs:
   validate:
-    if: github.ref == 'refs/heads/roundhouse/v11'
-    permissions:
-      contents: write
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
     env:
       LIBGL_ALWAYS_SOFTWARE: '1'
       WEBKIT_DISABLE_DMABUF_RENDERER: '1'
@@ -24,54 +21,39 @@ jobs:
         with:
           node-version: '22'
           cache: npm
-      - name: Apply bounded engineering stage on work branch
-        id: stage
+      - name: Clean release source only
         run: |
+          test ! -e tools/v11_stage.py
+          test ! -e tools/v11_followup.py
           mkdir -p artifacts
-          if test -f tools/v11_stage.py; then
-            python tools/v11_stage.py
-            echo 'applied=true' >> "$GITHUB_OUTPUT"
-          fi
-          if test -f tools/v11_followup.py; then
-            python tools/v11_followup.py
-            echo 'applied=true' >> "$GITHUB_OUTPUT"
-          fi
+          git rev-parse HEAD > artifacts/commit.txt
       - run: npm ci --ignore-scripts
       - name: Unit and syntax
         run: |
-          set -o pipefail
+          set -euo pipefail
           for f in src/*.js; do node --check "$f"; done
           npm test | tee artifacts/unit.txt
       - run: npm run build
       - name: Model serialization
         run: |
-          set -o pipefail
+          set -euo pipefail
           node --test tests/model_roundtrip.test.mjs | tee artifacts/model-tests.txt
       - uses: actions/setup-python@v6
         with:
           python-version: '3.13'
-      - name: Browsers
+      - name: Browsers and deployment-guard self-test
         run: |
+          python tests/gate.test.py
+          python tests/pages_verify.test.py
           pip install playwright==1.56.0 pillow==12.0.0
           python -m playwright install --with-deps chromium webkit
-      - name: Actual browser regressions
-        run: xvfb-run -a python tests/browser_smoke.py
-      - name: Stage-specific browser gates
+      - name: Every actual browser gate
         run: |
-          if test -f tests/browser_v11.py; then
-            for suite in tests/browser_v11*.py; do xvfb-run -a python "$suite"; done
-          fi
-      - name: Persist validated engineering changes only to work branch
-        if: success() && steps.stage.outputs.applied == 'true'
-        run: |
-          test "$GITHUB_REF" = 'refs/heads/roundhouse/v11'
-          git config user.name 'ROUNDHOUSE validation'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git rm --ignore-unmatch tools/v11_stage.py tools/v11_followup.py
-          git add src tests tools/build.mjs package.json package-lock.json index.html style.css docs
-          git commit -m 'V11: persist validated engineering stage; no deployment'
-          git push origin HEAD:refs/heads/roundhouse/v11
-      - name: Capture source and exact validation provenance
+          set -euo pipefail
+          for suite in tests/browser_*.py; do xvfb-run -a python "$suite"; done
+      - name: Validation Success - exact commit and all evidence
+        run: python tools/check_release.py
+      - name: Capture validation provenance
         if: always()
         run: |
           mkdir -p artifacts

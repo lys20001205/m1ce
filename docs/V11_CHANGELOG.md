@@ -16,3 +16,6 @@ Release candidate scope is frozen. V11 keeps the validated V10 recovery, WebGL2,
 V11-L adds the frozen Final Snapshot / Telemetry contract plus a stitched browser journey covering Freight -> Depot -> TRAIN LOST -> Respawn -> Scrap -> Armory -> FAST -> Roundhouse -> Cash Out -> Prep Shop. Final regression also covers 812x332, 844x390 and 932x430 landscape layouts, portrait/landscape switching, lifecycle input clearing, 12-car framing, Chromium and WebKit.
 
 V11-M may update `master` only after the work branch passes once with the L migration and then passes again from the persisted source with no staging utility. GitHub Pages deploys only from the validated `master` workflow.
+
+## Release closure
+V11-M adds clean fail-closed CI, exact built-commit provenance, V11 PWA metadata, a compact privacy-filtered telemetry transport and strict isolated test entry. No gameplay tuning or frozen decision changes are introduced by release closure. Actual final pass counts and deployment state belong to the per-run `release-gate.json` and GitHub Actions results.

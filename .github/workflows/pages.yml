@@ -1,13 +1,12 @@
 name: Validate and deploy ROUNDHOUSE V11
 on:
   push:
-    branches: [master, v10-recovery]
-    paths-ignore: ['docs/**', '**.md', 'tools/pull_telemetry.py', '.github/workflows/telemetry.yml']
+    branches: [master]
   workflow_dispatch:
 permissions:
   contents: read
 concurrency:
-  group: roundhouse-${{ github.ref }}
+  group: roundhouse-pages
   cancel-in-progress: true
 jobs:
   validate:
@@ -22,55 +21,72 @@ jobs:
         with:
           node-version: '22'
           cache: npm
-      - run: npm ci --ignore-scripts
-      - name: Deterministic rules and syntax
+      - name: Clean release source only
         run: |
-          set -o pipefail
+          test ! -e tools/v11_stage.py
+          test ! -e tools/v11_followup.py
           mkdir -p artifacts
-          for f in src/*.js; do node --check "$f"; done
-          npm test | tee artifacts/rule-tests.txt
-      - run: npm run build
-      - name: Model serialization regression
+          git rev-parse HEAD > artifacts/commit.txt
+      - run: npm ci --ignore-scripts
+      - name: Unit and syntax
         run: |
-          set -o pipefail
+          set -euo pipefail
+          for f in src/*.js; do node --check "$f"; done
+          npm test | tee artifacts/unit.txt
+      - run: npm run build
+      - name: Model serialization
+        run: |
+          set -euo pipefail
           node --test tests/model_roundtrip.test.mjs | tee artifacts/model-tests.txt
       - uses: actions/setup-python@v6
         with:
           python-version: '3.13'
-      - name: Install fixed browser tests
+      - name: Browsers and deployment-guard self-test
         run: |
+          python tests/gate.test.py
+          python tests/pages_verify.test.py
           pip install playwright==1.56.0 pillow==12.0.0
           python -m playwright install --with-deps chromium webkit
-      - name: Actual WebGL and V11 browser regressions
+      - name: Every actual browser gate
         run: |
-          xvfb-run -a python tests/browser_smoke.py
-          for suite in tests/browser_v11*.py; do xvfb-run -a python "$suite"; done
-      - name: Upload evidence even on failure
+          set -euo pipefail
+          for suite in tests/browser_*.py; do xvfb-run -a python "$suite"; done
+      - name: Validation Success - exact commit and all evidence
+        run: python tools/check_release.py
+      - name: Capture validation provenance
         if: always()
-        uses: actions/upload-artifact@v4
+        run: |
+          mkdir -p artifacts
+          git rev-parse HEAD > artifacts/commit.txt
+          git diff --binary HEAD > artifacts/uncommitted.patch
+          tar --exclude=__pycache__ -cf artifacts/source.tar src tests tools docs .github package.json package-lock.json index.html style.css manifest.webmanifest README.md .gitignore ASSET_SOURCES.md
+          if test -d node_modules/three; then tar -czf artifacts/three-dependency.tar.gz node_modules/three; fi
+      - uses: actions/upload-artifact@v4
+        if: always()
         with:
           name: v11-validation
           path: artifacts/
           retention-days: 14
-      - name: Upload built site for review
+      - uses: actions/upload-artifact@v4
         if: always()
-        uses: actions/upload-artifact@v4
         with:
           name: v11-site
           path: dist/
           retention-days: 14
-      - name: Stage Pages only after successful tests
-        if: github.ref == 'refs/heads/master'
+      - name: Stage Pages only after Validation Success
+        if: success() && github.ref == 'refs/heads/master'
         uses: actions/upload-pages-artifact@v4
         with:
           path: dist/
   deploy:
-    if: github.ref == 'refs/heads/master'
+    if: success() && github.ref == 'refs/heads/master'
     needs: validate
     runs-on: ubuntu-latest
     permissions:
+      contents: read
       pages: write
       id-token: write
+    timeout-minutes: 10
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
@@ -78,3 +94,18 @@ jobs:
       - uses: actions/configure-pages@v5
       - id: deployment
         uses: actions/deploy-pages@v4
+      - uses: actions/checkout@v6
+      - uses: actions/download-artifact@v4
+        with:
+          name: v11-validation
+          path: proof/
+      - name: Verify the public commit and exact tested site bytes
+        env:
+          PAGES_URL: ${{ steps.deployment.outputs.page_url }}
+        run: python tools/verify_pages.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: v11-pages-verification
+          path: pages-verification.json
+          retention-days: 14
