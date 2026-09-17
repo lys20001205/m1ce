@@ -1,23 +1,25 @@
-# ROUNDHOUSE — V10 WebGL playtest
+# ROUNDHOUSE V11 — Train Route / Loot / Combat Progression
 
-A single-player 2.5D cutaway train prototype: real Three.js models, two movement layers, a depot/industrial/tunnel loop, cargo and opt-in telemetry. V10 focuses on rescue, feedback and fair failure, not new content volume.
+Single-player Three.js / WebGL2 browser prototype. A stable 2.5D cutaway train travels through three continuous ring worlds. No S&box migration, multiplayer, parallel enemy trains or permanent damage tree.
 
-Live: https://lys20001205.github.io/m1ce/?build=v10
+Play: https://lys20001205.github.io/m1ce/
 
-Phone: landscape, start from Safari or the home-screen app. Confirm `V10 / WEBGL 3D`. A labelled rescue practice mode is available; it never writes bank credits.
+DEV: https://lys20001205.github.io/m1ce/?dev=1
 
-- Hold left/right to move. Roof travel is faster, with clearance hazards.
-- At a yellow ladder, switch interior/roof.
-- Hold attack. Near a station, stand still and hold repair for a full channel.
-- At engine zero HP, use the displayed last-chance deadline to restart it.
-- At the depot, read condition and risk before continuing/cashing out.
-- Audio is optional. Logs upload only after explicit consent to the temporary public endpoint.
+## Play loop
+Choose Industrial, Freight or Tunnel **before** choosing a car. The Roundhouse turntable aligns with the selected gate. Move to the Engine Console to set STOP, SLOW, CRUISE or FAST. Emergency brake works from anywhere on the train; acceleration still requires the Engine. FAST drains charge.
 
-## Develop
+On STOP or SLOW, cross from the roof onto a Depot behind the cutaway. Each Cargo car has three slots. Load crates through a Cargo car roof hatch. STOP never departs on its own; SLOW can leave you behind. TRAIN LOST destroys carried cargo. An intact/recoverable Engine permits respawn after five simulation seconds, at 60% HP with two seconds of **player-only** protection. The Engine rescue clock does not pause during death.
 
-Node 22; `npm ci --ignore-scripts`; `npm test`; `npm run build`; `node --test tests/model_roundtrip.test.mjs`.
-Serve `dist` over HTTP. Do not preview `index.html` as a local iOS file.
-Browser checks: pinned Python Playwright and Pillow as in `.github/workflows/pages.yml`, then `xvfb-run -a python tests/browser_smoke.py`.
+Kills give run-only Scrap. Buy Knife and Axe at the live Engine Armory, then Handgun, SMG and Rifle. Scrap and equipment persist between rounds and ordinary deaths; Cash Out and failure reset them. Cargo value is separate and cashes into Bank. Prep Shop offers Reroll Tokens, an Emergency Repair Kit and Route Intel. Workshop and Battery cars change repair, fault-service, FAST and lighting behavior.
 
-Documentation: `docs/V10_CHANGELOG.md`, `docs/AUDIT_V9R1.md`, `docs/ASSET_LICENSES.md`.
-No S&box build or multiplayer implementation is included. Browser test success is not real iPhone or fun/balance acceptance.
+The desktop keyboard legend is generated from `INPUT_BINDINGS_SSOT`. Touch controls provide independent melee/ranged buttons. Bank and preferences persist locally; DEV and test URLs use separate storage. Use a landscape browser or add the online-first app to the home screen. Audio starts from a real gesture. Telemetry uploads require explicit consent; the channel is labelled public. Detailed renderer diagnostics and free-form errors stay local.
+
+## Development and validation
+Node 22. Run `npm ci --ignore-scripts`, `npm test`, `npm run build`, and `node --test tests/model_roundtrip.test.mjs`. Serve `dist` over HTTP; do not open the source HTML as a local file.
+
+Browser tooling is pinned in the workflows. Run every `tests/browser_*.py` suite with Chromium and WebKit, then `python tools/check_release.py`. The release gate rejects missing, false or skipped evidence and validates `build.json` against the tested commit. Source is never rewritten by release CI. The `master` workflow publishes only its own successfully validated site artifact.
+
+`?dev=1` exposes supported quick controls. `?test=1` exposes test fixtures in an isolated save namespace. Other query values do not expose mutable test controls. Frame acceleration affects simulation only, never audio pitch.
+
+See `docs/V11_CHANGELOG.md`, `docs/V11_RELEASE.md`, `docs/V11_MIGRATIONS.md` and `docs/ASSET_LICENSES.md`. Browser checks are not proof of fun, real-device performance or iPhone speaker output.
