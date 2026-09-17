@@ -66,13 +66,22 @@ async def run(p,name):
         lost=await page.evaluate('__RH_DEBUG.snapshot()');report['checks']['e2e_train_lost']=lost['playerLifeState']=='DEAD_WAITING_RESPAWN' and lost['deathReason']=='train_lost' and lost['heldCargo'] is None
         await page.evaluate('__RH_TEST.step(5.05)');respawn=await page.evaluate('__RH_DEBUG.snapshot()');report['checks']['e2e_respawn']=respawn['playerLayer']=='INTERIOR' and respawn['playerHp']==60 and respawn['playerLifeState']=='ALIVE_PROTECTED'
 
-        # Five actual melee inputs against one-hit fixtures earn the ten Scrap needed for Knife.
-        # Respawn preserves facing, so explicitly face each right-side fixture before the real attack input.
+        # Controlled encounter, real boarding / full-HP combat / rewards. No hit or reward shortcuts.
+        # Director rest isolates this encounter without pausing the world or replacing game methods.
+        await page.evaluate('(()=>{const g=__RH_TEST.game();g.enemies=[];g.director.rest=120;g.director.clock=0;})()')
+        report['combatKills']=[]
         for i in range(5):
-            await page.evaluate('(()=>{const a=__RH_TEST,g=a.game();g.enemies=[];g.player.cooldown=0;g.player.stun=0;g.player.face=1;g.pause(false);a.forcePlayer(3);const e=g.spawn("boarder",3.8,false);e.hp=1;})()')
-            await page.keyboard.down('KeyJ');await wait_state(page,'__RH_TEST.input().attack===true');await page.evaluate('__RH_TEST.step(.22,__RH_TEST.input())');await page.keyboard.up('KeyJ')
+            fixture=await page.evaluate('(()=>{const a=__RH_TEST,g=a.game();g.pause(false);a.forcePlayer(3);g.player.face=1;const e=g.spawn("boarder",3.8,false);if(!e)throw Error("release fixture admission failed");const result={id:e.id,hp:e.hp,boarding:e.climb,before:g.scrap,kills:g.totalKills};a.step(e.climb+.05);return result;})()')
+            await page.keyboard.down('KeyJ');await wait_state(page,'__RH_TEST.input().attack===true')
+            result=await page.evaluate('(fixture)=>{const a=__RH_TEST,g=a.game();a.step(2,a.input());return {dead:!g.enemies.some(e=>e.id===fixture.id&&e.hp>0),scrap:g.scrap,kills:g.totalKills};}',fixture)
+            await page.keyboard.up('KeyJ');await wait_state(page,'__RH_TEST.input().attack===false')
+            result['fixture']=fixture;report['combatKills'].append(result)
+            if not (result['dead'] and result['kills']==fixture['kills']+1 and result['scrap']==fixture['before']+2):
+                raise AssertionError('Boarded enemy must produce one kill and two Scrap: '+json.dumps(result))
+            # Finish the previous swing/cooldown naturally, without resetting combat state.
+            await page.evaluate('__RH_TEST.step(.6)')
         scrap=await page.evaluate('__RH_DEBUG.snapshot().scrap');report['checks']['e2e_scrap_from_kills']=scrap>=10
-        await page.evaluate('__RH_TEST.game().enemies=[];__RH_TEST.forcePlayer(1.7)');await tap(page,'#interact','__RH_TEST.game().armoryOpen===true');await page.locator('[data-armory=melee]').tap();await wait_state(page,'__RH_DEBUG.snapshot().meleeWeapon==="knife"')
+        await page.evaluate('__RH_TEST.forcePlayer(1.7)');await tap(page,'#interact','__RH_TEST.game().armoryOpen===true');await page.locator('[data-armory=melee]').tap();await wait_state(page,'__RH_DEBUG.snapshot().meleeWeapon==="knife"')
         report['checks']['e2e_armory_upgrade']=await page.evaluate('__RH_DEBUG.snapshot().meleeTier===2')
         await page.evaluate('__RH_TEST.forcePlayer(5.8)');await tap(page,'#interact');await page.locator('[data-speed=FAST]').tap();await wait_state(page,'__RH_DEBUG.snapshot().speedMode==="FAST"')
         report['checks']['e2e_fast']=await page.evaluate('__RH_DEBUG.snapshot().batteryCharge>0')

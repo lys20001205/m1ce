@@ -21,3 +21,17 @@ test('normal death and rounds preserve both weapons and Scrap; Cash Out and fail
 test('firing muzzle is a stable per-weapon local coordinate in both directions',()=>{const {g}=run();upgrades(g);for(let tier=1;tier<=3;tier++){assert(g.buyWeapon('ranged'));for(const face of [-1,1]){g.player.face=face;const m=g.muzzle();near(m.x,g.player.x+face*(V11.rig.armX+g.rangedStats.muzzle)*V11.rig.scale);near(m.y,g.player.y+V11.rig.armY*V11.rig.scale);near(m.z,.65+face*V11.rig.armZ*V11.rig.scale);}}});
 
 test('stop quota remains attached to the rail region after accelerating before the next spawn',()=>{const {g}=run();g.player.x=5.8;g.setSpeed('STOP');for(let i=0;i<6;i++)kill(g,'bruiser');g.setSpeed('CRUISE');kill(g,'bruiser');assert.equal(g.scrap,37);g.t=.201;kill(g,'bruiser');assert.equal(g.scrap,43);});
+
+
+test('boarding window rejects premature hits; natural full-health kills fund the first Armory purchase',()=>{
+  const {g,events}=run();g.t=.29;g.speedMode='SLOW';g.director.rest=120;g.player.x=3;g.player.face=1;
+  const early=g.spawn('boarder',3.8,false);assert(early);assert.equal(early.hp,V11.enemies.boarder.hp);
+  tick(g,.22,{attack:true});assert(early.climb>0);assert.equal(early.hp,V11.enemies.boarder.hp);assert.equal(g.scrap,0);
+  tick(g,.6);assert.equal(early.climb,0);tick(g,2,{attack:true});assert.equal(early.hp,0);assert.equal(g.scrap,2);tick(g,.6);
+  for(let i=1;i<5;i++){
+    g.player.x=3;g.player.face=1;const e=g.spawn('boarder',3.8,false);assert(e);assert.equal(e.hp,V11.enemies.boarder.hp);
+    tick(g,e.climb+.05);assert.equal(e.climb,0);tick(g,2,{attack:true});assert.equal(e.hp,0);tick(g,.6);
+  }
+  assert.equal(g.totalKills,5);assert.equal(g.scrap,10);assert.equal(events.filter(e=>e.type==='scrap_gain').length,5);
+  g.player.x=V11.armoryX;assert(g.openArmory());assert(g.buyWeapon('melee'));assert.equal(g.melee.id,'knife');assert.equal(g.scrap,0);
+});

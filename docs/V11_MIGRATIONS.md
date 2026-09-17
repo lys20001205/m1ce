@@ -11,3 +11,6 @@ The four-second consumable boost is superseded by the frozen sustained STOP/SLOW
 Scenery is now one continuous selected ring, with persistent landmark identities, shared primitive batches, LOD, culling and perspective parallax. The local tangent track stabilizes a straight cutaway consist; distant rails and all landmarks use the ring frame. Browser proof combines mesh world coordinates, projected displacement and actual canvas pixel differences. Frame metrics are measured from raw requestAnimationFrame timestamps, not capped simulation dt or manually stepped test time.
 
 The work-branch staging utility is only a source-transport aid for the constrained editing environment. CI persists generated source only after all current stage tests pass; it cannot deploy or update master. Final release validation will not use a staging utility.
+
+## V11-L
+Final telemetry exposes the frozen gameplay snapshot contract directly, including `threatCurrent` and `threatCap`. Release regression covers the three frozen landscape sizes, long-consist framing, orientation/lifecycle input recovery, and the stitched Freight -> Depot -> TRAIN LOST -> Respawn -> Scrap -> Armory -> FAST -> Roundhouse -> Cash Out -> Prep Shop loop in Chromium and WebKit. Final deployment still requires a clean no-staging validation pass.
