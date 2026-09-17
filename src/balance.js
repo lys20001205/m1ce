@@ -1,5 +1,5 @@
-// V10 playtest values, not measured completion-rate claims. One source for tuning.
-export const BUILD = 'V11-L-REGRESSION-20260916';
+// Prototype tuning, not measured completion-rate claims. One source for all gameplay numbers.
+export const BUILD = 'V11-RELEASE-20260917';
 export const B = Object.freeze({
   walk: 5.1, roofSpeed: 1.25, carrySpeed: 2.8,
   repairTime: 1.8, repairHP: 28, repairRadius: 1.9, repairCooldown: .3,
@@ -17,7 +17,7 @@ export const capFor = round => V11.caps[Math.min(V11.caps.length-1,Math.max(0,Ma
 export const reserveFor = round => round===1 ? 1 : 2;
 export const intervalFor = round => V11.spawnIntervals[Math.min(V11.spawnIntervals.length-1,Math.max(0,Math.floor(round)-1))];
 
-// V11 contract tuning. Kept separate during the validated V10 -> V11 handover.
+// V11 route / life / progression tuning.
 export const V11 = Object.freeze({
   carHP:{engine:180,cargo:110,battery:100,workshop:120},poweredRepairThreshold:.25,workshopFaultTime:1.2,
   duration:140,turntableSeconds:3,maxCars:12,step:.025,maxFrame:.10,

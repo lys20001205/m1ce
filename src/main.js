@@ -146,7 +146,7 @@ document.addEventListener('visibilitychange',()=>{if(!document.hidden)audio.rest
 for(const type of ['pointerdown','keydown'])addEventListener(type,()=>{if(audio.context&&audio.context.state!=='running')audio.unlock('recovery_gesture');},{capture:true});
 devtools=mode.dev?new DevTools({game:()=>game,audio,view:()=>view,clock,start:()=>{audio.unlock('dev_start');if(['lost','cashed','practice_complete'].includes(game.status))replaceGame(false);if(game.devCommand('start')){$('modal').hidden=true;lastStatus='';clock.reset();return true;}return false;},changed:()=>{clearInput();if(view.carCount!==game.cars.length)view.rebuildCars();if(game.status==='ready')showHub();ui();}}):null;
 window.__RH_DEBUG={snapshot,logs:()=>telemetry.events,renderer:()=>view.snapshot(),occlusion:()=>view.occlusion(),pixels:()=>view.pixels()};
-if(new URLSearchParams(location.search).has('test'))window.__RH_TEST={
+if(mode.test)window.__RH_TEST={
   game:()=>game,view:()=>view,audio:()=>audio,clock:()=>clock,save:()=>save,input:()=>({...input}),
   step:(seconds,controls={})=>{for(let left=seconds;left>1e-8;left-=.025)game.step(Math.min(.025,left),controls);view.render(.016);ui();},
   forceRoute:t=>{game.t=t;game.elapsed=Math.max(game.elapsed,3);game.phase=phaseAt(t,game.route);},
