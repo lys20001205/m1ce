@@ -101,6 +101,16 @@ async def run(p, name):
         check('stall_priority', '动力停机' in await page.locator('#event').inner_text()
               and await page.locator('#phase').inner_text() == '动力停机 / 路线暂停')
         await page.screenshot(path=str(ART/f'{name}-qa-kit-stall.png'))
+        await page.goto(BASE+'&dev=1', wait_until='networkidle')
+        await page.wait_for_function('window.__RH_DEBUG?.snapshot().modelsLoaded===3')
+        await page.locator('[data-route=industrial]').click()
+        await page.locator('#devBadge').click()
+        for _ in range(11):
+            await page.locator('button[data-dev=car][data-value=cargo]').click()
+        await page.locator('#devBadge').click()
+        dev_full = await page.evaluate('__RH_TEST.game().hubStage==="depart"&&__RH_TEST.game().cars.length===12')
+        await page.locator('#start').click()
+        check('dev_cap_during_choice_starts', dev_full and await page.evaluate('__RH_TEST.game().status==="running"'))
         check('no_page_errors', not errors)
         check('completed_suite', True)
     except Exception as exc:
@@ -116,7 +126,7 @@ async def run(p, name):
         if browser:
             await browser.close()
     report['errors'] = errors
-    report['passed'] = len(report['checks']) >= 41 and all(report['checks'].values()) and not errors
+    report['passed'] = len(report['checks']) >= 42 and all(report['checks'].values()) and not errors
     (ART/f'{name}-qa-report.json').write_text(json.dumps(report, indent=2)+'\n')
     print(json.dumps(report), flush=True)
     return report['passed']

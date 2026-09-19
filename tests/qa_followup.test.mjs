@@ -112,3 +112,10 @@ test('C03: special hazard text remains unchanged and unknown phases have a safe 
   assert.equal(sim.phaseLabel('dock','freight'),sim.LABELS.dock);
   assert.equal(sim.phaseLabel('yard',null),'工业装卸区');assert.equal(sim.phaseLabel('unknown','freight'),'unknown');
 });
+test('C01: DEV adding the last car during car choice advances to a usable departure',()=>{
+  const g=new Game({dev:true,prep:{reroll:1}});assert(g.chooseRoute('industrial'));
+  while(g.cars.length<MAX_CARS)assert(g.devCommand('car','cargo'));
+  assert.equal(g.hubStage,'depart');assert.deepEqual(g.carOffers,[]);assert.equal(g.selectedCar,null);
+  assert(!g.rerollCars());assert.equal(g.prep.reroll,1);assert(g.devCommand('start'));
+  assert.equal(g.status,'running');assert.equal(g.cars.length,MAX_CARS);
+});

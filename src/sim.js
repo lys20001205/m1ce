@@ -52,7 +52,7 @@ export class Game {
       if(this.heldCargo&&this.playerLayer===LAYER.DEPOT)this.loseCargo(this.heldCargo,'dev_jump');
       this.setPlayerLayer(LAYER.INTERIOR);this.player.x=V11.consoleX;this.t=marker;this.elapsed=Math.max(3,this.elapsed);this.phase=phaseAt(marker,this.route);this.warnings={};this.craneHits.clear();
     }
-    else if(action==='car'){if(!['cargo','battery','workshop'].includes(value)||this.cars.length>=MAX_CARS)return false;this.cars.push(car(value));this.syncSystems();}
+    else if(action==='car'){if(!['cargo','battery','workshop'].includes(value)||this.trainFull)return false;this.cars.push(car(value));if(this.trainFull&&this.status==='ready'&&this.hubStage==='car'){this.hubStage='depart';this.carOffers=[];this.selectedCar=null;}this.syncSystems();}
     else if(action==='cargo'){
       if(value==='fill'){
         const amount=V11.routes[this.route||'industrial'].value;
@@ -436,7 +436,7 @@ export class Game {
     const e={id:this.nextId++,rewardEncounter:this.rewardEncounter(),rewarded:false,type,x,y:roof?ROOF:FLOOR,z:.65,roof,face:1,hp:spec.hp,maxHP:spec.hp,wind:0,recovery:0,stun:0,flash:0,climb:type==='clinger'?spec.attach+spec.climb:V11.enemyBoardingSeconds,carry:false,cargoCar:null,escapeWarned:false,state:type==='clinger'?'attach':'boarding',targetKind:null,targetCar:null,layerMove:null};
     if(type==='clinger'){e.y=.45;e.z=1.62;}
     this.enemies.push(e);this.director.maxLoad=Math.max(this.director.maxLoad,this.director.load(this));
-    this.tell('enemy_spawn',{id:e.id,enemy_type:e.type,x,roof,load:this.director.load(this),cap:capFor(this.round)+this.repeatPressure});this.tell('spawn',{id:e.id,type,x,roof});return e;
+    this.tell('enemy_spawn',{id:e.id,enemy_type:type,x,roof,load:this.director.load(this),cap:capFor(this.round)+this.repeatPressure});this.tell('spawn',{id:e.id,type,x,roof});return e;
   }
   warn(kind,lead){if(this.warnings[kind]!==undefined)return;this.warnings[kind]=this.elapsed;this.tell('hazard_warning',{hazard:kind,minimumLead:lead});}
   warningAge(kind){return this.warnings[kind]===undefined?0:this.elapsed-this.warnings[kind];}
