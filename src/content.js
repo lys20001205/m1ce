@@ -4,9 +4,9 @@ export const LIFE = freeze({ALIVE:'ALIVE',DEAD:'DEAD_WAITING_RESPAWN',RESPAWNING
 export const LAYER = freeze({INTERIOR:'INTERIOR',ROOF:'ROOF',DEPOT:'DEPOT'});
 export const SPEED_MODES = freeze(['STOP','SLOW','CRUISE','FAST']);
 export const ROUTES = freeze({
-  industrial:{id:'industrial',name:'INDUSTRIAL LOOP',gate:'INDUSTRIAL GATE',theme:'Machinery / Saboteurs',cargo:'Medium',threat:'Medium',recommended:'workshop',firstEnemies:['boarder','saboteur'],intel:'CRANE SWEEP AT 40% · DEPOT AT 66%'},
-  freight:{id:'freight',name:'FREIGHT LOOP',gate:'FREIGHT GATE',theme:'Cargo / Thieves',cargo:'High',threat:'Medium',recommended:'cargo',firstEnemies:['boarder','thief'],intel:'TWO HIGH-VALUE DEPOTS · 26% AND 66%'},
-  tunnel:{id:'tunnel',name:'TUNNEL LOOP',gate:'TUNNEL GATE',theme:'Low Clearance / Power',cargo:'Low-Medium',threat:'High',recommended:'battery',firstEnemies:['boarder','clinger'],intel:'DEPOT AT 20% · LOW CLEARANCE 38%–76%'}
+  industrial:{id:'industrial',travelLabel:'工业装卸区',name:'INDUSTRIAL LOOP',gate:'INDUSTRIAL GATE',theme:'Machinery / Saboteurs',cargo:'Medium',threat:'Medium',recommended:'workshop',firstEnemies:['boarder','saboteur'],intel:'CRANE SWEEP AT 40% · DEPOT AT 66%'},
+  freight:{id:'freight',travelLabel:'货运堆场',name:'FREIGHT LOOP',gate:'FREIGHT GATE',theme:'Cargo / Thieves',cargo:'High',threat:'Medium',recommended:'cargo',firstEnemies:['boarder','thief'],intel:'TWO HIGH-VALUE DEPOTS · 26% AND 66%'},
+  tunnel:{id:'tunnel',travelLabel:'地下连接段',name:'TUNNEL LOOP',gate:'TUNNEL GATE',theme:'Low Clearance / Power',cargo:'Low-Medium',threat:'High',recommended:'battery',firstEnemies:['boarder','clinger'],intel:'DEPOT AT 20% · LOW CLEARANCE 38%–76%'}
 });
 export const CARS = freeze({engine:{label:'动力车',name:'ENGINE',utility:'console / armory / respawn'},cargo:{label:'货车',name:'CARGO',utility:'+3 slots · freight loot'},battery:{label:'电池车',name:'BATTERY',utility:'FAST storage · lighting · powered repair'},workshop:{label:'维修车',name:'WORKSHOP',utility:'faster repair · local fault recovery'}});
 export const ENEMIES = freeze({boarder:{name:'BOARDER',behavior:'pursue_player'},clinger:{name:'CLINGER',behavior:'attach_climb_roof'},thief:{name:'THIEF',behavior:'steal_then_escape'},saboteur:{name:'SABOTEUR',behavior:'windup_system_damage'},bruiser:{name:'BRUISER',behavior:'armored_heavy_windup'}});
