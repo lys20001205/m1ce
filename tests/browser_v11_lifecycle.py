@@ -35,8 +35,8 @@ async def run(p, name):
         await page.locator('[data-route=freight]').click()
         await page.locator('[data-car=cargo]').click()
         await page.locator('#start').click()
-        await page.evaluate('''() => {window.captureProof=[];for(const type of ['pointerdown','pointerup','lostpointercapture'])
-          document.addEventListener(type,e=>captureProof.push({type,id:e.pointerId,trusted:e.isTrusted}),true);}''')
+        await page.evaluate('''() => {window.captureProof=[];for(const type of ['pointerdown','pointerup','lostpointercapture','click'])
+          document.addEventListener(type,e=>captureProof.push({type,id:e.pointerId,trusted:e.isTrusted,target:e.target.id}),true);}''')
         for action, button, key, field, value in [('left','L','KeyA','move',-1),('right','R','KeyD','move',1),
                 ('melee','attack','KeyJ','attack',True),('ranged','ranged','KeyK','ranged',True),('repair','fix','KeyE','repair',True)]:
             await page.evaluate(RESET)
@@ -103,7 +103,11 @@ async def run(p, name):
             await page.evaluate(RESET)
             await page.evaluate("""side=>{const a=__RH_TEST,g=a.game();g.pause(true);g.route='freight';g.prepareDepots();
               g.t=.26;g.elapsed=5;g.phase='yard';g.setPlayerLayer('DEPOT');g.player.depotId=g.depots[0].id;
-              g.player.depotX=side*7;g.syncDepotPlayer();g.damageCar(0,g.cars[0].hp);g.pause(false);a.step(0);}""", side)
+              g.player.depotX=side*7;g.syncDepotPlayer();g.damageCar(0,g.cars[0].hp);g.pause(false);a.step(0);
+              window.bridgeProof=[];const original=g.layer;
+              g.layer=function(){const before={status:this.status,paused:this.paused,alive:this.alive,stun:this.player.stun,
+                layer:this.playerLayer,x:this.player.depotX,depot:this.depotState(),connected:this.depotConnected(this.depotState())};
+                const result=original.call(this);bridgeProof.push({before,result,after:this.playerLayer,event:this.event});return result;};}""", side)
             await page.locator('#layer').click()
             text = await page.locator('#event').inner_text()
             direction = '← ' if side > 0 else '→ '
@@ -163,6 +167,12 @@ async def run(p, name):
             except Exception:
                 pass
     finally:
+        if page and not page.is_closed():
+            try:
+                report['bridgeProof'] = await page.evaluate('window.bridgeProof||[]')
+                report['allPointerEvents'] = await page.evaluate('window.captureProof||[]')
+            except Exception:
+                pass
         if context:
             await context.close()
         if browser:
