@@ -116,8 +116,11 @@ async def run(p, name):
             await page.keyboard.up(key)
             check(f'depot_{side}_walking_reaches_return_instruction', '先 RETURN 回列车' in await page.locator('#event').inner_text())
             await page.locator('#layer').click()
-            check(f'depot_{side}_return_succeeds_after_following_hint', await page.evaluate('__RH_TEST.game().playerLayer==="ROOF"')
-                  and '黄色梯子' in await page.locator('#event').inner_text())
+            # Input changes the layer synchronously; the HUD is painted by the next RAF.
+            # Wait for both observable outcomes instead of reading the previous frame.
+            returned = "__RH_TEST.game().playerLayer===\"ROOF\"&&document.getElementById('event').textContent.includes('黄色梯子')"
+            await page.wait_for_function(returned, timeout=1500)
+            check(f'depot_{side}_return_succeeds_after_following_hint', await page.evaluate(returned))
         # Observe actual play() calls while leaving all real nodes and signal paths intact.
         await page.evaluate('''()=>{window.lifecycleCues=[];const a=__RH_TEST.audio(),original=a.play;
           a.play=function(name,options){const result=original.call(this,name,options);lifecycleCues.push({name,result,time:this.context?.currentTime});return result;};}''')
