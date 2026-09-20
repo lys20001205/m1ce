@@ -2,6 +2,8 @@ name: ROUNDHOUSE V11 validation (no deployment)
 on:
   push:
     branches: [roundhouse/v11]
+  pull_request:
+    branches: [master]
   workflow_dispatch:
 permissions:
   contents: read

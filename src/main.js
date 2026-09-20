@@ -1,4 +1,4 @@
-import {Game,BUILD,B,DEFS,LENGTH,FLOOR,ROOF,phaseAt,clamp,stationX} from './sim.js?v=11';
+import {Game,BUILD,B,DEFS,LENGTH,FLOOR,ROOF,phaseAt,phaseLabel,clamp,stationX} from './sim.js?v=11';
 import {View} from './view.js?v=11';
 import {Telemetry} from './telemetry.js?v=11';
 import {runtimeMode,SimulationClock} from './runtime.js';
@@ -58,7 +58,7 @@ function replaceGame(practice=false){
 }
 $('practice').onclick=()=>replaceGame(true);$('restart').onclick=()=>replaceGame(false);
 function choices(){
-  const root=$('choices');root.replaceChildren();
+  const root=$('choices');root.replaceChildren();if(game.trainFull)return;
   const descriptions={cargo:'+3 个空货位 · Freight 搬货 · 额外货车增加盗贼权重',battery:'FAST 储能 · 隧道照明 · 供电维修',workshop:'维修加速 · 工业故障处理 · 本地维修站'};
   if(!game.carOffers.includes(selected))selected=game.carOffers[0];
   for(const type of game.carOffers){const b=document.createElement('button');b.textContent=DEFS[type].name;const small=document.createElement('small');small.textContent=descriptions[type];b.appendChild(small);b.className=type===selected?'selected':'';b.dataset.car=type;b.onclick=()=>{selected=type;if(game.chooseCar(type)){view.rebuildCars();showHub();}};root.appendChild(b);}
@@ -75,7 +75,7 @@ $('cash').onclick=()=>{if(game.cashout()){bankWritable=save.write(game);showEnd(
 function showHub(){
   if(game.hubStage==='route'){const before=game.prep.intel;game.prepareRouteIntel();if(game.prep.intel!==before)bankWritable=save.write(game);}
   $('modal').hidden=false;$('brief').hidden=true;$('endTitle').textContent='ROUNDHOUSE';
-  $('intro').textContent=game.hubStage==='route'?'先选路线，再决定需要哪种车厢。':game.hubStage==='car'?'路线已确定。推荐仅作参考；当前两项车厢都允许出发。':'转盘准备完毕。点击 START 发车。';
+  $('intro').textContent=game.hubStage==='route'?(game.trainFull?'列车已满编，本圈不接新车。请选择路线。':'先选路线，再决定需要哪种车厢。'):game.hubStage==='car'?'路线已确定。推荐仅作参考；当前两项车厢都允许出发。':game.trainFull?'列车已满编，本圈不接新车。点击 START 发车。':'转盘准备完毕。点击 START 发车。';
   $('summary').textContent='ROUND '+game.round+' · BANK '+Math.round(game.bank)+' · '+(ROUTES[game.route]?.name||'CHOOSE ROUTE');
   $('resultStats').hidden=true;$('riskPanel').hidden=true;$('cash').hidden=true;$('more').hidden=true;$('restart').hidden=true;
   $('start').hidden=game.hubStage!=='depart';$('start').textContent='START · '+(ROUTES[game.route]?.name||'');
@@ -86,7 +86,7 @@ function showHub(){
     const info=document.createElement('small');info.textContent=r.theme+' · Cargo: '+r.cargo+' · Threat: '+r.threat+' · Recommended: '+r.recommended.toUpperCase()+(game.previousRoute===r.id?' · REPEAT PRESSURE +1':'')+(game.routeIntel?.route===r.id?' · INTEL: '+game.routeIntel.text:'');
     b.append(title,info);b.onclick=()=>{audio.unlock('route_gesture');if(game.chooseRoute(r.id))showHub();};root.append(b);
   }
-  if(game.hubStage==='car')choices();renderPrep();
+  if(game.hubStage==='car')choices();else $('choices').replaceChildren();renderPrep();
 }
 const riskName={LOW:'低',MEDIUM:'中',HIGH:'高',EXTREME:'极高'};
 function showEnd(){
@@ -117,12 +117,12 @@ function ui(){
   $('lifePanel').hidden=game.alive||!['running','arriving','complete'].includes(game.status);$('lifePanel').textContent=(game.player.deathReason==='train_lost'?'TRAIN LOST':'PLAYER DOWN')+' · RESPAWN '+game.player.respawnRemaining.toFixed(1);
   $('more').disabled=!game.alive;
   $('round').textContent=String(game.round).padStart(2,'0');$('money').textContent=Math.round(game.money).toLocaleString();$('health').textContent=Math.ceil(game.cars[0].hp/game.cars[0].max*100)+'% / '+Math.ceil(game.player.hp);$('health').dataset.state=engine;
-  $('weapon').textContent=game.weapon;$('scrapHud').textContent=String(game.scrap);$('attack').textContent=game.melee.name;$('ranged').textContent=game.ranged?.name==='HIGH-DAMAGE RIFLE'?'RIFLE':game.ranged?.name||'LOCKED';$('ranged').disabled=!game.ranged;$('phase').textContent=game.practice?'抢修演练 / 不结算':game.status==='arriving'?'安全回站 / 转盘锁定':game.engineState==='stalled'?'动力停机 / 路线暂停':({dock:'机库准备',depart:'出库 / 转盘对轨',yard:'工业装卸区',crane:'机械臂',approach:'隧道预告',tunnel:'低净空隧道',return:'返回机库'}[game.phase]||game.phase);
+  $('weapon').textContent=game.weapon;$('scrapHud').textContent=String(game.scrap);$('attack').textContent=game.melee.name;$('ranged').textContent=game.ranged?.name==='HIGH-DAMAGE RIFLE'?'RIFLE':game.ranged?.name||'LOCKED';$('ranged').disabled=!game.ranged;$('phase').textContent=game.practice?'抢修演练 / 不结算':game.status==='arriving'?'安全回站 / 转盘锁定':game.engineState==='stalled'?'动力停机 / 路线暂停':({dock:'机库准备',depart:'出库 / 转盘对轨',yard:phaseLabel(game.phase,game.route),crane:'机械臂',approach:'隧道预告',tunnel:'低净空隧道',return:'返回机库'}[game.phase]||game.phase);
   $('fill').style.width=game.t*100+'%';$('pause').textContent=game.paused?'继续':'暂停';
   $('progress').textContent=game.rescue?'抢救剩余 '+game.rescue.remaining.toFixed(1)+' 秒':warn?(warn.kind==='crane'?'扫顶':'入隧道')+'约 '+warn.seconds.toFixed(1)+' 秒':threat.rest>0?'新威胁暂停 '+threat.rest.toFixed(1)+'s':threat.relief?'危急减压中':(ROUTES[game.route]?.name||'ROUNDHOUSE')+' · '+game.speedMode+' · CHARGE '+Math.round(game.batteryCharge)+' / '+game.batteryCapacity;
   let message=game.event;
   if(game.status==='running'){
-    if(game.rescue){const d=game.player.x-stationX(0);message='动力停机 · '+game.rescue.remaining.toFixed(1)+'s ｜ '+(Math.abs(d)>B.repairRadius?(d>0?'← ':'→ ')+'前往 01 控制柜，长按修理':'控制柜已在身旁：长按修理 '+(B.restartTime/game.repairSpeed).toFixed(1)+' 秒');}
+    if(game.rescue){const d=game.player.x-stationX(0);message='动力停机 · '+game.rescue.remaining.toFixed(1)+'s ｜ '+(Math.abs(d)>B.repairRadius?(d>0?'← ':'→ ')+'前往 01 控制柜，长按修理':'控制柜已在身旁：长按修理 '+game.emergencyRepairTime.toFixed(1)+' 秒'+(game.runRepairKit?' · 维修包加速':''));}
     else if(engine==='critical')message='01 动力车危急：'+Math.ceil(game.cars[0].hp/game.cars[0].max*100)+'% ｜ 回到控制柜持续维修';
     else if(stolen.length)message='货物有风险 '+stolen.reduce((n,e)=>n+(game.cargoCrates.find(c=>c.id===e.carry)?.value||0),0)+' ｜ 盗贼正往车尾逃离，击败可追回';
     else if(warn)message=(warn.kind==='crane'?'机械臂将扫过车顶':'前方低净空隧道')+' ｜ 找黄色梯子提前下车内';
