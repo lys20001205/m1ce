@@ -25,7 +25,12 @@ export class AudioCues {
   createGraph(){
     if(this.context&&this.context.state!=='closed')return;
     const Factory=this.contextFactory||(()=>{const C=globalThis.AudioContext||globalThis.webkitAudioContext;return C?new C({latencyHint:'interactive'}):null;});
-    const c=Factory();if(!c)return;this.context=c;
+    const c=Factory();if(!c)return;
+    // A recreated context has its own clock. Old deadlines and voices cannot follow it.
+    if(this.context)this.context.onstatechange=null;
+    for(const voice of this.voices){try{voice.o.stop();voice.o.disconnect();voice.gain.disconnect();}catch{}}
+    this.voices.clear();this.pending.length=0;this.nextRail=this.nextRepair=this.nextAlarm=c.currentTime;
+    this.firstSound=false;this.outputRMS=0;this.context=c;
     this.master=c.createGain();this.master.gain.value=this.enabled?1:0;
     this.buses={};for(const [name,value] of [['music',.25],['ambience',.45],['sfx',.80]]){const node=c.createGain();node.gain.value=value;node.connect(this.master);this.buses[name]=node;}
     this.limiter=c.createDynamicsCompressor();this.limiter.threshold.value=-10;this.limiter.knee.value=12;this.limiter.ratio.value=8;

@@ -24,13 +24,15 @@ const actions={climb:()=>game.layer(),interact:()=>game.interact(),brake:()=>gam
 function refreshInputs(){
   const held=new Set(pressed.values()),repair=held.has('repair');if(input.repair&&!repair)game.cancelRepair('released');
   input={move:Number(held.has('right'))-Number(held.has('left')),attack:held.has('melee'),ranged:held.has('ranged'),repair};
+  for(const [action,binding] of Object.entries(INPUT_BINDINGS_SSOT))if(binding.hold)$(binding.button).classList.toggle('active',held.has(action));
 }
 for(const [action,binding] of Object.entries(INPUT_BINDINGS_SSOT)){
   const el=$(binding.button);el.title=binding.label+' · '+binding.display;
   if(!binding.hold){el.onclick=()=>actions[action]?.();continue;}
-  el.addEventListener('pointerdown',e=>{e.preventDefault();if(game.paused||game.status!=='running'||!game.alive)return;el.setPointerCapture(e.pointerId);pressed.set(e.pointerId,action);el.classList.add('active');refreshInputs();telemetry.log('input_down',{key:binding.button,x:game.player.x});});
-  const release=e=>{e.preventDefault();pressed.delete(e.pointerId);if(![...pressed.values()].includes(action))el.classList.remove('active');refreshInputs();telemetry.log('input_up',{key:binding.button,x:game.player.x});};
-  el.addEventListener('pointerup',release);el.addEventListener('pointercancel',release);el.addEventListener('lostpointercapture',()=>{for(const [k,a] of pressed)if(a===action)pressed.delete(k);refreshInputs();el.classList.remove('active');});
+  el.addEventListener('pointerdown',e=>{e.preventDefault();if(game.paused||game.status!=='running'||!game.alive)return;el.setPointerCapture(e.pointerId);pressed.set(e.pointerId,action);refreshInputs();telemetry.log('input_down',{key:binding.button,x:game.player.x});});
+  // Capture belongs to one pointer, not to every source holding the same action.
+  const release=e=>{e.preventDefault();if(pressed.get(e.pointerId)!==action)return;pressed.delete(e.pointerId);refreshInputs();telemetry.log('input_up',{key:binding.button,x:game.player.x});};
+  el.addEventListener('pointerup',release);el.addEventListener('pointercancel',release);el.addEventListener('lostpointercapture',release);
 }
 const keyActions=new Map(Object.entries(INPUT_BINDINGS_SSOT).flatMap(([action,binding])=>binding.keys.map(code=>[code,{action,binding}])));
 addEventListener('keydown',e=>{if(['INPUT','TEXTAREA','SELECT'].includes(e.target?.tagName)||game.paused||game.status!=='running'||!game.alive)return;const entry=keyActions.get(e.code);if(!entry)return;e.preventDefault();if(entry.binding.hold){pressed.set('key'+e.code,entry.action);refreshInputs();}else if(!e.repeat)actions[entry.action]?.();});
@@ -122,7 +124,15 @@ function ui(){
   $('progress').textContent=game.rescue?'抢救剩余 '+game.rescue.remaining.toFixed(1)+' 秒':warn?(warn.kind==='crane'?'扫顶':'入隧道')+'约 '+warn.seconds.toFixed(1)+' 秒':threat.rest>0?'新威胁暂停 '+threat.rest.toFixed(1)+'s':threat.relief?'危急减压中':(ROUTES[game.route]?.name||'ROUNDHOUSE')+' · '+game.speedMode+' · CHARGE '+Math.round(game.batteryCharge)+' / '+game.batteryCapacity;
   let message=game.event;
   if(game.status==='running'){
-    if(game.rescue){const d=game.player.x-stationX(0);message='动力停机 · '+game.rescue.remaining.toFixed(1)+'s ｜ '+(Math.abs(d)>B.repairRadius?(d>0?'← ':'→ ')+'前往 01 控制柜，长按修理':'控制柜已在身旁：长按修理 '+game.emergencyRepairTime.toFixed(1)+' 秒'+(game.runRepairKit?' · 维修包加速':''));}
+    if(game.rescue){
+      const d=game.player.x-stationX(0);let instruction;
+      if(!game.alive)instruction='等待复活 '+game.player.respawnRemaining.toFixed(1)+'s；动力倒计时继续';
+      else if(game.playerLayer==='DEPOT')instruction='先 RETURN 回列车，再进 01 动力车内抢修';
+      else if(game.player.carry)instruction=game.player.roof?'先到货车舱口 LOAD 放货，再下车内抢修':'先把货物放回货车，再前往 01 控制柜抢修';
+      else if(game.player.roof)instruction='找到黄色梯子下车内，再前往 01 控制柜';
+      else instruction=Math.abs(d)>B.repairRadius?(d>0?'← ':'→ ')+'前往 01 控制柜，长按修理':'控制柜已在身旁：长按修理 '+game.emergencyRepairTime.toFixed(1)+' 秒'+(game.runRepairKit?' · 维修包加速':'');
+      message='动力停机 · '+game.rescue.remaining.toFixed(1)+'s ｜ '+instruction;
+    }
     else if(engine==='critical')message='01 动力车危急：'+Math.ceil(game.cars[0].hp/game.cars[0].max*100)+'% ｜ 回到控制柜持续维修';
     else if(stolen.length)message='货物有风险 '+stolen.reduce((n,e)=>n+(game.cargoCrates.find(c=>c.id===e.carry)?.value||0),0)+' ｜ 盗贼正往车尾逃离，击败可追回';
     else if(warn)message=(warn.kind==='crane'?'机械臂将扫过车顶':'前方低净空隧道')+' ｜ 找黄色梯子提前下车内';
@@ -136,7 +146,7 @@ function ui(){
   for(const slot of ['melee','ranged']){const b=document.querySelector('[data-armory='+slot+']'),offer=game.armoryOffer(slot);const text=slot.toUpperCase()+' · '+(offer?(offer.locked?'LOCKED UNTIL COMBAT TIER 3':offer.name+' · '+offer.cost+' SCRAP'):'MAX TIER');if(b.textContent!==text)b.textContent=text;b.disabled=!offer||offer.locked||game.scrap<offer.cost;}
   $('repairPanel').hidden=!job;$('repairFill').style.width=job?Math.min(100,job.progress/job.duration*100)+'%':'0%';$('repairText').textContent=job?(job.emergency?'紧急重启':job.localFault?'本地故障检修':'维修 '+String(job.car+1).padStart(2,'0'))+' · '+Math.min(100,Math.floor(job.progress/job.duration*100))+'%':'';
   const notice=game.notices.at(-1);$('success').hidden=!notice;$('centerStack').dataset.repair=job?'true':'false';$('successTitle').textContent=notice?.title||'';$('successDetail').textContent=notice?.detail||'';
-  $('centerHint').hidden=!!job||!!notice;$('centerHint').textContent=game.status==='arriving'?'安全回站 · '+Math.max(0,B.arrivalTime-game.arrivalElapsed).toFixed(1)+'s':input.repair?game.repairHint:game.player.roof?'车顶移动 +25% · 提前留意净空':'近设备长按修理 · 黄梯切层';
+  $('centerHint').hidden=!!job||!!notice||!game.alive;$('centerHint').textContent=game.status==='arriving'?'安全回站 · '+Math.max(0,B.arrivalTime-game.arrivalElapsed).toFixed(1)+'s':input.repair?game.repairHint:game.player.roof?'车顶移动 +25% · 提前留意净空':'近设备长按修理 · 黄梯切层';
   if(game.status!==lastStatus){lastStatus=game.status;if(['complete','lost','cashed','practice_complete'].includes(game.status))showEnd();if(game.status==='arriving')clearInput();}
 }
 function frame(ts){if(frameError)return;try{const raw=last?ts-last:0,dt=Math.min(.05,raw/1000);last=ts;view.recordFrame(raw);clock.advance(game,raw/1000,input);audio.update(game);view.render(dt);ui();devtools?.update(ts);requestAnimationFrame(frame);}catch(e){fatal(e);}}
