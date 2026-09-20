@@ -116,7 +116,7 @@ export class DesignUI {
   hub(g){
     this.ensure(g);this.node('outcomeStats').hidden=true;this.node('economyDetails').hidden=true;this.node('resultHighlights').hidden=true;
     this.node('hubObjective').hidden=false;this.text('upgradesDetail','');
-    const objective=g.hubStage==='route'?'选路线 → 选车厢 → START。带货回站，才能把未兑现存入 Bank。':
+    const objective=g.hubStage==='route'?'选路线 → 选车厢 → START。完整回站后，才能把未兑现存入 Bank。':
       g.hubStage==='car'?'本圈货位 '+g.cargoCapacity+'；选车可改变容量与服务。':
       g.cargoCapacity?(g.cargoUsed>=g.cargoCapacity?'货舱已满：保护现有货物回站兑现。':`本圈空货位 ${g.cargoCapacity-g.cargoUsed}：到 Depot 装回一箱货，并带回 Roundhouse。`):'本圈货位 0：守住动力回站；选货车后才能运输货物。';
     this.text('hubObjective',objective);this.node('practice').hidden=false;
@@ -148,9 +148,9 @@ export class DesignUI {
     this.text('economyBreakdown',items.join('\n'));
     const v=g.status==='complete'?g.lap:g.total;
     this.node('resultHighlights').hidden=!(v.clutchSaves||v.cargoSaved||v.criticalSeconds||v.repairs)||g.practice;
-    if(g.status==='complete')this.text('riskPanel',`继续押上 ${money(g.money)} 未兑现 · ${g.scrap} Scrap 保留 · ${upgradeGoal(g).text}。动力 ${s.engine}% 将带入下一圈；生命按现有规则恢复。`);
+    if(g.status==='complete')this.text('riskPanel',`继续押上 ${money(g.money)} 未兑现 · ${g.scrap} Scrap 保留 · ${upgradeGoal(g).text}。动力 ${s.engine}% 将带入下一圈；生命会恢复一部分，动力不会自动修满。`);
   }
-  frame(g){
+  frame(g,controls={}){
     this.ensure(g);
     if(this.routeKey!==g.route){
       this.routeKey=g.route;const root=this.node('depotMarkers');root.replaceChildren();
@@ -161,7 +161,7 @@ export class DesignUI {
     this.text('kitStatus',g.runRepairKit?'维修包已携带 · 成功重启自动使用':'');
     this.node('kitStatus').hidden=!g.runRepairKit;
     const safe=g.status==='running'&&g.alive&&!g.rescue&&g.engineState!=='critical'&&!g.hazardInfo()&&!g.director.fault;
-    if(!safe||g.repairJob||g.notices.length)return;
+    if(!safe||controls.repair||g.repairJob||g.notices.length)return;
     const guide=depotGuide(g,this.touch);let text=guide.text;
     const service=g.playerLayer==='INTERIOR'&&g.cars[g.currentCar].type==='workshop'&&!g.player.carry;
     if(service){

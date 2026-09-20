@@ -11,7 +11,7 @@ OTHER_CHECKS=['armory_unlock_explained','three_native_purchases','one_scrap_goal
  'kills_upgrades_visible','zero_incidents_secondary','ledger_reconciles','cashout_keeps_history','cashout_shop',
  'restart_clears_history','depot_stock','depot_pickup_unsecured','loaded_delta','reload_no_duplicate_credit',
  'full_return_guidance','stall_wins','death_hides_ordinary_guide','inventory_zero_bank_opens','formal_save_untouched',
- 'no_page_errors','completed_suite']
+ 'repair_unavailable_hint','defeat_shows_loss_not_gain','no_page_errors','completed_suite']
 MINIMUM=len(VIEW_CHECKS)*len(VIEWPORTS)+len(OTHER_CHECKS)
 async def run(p,name):
     kw={'headless':True}
@@ -67,6 +67,10 @@ async def run(p,name):
         await page.locator('[data-route=freight]').click();await page.locator('[data-car=cargo]').click();await page.locator('#start').click()
         # Fixture provides upgrade resources, real F and purchase buttons exercise the UI.
         await page.evaluate('''()=>{const a=__RH_TEST,g=a.game();g.director.rest=9999;g.enemies=[];g.scrap=42;a.forcePlayer(1.7);}''')
+        await page.keyboard.down('KeyE')
+        await page.wait_for_function('document.getElementById("centerHint").textContent.includes("靠近本节设备中心")')
+        check('repair_unavailable_hint',await page.evaluate('__RH_TEST.game().repairJob===null'))
+        await page.keyboard.up('KeyE')
         await page.keyboard.press('KeyF');await page.locator('#armoryPanel').wait_for(state='visible')
         check('armory_unlock_explained','AXE（COMBAT TIER 3）' in await page.locator('#armoryHelp').inner_text())
         for slot in ['melee','melee','ranged']:
@@ -116,6 +120,9 @@ async def run(p,name):
         await page.evaluate('__RH_TEST.game().killPlayer();__RH_TEST.step(0)')
         check('death_hides_ordinary_guide',await page.locator('#centerHint').is_hidden() and '等待复活' in await page.locator('#event').inner_text())
         await page.screenshot(path=str(ART/f'{name}-design-danger-priority.png'))
+        await page.evaluate('__RH_TEST.game().fail("engine_timeout");__RH_TEST.step(0)')
+        check('defeat_shows_loss_not_gain',await page.locator('#gainLabel').inner_text()=='本局损失'
+              and await page.locator('#gainStat').inner_text()=='−1,450')
         await page.evaluate('''()=>{localStorage.setItem('roundhouse_save_v11',JSON.stringify({version:11,bank:7777,prep:{}}));
           localStorage.setItem('roundhouse_test_save_v11',JSON.stringify({version:11,bank:0,prep:{reroll:1}}));}''')
         await page.reload(wait_until='networkidle');await page.wait_for_function('window.__RH_TEST')

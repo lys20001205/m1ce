@@ -154,7 +154,7 @@ function ui(){
   $('centerHint').hidden=!!job||!!notice||!game.alive;$('centerHint').textContent=game.status==='arriving'?'安全回站 · '+Math.max(0,B.arrivalTime-game.arrivalElapsed).toFixed(1)+'s':input.repair?game.repairHint:game.player.roof?'车顶移动 +25% · 提前留意净空':'近设备长按修理 · 黄梯切层';
   if(game.status!==lastStatus){lastStatus=game.status;if(['complete','lost','cashed','practice_complete'].includes(game.status))showEnd();if(game.status==='arriving')clearInput();}
 }
-function frame(ts){if(frameError)return;try{const raw=last?ts-last:0,dt=Math.min(.05,raw/1000);last=ts;view.recordFrame(raw);clock.advance(game,raw/1000,input);audio.update(game);view.render(dt);ui();design.frame(game);devtools?.update(ts);requestAnimationFrame(frame);}catch(e){fatal(e);}}
+function frame(ts){if(frameError)return;try{const raw=last?ts-last:0,dt=Math.min(.05,raw/1000);last=ts;view.recordFrame(raw);clock.advance(game,raw/1000,input);audio.update(game);view.render(dt);ui();design.frame(game,input);devtools?.update(ts);requestAnimationFrame(frame);}catch(e){fatal(e);}}
 try{view=new View($('game'),game,(t,d)=>telemetry.log(t,d));view.reducedMotion=$('reduced').checked;await view.init();$('start').disabled=false;$('practice').disabled=false;$('start').textContent='从机库发车';showHub();$('event').textContent=game.event;resize();requestAnimationFrame(frame);}catch(e){fatal(e);}
 addEventListener('pageshow',()=>audio.restore('pageshow'));
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)audio.restore('visible');});
@@ -163,7 +163,7 @@ devtools=mode.dev?new DevTools({game:()=>game,audio,view:()=>view,clock,start:()
 window.__RH_DEBUG={snapshot,logs:()=>telemetry.events,renderer:()=>view.snapshot(),occlusion:()=>view.occlusion(),pixels:()=>view.pixels()};
 if(mode.test)window.__RH_TEST={
   game:()=>game,view:()=>view,audio:()=>audio,clock:()=>clock,save:()=>save,input:()=>({...input}),
-  step:(seconds,controls={})=>{for(let left=seconds;left>1e-8;left-=.025)game.step(Math.min(.025,left),controls);view.render(.016);ui();design.frame(game);},
+  step:(seconds,controls={})=>{for(let left=seconds;left>1e-8;left-=.025)game.step(Math.min(.025,left),controls);view.render(.016);ui();design.frame(game,controls);},
   forceRoute:t=>{game.t=t;game.elapsed=Math.max(game.elapsed,3);game.phase=phaseAt(t,game.route);},
   forceCars:n=>{while(game.cars.length<Math.min(12,n)){const d=DEFS.cargo;game.cars.push({type:'cargo',hp:d.hp,max:d.hp,cargo:3});}view.rebuildCars();},
   forcePlayer:(x,roof=false)=>{game.player.x=clamp(x,.4,game.length-.4);game.player.roof=roof;game.player.y=roof?ROOF:FLOOR;game.player.layer=roof?'ROOF':'INTERIOR';game.player.z=.65;view.cameraX=game.player.x;view.render(.016);},

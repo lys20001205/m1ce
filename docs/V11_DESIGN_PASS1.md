@@ -23,10 +23,11 @@ Deferred: unequal crate values, staged STOP pressure, weapon re-equipping, Intel
 
 ## Regression acceptance
 
-- `tests/design_ui.test.mjs`: 56 rule-backed presentation/DOM-double checks. No claims about actual rendering or player comprehension.
-- `tests/browser_v11_design.py`: 65 mandatory checks per Chromium/WebKit, with four measured CSS viewports (812x332, 844x390, 932x430, 1280x720), native disclosure/route/car/START/purchase/cargo controls and archived screenshots. Fixture resources and positions are labelled.
+- `tests/design_ui.test.mjs`: 59 rule-backed presentation/DOM-double checks. No claims about actual rendering or player comprehension.
+- `tests/browser_v11_design.py`: 67 mandatory checks per Chromium/WebKit, with four measured CSS viewports (812x332, 844x390, 932x430, 1280x720), native disclosure/route/car/START/purchase/cargo controls and archived screenshots. Fixture resources and positions are labelled.
 - Existing consent transport test now opens the optional Settings disclosure through the actual native UI before checking/revoking consent; all its original transport/privacy assertions remain.
-- Release gate requires both new reports and at least 296 passing units. No existing browser suite is omitted or weakened.
+- Release gate requires both new reports and at least 299 passing units. No existing browser suite is omitted or weakened.
+- The Pages verifier also checks both new presentation files; stale script/CSS fails deployment verification.
 - Local direct browser navigation currently returns ERR_BLOCKED_BY_ADMINISTRATOR. Only exact-commit CI screenshots may supply graphical evidence; final acceptance and deployment status belong in the PR/workflow receipt, not assumed here.
 
 ## Manual questions still open

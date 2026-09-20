@@ -142,3 +142,19 @@ test('normal entry order and core clickable IDs are preserved in the document',(
   assert(s.indexOf('id="routeChoices"')<s.indexOf('id="practice"'));assert(s.includes('id="helpSettings"'));
   for(const id of ['start','more','cash','practice','telemetry','reduced'])assert.equal((s.match(new RegExp('id="'+id+'"','g'))||[]).length,1);
 });
+
+test('held repair preserves the existing unavailable/range hint before a repair job exists',()=>{
+  const d=dom(),ui=new DesignUI(d),{g}=setup();d.getElementById('centerHint').textContent='靠近本节设备中心再修理';
+  ui.frame(g,{repair:true});assert.equal(d.getElementById('centerHint').textContent,'靠近本节设备中心再修理');
+});
+test('full departure goal does not ask for one more impossible cargo pickup',()=>{
+  const d=dom(),ui=new DesignUI(d),g=new Game();g.chooseRoute('freight');g.chooseCar('cargo');
+  for(let i=0;i<3;i++)g.createCargo(450,'stored',{carIndex:1,secured:true});ui.hub(g);
+  assert.match(d.getElementById('hubObjective').textContent,/已满.*保护/);assert.doesNotMatch(d.getElementById('hubObjective').textContent,/装回一箱/);
+});
+test('defeat labels uncashed losses instead of presenting them as banked gains',()=>{
+  const d=dom(),ui=new DesignUI(d);let g;g=new Game({emit:(t,v)=>ui.observe(g,t,v)});ui.hub(g);
+  g.chooseRoute('freight');g.chooseCar('cargo');g.start();g.fail('engine_timeout');ui.end(g);
+  assert.equal(d.getElementById('gainLabel').textContent,'本局损失');assert.equal(d.getElementById('gainStat').textContent,'−1,000');
+  assert.equal(d.getElementById('cargoLabel').textContent,'未带回货物');assert.match(d.getElementById('economyBreakdown').textContent,/未兑现损失 1,000/);
+});
