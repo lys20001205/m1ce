@@ -1,0 +1,52 @@
+name: Verify published C04 runtime bytes (read only)
+on:
+  push:
+    branches: [qa/v11-pages-proof]
+permissions:
+  contents: read
+jobs:
+  verify-public:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v6
+      - name: Await target deployment and compare every runtime source file
+        env:
+          TARGET_COMMIT: b12ab97e288248f865c8fc1a6ec0939e8bc04876
+        run: |
+          mkdir -p public-proof
+          python - <<'PY'
+          import hashlib,json,os,time
+          from pathlib import Path
+          from datetime import datetime,timezone
+          from urllib.request import Request,urlopen
+          target=os.environ['TARGET_COMMIT'];base='https://lys20001205.github.io/m1ce/'
+          paths=['index.html','style.css','manifest.webmanifest']+[str(p) for p in sorted(Path('src').glob('*.js'))]
+          expected={p:hashlib.sha256(Path(p).read_bytes()).hexdigest() for p in paths}
+          result={'target':target,'sourceCommit':os.environ['GITHUB_SHA'],'scope':'all runtime JS plus entry/style/manifest; model assets covered by production deployment verification','passed':False,'attempts':[]}
+          def get(path):
+              url=base+path+'?verify='+target
+              with urlopen(Request(url,headers={'Cache-Control':'no-cache','Accept-Encoding':'identity'}),timeout=15) as r:return r.read()
+          for attempt in range(1,121):
+              try:
+                  build=json.loads(get('build.json'))
+                  if build.get('commit')!=target:raise ValueError('target not published yet: '+str(build.get('commit')))
+                  found={}
+                  for p,h in expected.items():
+                      b=get(p);v=hashlib.sha256(b).hexdigest()
+                      if v!=h:raise ValueError('runtime mismatch: '+p)
+                      found[p]=v
+                  result.update({'passed':True,'build':build,'verifiedSHA256':found,'attempt':attempt});break
+              except Exception as e:
+                  result['attempts'].append(str(e));print(attempt,str(e),flush=True)
+                  if attempt<120:time.sleep(6)
+          result['verifiedAt']=datetime.now(timezone.utc).isoformat()
+          Path('public-proof/runtime-verification.json').write_text(json.dumps(result,indent=2)+'\n')
+          print(json.dumps(result,indent=2));raise SystemExit(0 if result['passed'] else 1)
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: published-c04-runtime-proof
+          path: public-proof/
+          retention-days: 14
