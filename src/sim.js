@@ -316,7 +316,7 @@ export class Game {
     const p=this.player;if(p.rangedCooldown>1e-8||p.stun>0||p.carry)return false;
     this.cancelRepair('attack');this.armoryOpen=false;const spec=this.rangedStats,m=this.muzzle();
     p.rangedCooldown=spec.cooldown;p.rangedFlash=V11.combat.rangedFlash;this.lastMuzzle={...m};
-    this.projectiles.push({id:this.nextId++,...m,origin:m.x,dir:p.face,roof:p.roof,weapon:this.ranged.id,damage:spec.damage,range:spec.range,velocity:spec.velocity,life:spec.range/spec.velocity+V11.step});
+    this.projectiles.push({id:this.nextId++,...m,origin:m.x,launchX:p.x,dir:p.face,roof:p.roof,weapon:this.ranged.id,damage:spec.damage,range:spec.range,velocity:spec.velocity,life:spec.range/spec.velocity+V11.step});
     this.feedback('muzzle',m.x,m.y);this.tell('projectile_spawn',{...m,roof:p.roof,weapon:this.ranged.id});this.tell('attack',{x:p.x,roof:p.roof,slot:'ranged',weapon:this.ranged.id});return true;
   }
   muzzle(){const r=V11.rig,spec=this.rangedStats||V11.weapons.handgun,p=this.player;return{x:p.x+p.face*(r.armX+spec.muzzle)*r.scale,y:p.y+r.armY*r.scale,z:(p.z??.65)+p.face*r.armZ*r.scale};}
@@ -332,7 +332,10 @@ export class Game {
   projectileStep(dt){
     for(const b of this.projectiles){
       const old=b.x,remaining=Math.max(0,b.range-Math.abs(old-b.origin));b.x+=b.dir*Math.min(b.velocity*dt,remaining);b.life-=dt;
-      const r=V11.combat.bulletRadius,hits=this.enemies.filter(e=>e.hp>0&&e.roof===b.roof&&e.climb<=0&&!e.layerMove&&e.x>=Math.min(old,b.x)-r&&e.x<=Math.max(old,b.x)+r).sort((a,c)=>Math.abs(a.x-old)-Math.abs(c.x-old));
+      // The rendered muzzle can overlap a close enemy. Sweep its launch corridor once,
+      // while retaining the real muzzle as the projectile's visual origin and range origin.
+      const start=b.launchX??old,launch=b.launchX!==undefined;delete b.launchX;
+      const r=V11.combat.bulletRadius,hits=this.enemies.filter(e=>e.hp>0&&e.roof===b.roof&&e.climb<=0&&!e.layerMove&&(!launch||(e.x-start)*b.dir>=0)&&e.x>=Math.min(start,b.x)-r&&e.x<=Math.max(start,b.x)+r).sort((a,c)=>Math.abs(a.x-start)-Math.abs(c.x-start));
       if(hits.length){this.hitEnemy(hits[0],b.damage,b.dir,b.weapon);b.life=0;}
       if(Math.abs(b.x-b.origin)>=b.range-1e-8)b.life=0;
     }

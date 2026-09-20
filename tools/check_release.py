@@ -3,7 +3,7 @@ import hashlib,json,os,re,subprocess
 from pathlib import Path
 
 ROOT=Path('.');ART=ROOT/'artifacts'
-SUITES={'':53,'v11':41,'audio':12,'combat':17,'depot':11,'dev':19,'enemies':11,'life':11,'prep':12,'release':21,'train':10,'ship':11,'qa':42}
+SUITES={'':53,'v11':41,'audio':12,'combat':17,'depot':11,'dev':19,'enemies':11,'life':11,'prep':12,'release':21,'train':10,'ship':11,'qa':42,'muzzle':39}
 
 def inspect(art=ART):
     failures=[];totals={};reports={}
@@ -18,7 +18,7 @@ def inspect(art=ART):
                 totals[browser]+=len(checks);reports[name]=len(checks)
             except Exception as e:failures.append(name+': '+str(e))
     tap={}
-    for name,minimum in [('unit.txt',167),('model-tests.txt',6)]:
+    for name,minimum in [('unit.txt',212),('model-tests.txt',6)]:
         try:
             text=(art/name).read_text();stats={k:int(re.search(r'^# '+k+r' (\d+)\s*$',text,re.M).group(1)) for k in ['tests','pass','fail','cancelled','skipped','todo']}
             if stats['tests']<minimum or stats['pass']!=stats['tests'] or any(stats[k] for k in ['fail','cancelled','skipped','todo']):failures.append(name+': nonpassing TAP')
