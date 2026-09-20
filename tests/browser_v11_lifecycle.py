@@ -9,7 +9,7 @@ from pathlib import Path
 from playwright.async_api import async_playwright
 ART = Path('artifacts')
 ART.mkdir(exist_ok=True)
-MINIMUM = 40
+MINIMUM = 44
 RESET = '''() => {const a=__RH_TEST;a.reset();const g=a.game();g.director.rest=9999;
  g.elapsed=5;g.t=.1;g.phase='yard';g.rangedTier=1;a.forcePlayer(4.8);a.step(0);}'''
 
@@ -37,6 +37,15 @@ async def run(p, name):
         await page.locator('#start').click()
         await page.evaluate('''() => {window.captureProof=[];for(const type of ['pointerdown','pointerup','lostpointercapture','click'])
           document.addEventListener(type,e=>captureProof.push({type,id:e.pointerId,trusted:e.isTrusted,target:e.target.id}),true);}''')
+        # Stable native text nodes: the real WebKit click must span rendered frames.
+        await page.evaluate("""()=>{const a=__RH_TEST;a.game().pause(true);a.step(0);
+          window.buttonNodes=Object.fromEntries(['pause','layer','interact'].map(id=>[id,document.getElementById(id).firstChild]));}""")
+        await page.evaluate('() => new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))')
+        for button in ['pause','layer','interact']:
+            check(button+'_unchanged_label_preserves_native_node', await page.evaluate(
+                'id=>document.getElementById(id).firstChild===buttonNodes[id]',button))
+        await page.locator('#pause').click(delay=120)
+        check('resume_click_across_rendered_frames', await page.evaluate('!__RH_TEST.game().paused'))
         for action, button, key, field, value in [('left','L','KeyA','move',-1),('right','R','KeyD','move',1),
                 ('melee','attack','KeyJ','attack',True),('ranged','ranged','KeyK','ranged',True),('repair','fix','KeyE','repair',True)]:
             await page.evaluate(RESET)
@@ -108,23 +117,25 @@ async def run(p, name):
               g.layer=function(){const before={status:this.status,paused:this.paused,alive:this.alive,stun:this.player.stun,
                 layer:this.playerLayer,x:this.player.depotX,depot:this.depotState(),connected:this.depotConnected(this.depotState())};
                 const result=original.call(this);bridgeProof.push({before,result,after:this.playerLayer,event:this.event});return result;};}""", side)
-            await page.locator('#layer').click()
+            await page.locator('#layer').click(delay=120)
             text = await page.locator('#event').inner_text()
             direction = '← ' if side > 0 else '→ '
             check(f'depot_{side}_blocked_return_keeps_bridge_guidance', direction+'回到 Depot 中央连接桥' in text
-                  and await page.evaluate('__RH_TEST.game().playerLayer==="DEPOT"'))
+                  and await page.evaluate('__RH_TEST.game().playerLayer==="DEPOT"&&bridgeProof.length===1&&bridgeProof[0].result===false'))
             await page.screenshot(path=str(ART/f'{name}-lifecycle-depot-bridge-{side}.png'))
             key = 'KeyA' if side > 0 else 'KeyD'
             await page.keyboard.down(key)
             await page.wait_for_function('Math.abs(__RH_TEST.game().player.depotX)<=2', timeout=2500)
             await page.keyboard.up(key)
             check(f'depot_{side}_walking_reaches_return_instruction', '先 RETURN 回列车' in await page.locator('#event').inner_text())
-            await page.locator('#layer').click()
+            await page.locator('#layer').click(delay=120)
             # Input changes the layer synchronously; the HUD is painted by the next RAF.
             # Wait for both observable outcomes instead of reading the previous frame.
             returned = "__RH_TEST.game().playerLayer===\"ROOF\"&&document.getElementById('event').textContent.includes('黄色梯子')"
             await page.wait_for_function(returned, timeout=1500)
-            check(f'depot_{side}_return_succeeds_after_following_hint', await page.evaluate(returned))
+            check(f'depot_{side}_return_succeeds_after_following_hint', await page.evaluate(
+                returned+'&&bridgeProof.length===2&&bridgeProof[1].result===true'))
+            report['samples'].append({'case':f'depot_bridge_{side}','calls':await page.evaluate('bridgeProof')})
         # Observe actual play() calls while leaving all real nodes and signal paths intact.
         await page.evaluate('''()=>{window.lifecycleCues=[];const a=__RH_TEST.audio(),original=a.play;
           a.play=function(name,options){const result=original.call(this,name,options);lifecycleCues.push({name,result,time:this.context?.currentTime});return result;};}''')

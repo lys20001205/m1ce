@@ -91,3 +91,19 @@ for(const side of [-1,1])test(`C06: Depot offset ${side} gives bridge direction 
   g.player.depotX=side*V11.depot.bridgeRadius;g.syncDepotPlayer();assert.match(hint(g),/先 RETURN 回列车/);
   assert.equal(g.layer(),true);assert.equal(g.playerLayer,'ROOF');assert.match(hint(g),/黄色梯子.*车内/);
 });
+
+// C08: render-only updates must not replace stable native button text on every RAF.
+for(const id of ['pause','layer','interact'])test(`C08: ${id} text changes once per state change, not per rendered frame`,()=>{
+  const g=new Game();g.chooseRoute('freight');g.chooseCar('cargo');g.start();g.pause(true);
+  const nodes=new Map();const $=key=>{if(!nodes.has(key)){
+    let text='';const node={style:{},dataset:{},classList:{toggle(){}},writes:0};
+    Object.defineProperty(node,'textContent',{get:()=>text,set:v=>{text=v;node.writes++;}});nodes.set(key,node);
+  }return nodes.get(key);};
+  const context=vm.createContext({game:g,$,document:{querySelector:$,querySelectorAll:()=>[]},input:{repair:false},lastStatus:g.status,B,ROUTES,V11,stationX,phaseLabel});
+  vm.runInContext(source.slice(source.indexOf('function ui(){'),source.indexOf('function frame(')),context);
+  vm.runInContext('ui()',context);const before=$(id).textContent,writes=$(id).writes;
+  for(let i=0;i<40;i++)vm.runInContext('ui()',context);
+  assert.equal($(id).writes,writes,'unchanged text must retain its native text node');
+  if(id==='pause')g.pause(false);else g.setPlayerLayer('ROOF');
+  vm.runInContext('ui()',context);assert.notEqual($(id).textContent,before);assert.equal($(id).writes,writes+1);
+});

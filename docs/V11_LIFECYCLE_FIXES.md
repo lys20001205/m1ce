@@ -1,4 +1,4 @@
-# V11 QA continuation — C05 / C06 / C07
+# V11 QA continuation — C05 / C06 / C07 / C08
 
 Baseline: `b12ab97e288248f865c8fc1a6ec0939e8bc04876` (C01–C04 already merged). This change does not redesign gameplay, adjust tuning, or change save formats.
 
@@ -19,11 +19,16 @@ Closing a long-lived context and recovering with a new user gesture created a fr
 
 Graph creation resets periodic deadlines to the new context time, clears old voices/pending cues and stale output evidence, and disconnects the old context's state callback. It retains the user's mute setting. Ordinary suspend/resume still reuses the graph and its clock. Scope: `AudioCues.createGraph` in `src/audio.js`; no cue design, mix levels, bus gain or pitch changes. Main regression risks: unwanted replay, mute persistence, and repeated graph creation.
 
+### C08 — stable native button targets (BUG / UX, S2 candidate)
+The browser follow-up recorded an intermittent WebKit RETURN click with no resulting layer change. The page rewrites the pause/layer/interact button text on every render even when the label is unchanged, replacing the native text nodes during a click. WebKit has a matching upstream report (https://bugs.webkit.org/show_bug.cgi?id=252810); that report alone does not establish physical-iPhone impact.
+
+The three click-activated labels now update only when their text changes, preserving native targets while the pointer is held. Native click handlers and keyboard accessibility remain intact; no pointer-down shortcut replaces them. Three DOM-double regressions fail on the prior source and pass after the change. Browser coverage checks actual native node identity across rendered frames and uses 120ms trusted clicks spanning frames for pause/RETURN, including exact rejected/successful interaction call records. Investigation evidence and any remaining uncertainty must be retained in the final receipt.
+
 ## Evidence requirements
 
-- `tests/lifecycle_followup.test.mjs`: 25 production-rule/HUD/audio tests; the initial 23 have baseline 2 pass / 21 fail, with two further left/right Depot bridge regressions. Input/HUD tests use DOM doubles; they do not constitute browser or device evidence.
-- `tests/browser_v11_lifecycle.py`: 40 required checks per Chromium/WebKit using actual pages, trusted keyboard/mouse capture-loss input, screenshots, resized viewports and real Web Audio context close/recovery. Context closure and state setup are deliberate fixtures; no claim about actual OS interruption or real-phone behavior.
-- The release gate requires both new reports, at least 237 passing unit tests, and all existing gates. No existing check is relaxed or bypassed.
+- `tests/lifecycle_followup.test.mjs`: 28 production-rule/HUD/audio tests; the initial 23 have baseline 2 pass / 21 fail, with two further left/right Depot bridge regressions and three native-label stability regressions. Input/HUD tests use DOM doubles; they do not constitute browser or device evidence.
+- `tests/browser_v11_lifecycle.py`: 44 required checks per Chromium/WebKit using actual pages, trusted keyboard/mouse capture-loss input, screenshots, resized viewports and real Web Audio context close/recovery. Context closure and state setup are deliberate fixtures; no claim about actual OS interruption or real-phone behavior.
+- The release gate requires both new reports, at least 240 passing unit tests, and all existing gates. No existing check is relaxed or bypassed.
 - Initial delivery was local-only because a source-upload request was blocked. Upload succeeded on the subsequent authorized attempt. At PR submission the new browser suite is still pending its first CI execution; no browser pass or deployment is claimed in this document. Exact-commit CI and artifact verification are required before merging or deploying. See the PR and workflow artifacts for final execution status.
 
 ## Manual acceptance still open

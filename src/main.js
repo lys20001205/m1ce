@@ -114,13 +114,15 @@ addEventListener('blur',()=>{clearInput();if(active())game.pause(true);audio.sil
 document.addEventListener('visibilitychange',()=>{clearInput();if(document.hidden){if(active())game.pause(true);audio.silence();telemetry.log('hidden');telemetry.flush(true);}else{last=0;resize();telemetry.log('visible');}});
 $('game').addEventListener('webglcontextlost',e=>{e.preventDefault();fatal(new Error('WebGL context lost，请重新载入'));});addEventListener('error',e=>fatal(new Error(e.message)));addEventListener('unhandledrejection',e=>fatal(e.reason));
 function ui(){
+  // Preserve native click targets while a pointer is down (including WebKit).
+  const buttonText=(id,text)=>{const node=$(id);if(node.textContent!==text)node.textContent=text;};
   const engine=game.engineState,job=game.repairJob,warn=game.hazardInfo(),threat=game.director.snapshot(game),stolen=game.enemies.filter(e=>e.hp>0&&e.carry);
   $('cargoHud').textContent='CARGO '+game.cargoUsed+' / '+game.cargoCapacity;
   $('lifePanel').hidden=game.alive||!['running','arriving','complete'].includes(game.status);$('lifePanel').textContent=(game.player.deathReason==='train_lost'?'TRAIN LOST':'PLAYER DOWN')+' · RESPAWN '+game.player.respawnRemaining.toFixed(1);
   $('more').disabled=!game.alive;
   $('round').textContent=String(game.round).padStart(2,'0');$('money').textContent=Math.round(game.money).toLocaleString();$('health').textContent=Math.ceil(game.cars[0].hp/game.cars[0].max*100)+'% / '+Math.ceil(game.player.hp);$('health').dataset.state=engine;
   $('weapon').textContent=game.weapon;$('scrapHud').textContent=String(game.scrap);$('attack').textContent=game.melee.name;$('ranged').textContent=game.ranged?.name==='HIGH-DAMAGE RIFLE'?'RIFLE':game.ranged?.name||'LOCKED';$('ranged').disabled=!game.ranged;$('phase').textContent=game.practice?'抢修演练 / 不结算':game.status==='arriving'?'安全回站 / 转盘锁定':game.engineState==='stalled'?'动力停机 / 路线暂停':({dock:'机库准备',depart:'出库 / 转盘对轨',yard:phaseLabel(game.phase,game.route),crane:'机械臂',approach:'隧道预告',tunnel:'低净空隧道',return:'返回机库'}[game.phase]||game.phase);
-  $('fill').style.width=game.t*100+'%';$('pause').textContent=game.paused?'继续':'暂停';
+  $('fill').style.width=game.t*100+'%';buttonText('pause',game.paused?'继续':'暂停');
   $('progress').textContent=game.rescue?'抢救剩余 '+game.rescue.remaining.toFixed(1)+' 秒':warn?(warn.kind==='crane'?'扫顶':'入隧道')+'约 '+warn.seconds.toFixed(1)+' 秒':threat.rest>0?'新威胁暂停 '+threat.rest.toFixed(1)+'s':threat.relief?'危急减压中':(ROUTES[game.route]?.name||'ROUNDHOUSE')+' · '+game.speedMode+' · CHARGE '+Math.round(game.batteryCharge)+' / '+game.batteryCapacity;
   let message=game.event;
   if(game.status==='running'){
@@ -140,7 +142,7 @@ function ui(){
   }
   $('event').textContent=message;$('event').dataset.state=game.rescue?'stalled':engine;$('viewport').dataset.health=game.player.hp<=20?'critical':'normal';
   $('speedPanel').hidden=game.status!=='running'||!game.atConsole||!game.consoleOpen;document.querySelectorAll('[data-speed]').forEach(b=>{b.classList.toggle('selected',b.dataset.speed===game.speedMode);b.disabled=game.engineState==='stalled'||b.dataset.speed==='FAST'&&game.batteryCharge<=0;});
-  $('layer').textContent=game.playerLayer==='DEPOT'?'RETURN':game.player.roof?'下车内':'上车顶';$('interact').textContent=game.playerLayer==='DEPOT'?(game.player.carry?'RETURN':'PICKUP'):game.player.roof?(game.player.carry?'LOAD':'DEPOT'):game.player.carry?'放货':game.cars[game.currentCar].type==='engine'?(game.atArmory?'ARMORY':'SPEED'):game.cars[game.currentCar].type==='cargo'?'搬货':'交互';
+  buttonText('layer',game.playerLayer==='DEPOT'?'RETURN':game.player.roof?'下车内':'上车顶');buttonText('interact',game.playerLayer==='DEPOT'?(game.player.carry?'RETURN':'PICKUP'):game.player.roof?(game.player.carry?'LOAD':'DEPOT'):game.player.carry?'放货':game.cars[game.currentCar].type==='engine'?(game.atArmory?'ARMORY':'SPEED'):game.cars[game.currentCar].type==='cargo'?'搬货':'交互');
   $('armoryPanel').hidden=!game.armoryOpen||!game.atArmory||!game.alive||game.status!=='running';
   $('armoryScrap').textContent=game.scrap+' SCRAP · WORLD RUNNING';
   for(const slot of ['melee','ranged']){const b=document.querySelector('[data-armory='+slot+']'),offer=game.armoryOffer(slot);const text=slot.toUpperCase()+' · '+(offer?(offer.locked?'LOCKED UNTIL COMBAT TIER 3':offer.name+' · '+offer.cost+' SCRAP'):'MAX TIER');if(b.textContent!==text)b.textContent=text;b.disabled=!offer||offer.locked||game.scrap<offer.cost;}
