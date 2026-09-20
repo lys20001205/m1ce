@@ -127,7 +127,7 @@ function ui(){
     if(game.rescue){
       const d=game.player.x-stationX(0);let instruction;
       if(!game.alive)instruction='等待复活 '+game.player.respawnRemaining.toFixed(1)+'s；动力倒计时继续';
-      else if(game.playerLayer==='DEPOT')instruction='先 RETURN 回列车，再进 01 动力车内抢修';
+      else if(game.playerLayer==='DEPOT'){const dx=game.player.depotX||0;instruction=Math.abs(dx)>V11.depot.bridgeRadius?(dx>0?'← ':'→ ')+'回到 Depot 中央连接桥，再按 RETURN':'先 RETURN 回列车，再进 01 动力车内抢修';}
       else if(game.player.carry)instruction=game.player.roof?'先到货车舱口 LOAD 放货，再下车内抢修':'先把货物放回货车，再前往 01 控制柜抢修';
       else if(game.player.roof)instruction='找到黄色梯子下车内，再前往 01 控制柜';
       else instruction=Math.abs(d)>B.repairRadius?(d>0?'← ':'→ ')+'前往 01 控制柜，长按修理':'控制柜已在身旁：长按修理 '+game.emergencyRepairTime.toFixed(1)+' 秒'+(game.runRepairKit?' · 维修包加速':'');

@@ -7,6 +7,7 @@ import vm from 'node:vm';
 import {Game, B, stationX, phaseLabel} from '../src/sim.js';
 import {INPUT_BINDINGS_SSOT,ROUTES} from '../src/content.js';
 import {AudioCues} from '../src/audio.js';
+import {V11} from '../src/balance.js';
 const source=fs.readFileSync(new URL('../src/main.js',import.meta.url),'utf8');
 function controls(){
   const nodes=new Map(),listeners=new Map(),calls=[];
@@ -52,7 +53,7 @@ test('C05: repair cancels once only when its final input owner releases',()=>{
 function stalled(){const g=new Game();g.chooseRoute('freight');g.chooseCar('cargo');g.start();g.player.x=stationX(0);g.elapsed=3;g.damageCar(0,g.cars[0].hp);return g;}
 function hint(g){const nodes=new Map();const $=id=>{if(!nodes.has(id))nodes.set(id,{style:{},dataset:{},classList:{toggle(){}},textContent:''});return nodes.get(id);};
   vm.runInNewContext(source.slice(source.indexOf('function ui(){'),source.indexOf('function frame('))+'\nui();',
-    {game:g,$,document:{querySelector:$,querySelectorAll:()=>[]},input:{repair:false},lastStatus:g.status,B,ROUTES,stationX,phaseLabel});return $('event').textContent;}
+    {game:g,$,document:{querySelector:$,querySelectorAll:()=>[]},input:{repair:false},lastStatus:g.status,B,ROUTES,stationX,phaseLabel,V11});return $('event').textContent;}
 test('C06: vertically aligned roof does not claim the console is in reach',()=>{const g=stalled();g.setPlayerLayer('ROOF');const h=hint(g);assert.match(h,/黄色梯子.*车内/);assert(!h.includes('控制柜已在身旁'));assert.equal(g.repair(.1),false);});
 test('C06: Depot position prioritizes returning to the train',()=>{const g=stalled();g.setPlayerLayer('DEPOT');const h=hint(g);assert.match(h,/RETURN.*列车/);assert(!h.includes('控制柜已在身旁'));});
 test('C06: death during Stall shows respawn with the continuing engine deadline',()=>{const g=stalled();g.killPlayer('boarder');const h=hint(g);assert.match(h,/复活.*5\.0/);assert.match(h,/动力倒计时继续/);assert(!h.includes('长按修理'));assert.equal(g.rescue.remaining,8);});
@@ -81,4 +82,12 @@ test('C07: suspend/resume reuses its graph and recreation preserves mute prefere
   const f=audioFixture();f.audio.unlock();f.audio.update(f.g);const rail=f.audio.nextRail;
   f.contexts[0].state='suspended';f.audio.unlock();assert.equal(f.contexts.length,1);assert.equal(f.audio.nextRail,rail);
   f.audio.setEnabled(false);f.contexts[0].state='closed';f.audio.unlock();assert.equal(f.audio.enabled,false);assert.equal(f.audio.master.gain.value,0);
+});
+
+for(const side of [-1,1])test(`C06: Depot offset ${side} gives bridge direction before a rejected RETURN`,()=>{
+  const g=stalled();g.t=.26;g.setPlayerLayer('DEPOT');g.player.depotId=g.depots[0].id;g.player.depotX=side*7;g.syncDepotPlayer();
+  assert.equal(g.layer(),false);assert.equal(g.event,'RETURN TO THE CENTER BRIDGE');
+  assert(hint(g).includes((side>0?'← ':'→ ')+'回到 Depot 中央连接桥，再按 RETURN'));
+  g.player.depotX=side*V11.depot.bridgeRadius;g.syncDepotPlayer();assert.match(hint(g),/先 RETURN 回列车/);
+  assert.equal(g.layer(),true);assert.equal(g.playerLayer,'ROOF');assert.match(hint(g),/黄色梯子.*车内/);
 });

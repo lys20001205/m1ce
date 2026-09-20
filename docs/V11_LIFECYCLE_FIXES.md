@@ -12,7 +12,7 @@ Release now removes only its own pointer ID and ignores duplicate release notifi
 ### C06 — actionable Stall instruction (UX, S2)
 A player directly above the Engine console, on a Depot, carrying Cargo, or dead could receive the same instruction as a living empty-handed player beside the console. The previous hint compared only horizontal distance.
 
-The Stall hint now prioritizes: waiting for respawn (explicitly stating that the Engine countdown continues), RETURN from Depot, putting Cargo back in a cargo car (LOAD before any ladder action when carrying on the roof), a yellow ladder down from the roof, horizontal direction to the console, then the existing exact repair duration. The generic center hint is hidden while dead. Scope: HUD text in `src/main.js`; Engine authority, life transitions, deadlines, repair eligibility and duration are unchanged. Main regression risks: mobile text truncation, incorrect priority, and loss of the kit-speed hint.
+The Stall hint now prioritizes: waiting for respawn (explicitly stating that the Engine countdown continues), walking back to the Depot center bridge with a left/right arrow before RETURN when outside bridge range, putting Cargo back in a cargo car (LOAD before any ladder action when carrying on the roof), a yellow ladder down from the roof, horizontal direction to the console, then the existing exact repair duration. The generic center hint is hidden while dead. Scope: HUD text in `src/main.js`; Engine authority, life transitions, deadlines, repair eligibility and duration are unchanged. Main regression risks: mobile text truncation, incorrect priority, and loss of the kit-speed hint.
 
 ### C07 — AudioContext recreation clock (BUG / AUDIO, S2)
 Closing a long-lived context and recovering with a new user gesture created a fresh audio graph, but periodic rail/repair/alarm deadlines remained on the previous context's clock. This can delay periodic cues for the duration of the old session even though the new context runs and the engine hum works. It is not a claim that the entire game is silent.
@@ -21,9 +21,9 @@ Graph creation resets periodic deadlines to the new context time, clears old voi
 
 ## Evidence requirements
 
-- `tests/lifecycle_followup.test.mjs`: 23 production-rule/HUD/audio tests; baseline 2 pass / 21 fail, patched 23 pass. Input/HUD tests use DOM doubles; they do not constitute browser or device evidence.
-- `tests/browser_v11_lifecycle.py`: 34 required checks per Chromium/WebKit using actual pages, trusted keyboard/mouse capture-loss input, screenshots, resized viewports and real Web Audio context close/recovery. Context closure and state setup are deliberate fixtures; no claim about actual OS interruption or real-phone behavior.
-- The release gate requires both new reports, at least 235 passing unit tests, and all existing gates. No existing check is relaxed or bypassed.
+- `tests/lifecycle_followup.test.mjs`: 25 production-rule/HUD/audio tests; the initial 23 have baseline 2 pass / 21 fail, with two further left/right Depot bridge regressions. Input/HUD tests use DOM doubles; they do not constitute browser or device evidence.
+- `tests/browser_v11_lifecycle.py`: 40 required checks per Chromium/WebKit using actual pages, trusted keyboard/mouse capture-loss input, screenshots, resized viewports and real Web Audio context close/recovery. Context closure and state setup are deliberate fixtures; no claim about actual OS interruption or real-phone behavior.
+- The release gate requires both new reports, at least 237 passing unit tests, and all existing gates. No existing check is relaxed or bypassed.
 - Initial delivery was local-only because a source-upload request was blocked. Upload succeeded on the subsequent authorized attempt. At PR submission the new browser suite is still pending its first CI execution; no browser pass or deployment is claimed in this document. Exact-commit CI and artifact verification are required before merging or deploying. See the PR and workflow artifacts for final execution status.
 
 ## Manual acceptance still open

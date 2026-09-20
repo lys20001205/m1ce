@@ -9,7 +9,7 @@ from pathlib import Path
 from playwright.async_api import async_playwright
 ART = Path('artifacts')
 ART.mkdir(exist_ok=True)
-MINIMUM = 34
+MINIMUM = 40
 RESET = '''() => {const a=__RH_TEST;a.reset();const g=a.game();g.director.rest=9999;
  g.elapsed=5;g.t=.1;g.phase='yard';g.rangedTier=1;a.forcePlayer(4.8);a.step(0);}'''
 
@@ -99,6 +99,25 @@ async def run(p, name):
         await page.evaluate(RESET)
         await page.evaluate('''()=>{const a=__RH_TEST,g=a.game();g.pause(true);a.forcePlayer(5.8);g.runRepairKit=1;g.damageCar(0,g.cars[0].hp);a.step(0);}''')
         check('eligible_restart_duration_unchanged', '长按修理 1.5 秒' in await page.locator('#event').inner_text())
+        for side in [-1, 1]:
+            await page.evaluate(RESET)
+            await page.evaluate("""side=>{const a=__RH_TEST,g=a.game();g.pause(true);g.route='freight';g.prepareDepots();
+              g.t=.26;g.elapsed=5;g.phase='yard';g.setPlayerLayer('DEPOT');g.player.depotId=g.depots[0].id;
+              g.player.depotX=side*7;g.syncDepotPlayer();g.damageCar(0,g.cars[0].hp);g.pause(false);a.step(0);}""", side)
+            await page.locator('#layer').click()
+            text = await page.locator('#event').inner_text()
+            direction = '← ' if side > 0 else '→ '
+            check(f'depot_{side}_blocked_return_keeps_bridge_guidance', direction+'回到 Depot 中央连接桥' in text
+                  and await page.evaluate('__RH_TEST.game().playerLayer==="DEPOT"'))
+            await page.screenshot(path=str(ART/f'{name}-lifecycle-depot-bridge-{side}.png'))
+            key = 'KeyA' if side > 0 else 'KeyD'
+            await page.keyboard.down(key)
+            await page.wait_for_function('Math.abs(__RH_TEST.game().player.depotX)<=2', timeout=2500)
+            await page.keyboard.up(key)
+            check(f'depot_{side}_walking_reaches_return_instruction', '先 RETURN 回列车' in await page.locator('#event').inner_text())
+            await page.locator('#layer').click()
+            check(f'depot_{side}_return_succeeds_after_following_hint', await page.evaluate('__RH_TEST.game().playerLayer==="ROOF"')
+                  and '黄色梯子' in await page.locator('#event').inner_text())
         # Observe actual play() calls while leaving all real nodes and signal paths intact.
         await page.evaluate('''()=>{window.lifecycleCues=[];const a=__RH_TEST.audio(),original=a.play;
           a.play=function(name,options){const result=original.call(this,name,options);lifecycleCues.push({name,result,time:this.context?.currentTime});return result;};}''')
