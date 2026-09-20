@@ -1,0 +1,66 @@
+name: Recorded QA exploration (not human release signoff)
+on:
+  push:
+    branches: [qa/v11-completion]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: qa-exploration-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  explore:
+    runs-on: ubuntu-latest
+    timeout-minutes: 16
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - scenario: normal-freight
+            browser: chromium
+          - scenario: normal-industrial
+            browser: chromium
+          - scenario: normal-tunnel
+            browser: chromium
+          - scenario: probe-edges
+            browser: chromium
+          - scenario: probe-edges
+            browser: webkit
+    env:
+      LIBGL_ALWAYS_SOFTWARE: '1'
+      WEBKIT_DISABLE_DMABUF_RENDERER: '1'
+      QA_CASE: ${{ matrix.scenario }}
+      QA_BROWSER: ${{ matrix.browser }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: npm run build
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.13'
+      - run: |
+          pip install playwright==1.56.0
+          python -m playwright install --with-deps $QA_BROWSER
+          python -m py_compile tools/qa_exploratory.py
+      - name: Record actual page actions and failures
+        run: xvfb-run -a python tools/qa_exploratory.py
+      - name: Capture exact source and runner limits
+        if: always()
+        run: |
+          mkdir -p qa-evidence
+          git rev-parse HEAD > qa-evidence/commit.txt
+          git diff --binary HEAD > qa-evidence/uncommitted.patch
+          cp tools/qa_exploratory.py qa-evidence/executed-script.py
+          cp dist/build.json qa-evidence/local-build.json
+          uname -a > qa-evidence/runner.txt
+          echo 'Software-rendered CI. Not real device FPS or human gameplay; no subjective audio approval.' >> qa-evidence/runner.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: qa-${{ matrix.scenario }}-${{ matrix.browser }}
+          path: qa-evidence/
+          retention-days: 14
