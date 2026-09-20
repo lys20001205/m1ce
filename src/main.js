@@ -7,6 +7,8 @@ import {DevTools} from './devtools.js';
 import {AudioCues} from './audio.js?v=11';
 import {ROUTES,SPEED_MODES,INPUT_BINDINGS_SSOT,PREP_ITEMS} from './content.js';
 import {V11} from './balance.js';
+import {DesignUI,carPreview,routeReason} from './design_ui.js';
+const design=new DesignUI(document);
 const $=id=>document.getElementById(id);
 const mode=runtimeMode(location.search),save=new SaveStore({mode}),clock=new SimulationClock();let devtools=null;
 let game,view,telemetry,input={move:0,attack:false,ranged:false,repair:false},last=0,lastStatus='',selected='battery',frameError=false,bankWritable=true;
@@ -16,7 +18,7 @@ const active=()=>['running','arriving'].includes(game.status);
 function readSave(){return save.read();}
 function seed(){const a=new Uint32Array(1);try{crypto.getRandomValues(a);return a[0];}catch{return Date.now()>>>0;}}
 function snapshot(){return{...game?.snapshot(),...(view?.loaded===3?view.snapshot():{modelsLoaded:0}),audio:audio.snapshot(),clock:clock.snapshot(),test:mode.test,session:telemetry?.session,standalone:!!navigator.standalone||matchMedia('(display-mode: standalone)').matches,errors:telemetry?.errors||0};}
-function emit(type,data){if(type==='player_death')clearInput();telemetry?.log(type,data);audio.event(type,data);}
+function emit(type,data){design.observe(game,type,data);if(type==='player_death')clearInput();telemetry?.log(type,data);audio.event(type,data);}
 const initialSave=readSave();telemetry=new Telemetry(snapshot,{...mode,storage:save.storage});game=new Game({bank:initialSave.bank,prep:initialSave.prep,seed:seed(),emit,dev:mode.dev});
 function clearInput(){input={move:0,attack:false,ranged:false,repair:false};pressed.clear();document.querySelectorAll('.active').forEach(e=>e.classList.remove('active'));}
 function fatal(error){clearInput();game.pause(true);audio.silence();frameError=true;$('modal').hidden=true;$('portrait').hidden=true;telemetry.log('runtime_error',{message:String(error?.message||error).slice(0,150)});$('fatal').hidden=false;$('fatal').textContent='3D 运行暂停：'+String(error?.message||error)+'\n日志已保留。请重新载入；此版本不会切回二维画面。';}
@@ -38,6 +40,7 @@ const keyActions=new Map(Object.entries(INPUT_BINDINGS_SSOT).flatMap(([action,bi
 addEventListener('keydown',e=>{if(['INPUT','TEXTAREA','SELECT'].includes(e.target?.tagName)||game.paused||game.status!=='running'||!game.alive)return;const entry=keyActions.get(e.code);if(!entry)return;e.preventDefault();if(entry.binding.hold){pressed.set('key'+e.code,entry.action);refreshInputs();}else if(!e.repeat)actions[entry.action]?.();});
 addEventListener('keyup',e=>{pressed.delete('key'+e.code);refreshInputs();});
 const mobileInput=navigator.maxTouchPoints>0||matchMedia('(pointer: coarse)').matches;
+design.touch=mobileInput;
 $('keyboardLegend').hidden=mobileInput;$('app').classList.toggle('touchUI',mobileInput);
 for(const [action,binding] of Object.entries(INPUT_BINDINGS_SSOT)){
   const span=document.createElement('span');span.dataset.action=action;span.textContent=binding.label+' '+binding.display;$('keyboardLegend').append(span);
@@ -61,10 +64,10 @@ function replaceGame(practice=false){
 $('practice').onclick=()=>replaceGame(true);$('restart').onclick=()=>replaceGame(false);
 function choices(){
   const root=$('choices');root.replaceChildren();if(game.trainFull)return;
-  const descriptions={cargo:'+3 个空货位 · Freight 搬货 · 额外货车增加盗贼权重',battery:'FAST 储能 · 隧道照明 · 供电维修',workshop:'维修加速 · 工业故障处理 · 本地维修站'};
+  // Values are read from the actual current/projected rules, never written back.
   if(!game.carOffers.includes(selected))selected=game.carOffers[0];
-  for(const type of game.carOffers){const b=document.createElement('button');b.textContent=DEFS[type].name;const small=document.createElement('small');small.textContent=descriptions[type];b.appendChild(small);b.className=type===selected?'selected':'';b.dataset.car=type;b.onclick=()=>{selected=type;if(game.chooseCar(type)){view.rebuildCars();showHub();}};root.appendChild(b);}
-  if(game.prep.reroll>0&&!game.carRerolled){const b=document.createElement('button');b.dataset.reroll='car';b.textContent='REROLL OFFER · '+game.prep.reroll+' TOKEN';b.onclick=()=>{if(game.rerollCars()){bankWritable=save.write(game);choices();}};root.appendChild(b);}
+  for(const type of game.carOffers){const b=document.createElement('button');b.textContent=DEFS[type].name;const small=document.createElement('small');small.textContent=carPreview(game,type).lines.join('\n');b.appendChild(small);b.className=type===selected?'selected':'';b.dataset.car=type;b.onclick=()=>{selected=type;if(game.chooseCar(type)){view.rebuildCars();showHub();}};root.appendChild(b);}
+  if(game.prep.reroll>0&&!game.carRerolled){const b=document.createElement('button');b.dataset.reroll='car';b.textContent='更换备选 · REROLL · '+game.prep.reroll+' TOKEN（保留推荐车）';b.onclick=()=>{if(game.rerollCars()){bankWritable=save.write(game);choices();}};root.appendChild(b);}
 }
 function renderPrep(){
   const panel=$('prepShop'),visible=!game.practice&&(game.status==='cashed'||(game.status==='ready'&&game.hubStage==='route'));panel.hidden=!visible;if(!visible)return;
@@ -86,9 +89,9 @@ function showHub(){
   for(const r of Object.values(ROUTES)){
     const b=document.createElement('button');b.dataset.route=r.id;const title=document.createElement('b');title.textContent=r.name;
     const info=document.createElement('small');info.textContent=r.theme+' · Cargo: '+r.cargo+' · Threat: '+r.threat+' · Recommended: '+r.recommended.toUpperCase()+(game.previousRoute===r.id?' · REPEAT PRESSURE +1':'')+(game.routeIntel?.route===r.id?' · INTEL: '+game.routeIntel.text:'');
-    b.append(title,info);b.onclick=()=>{audio.unlock('route_gesture');if(game.chooseRoute(r.id))showHub();};root.append(b);
+    const reason=document.createElement('small');reason.className='routeReason';reason.textContent=routeReason(game,r.id);if(game.round===1&&game.cars.length===1&&r.id==='freight')b.classList.add('firstRoute');b.append(title,info,reason);b.onclick=()=>{audio.unlock('route_gesture');if(game.chooseRoute(r.id))showHub();};root.append(b);
   }
-  if(game.hubStage==='car')choices();else $('choices').replaceChildren();renderPrep();
+  if(game.hubStage==='car')choices();else $('choices').replaceChildren();renderPrep();design.hub(game);
 }
 const riskName={LOW:'低',MEDIUM:'中',HIGH:'高',EXTREME:'极高'};
 function showEnd(){
@@ -102,7 +105,7 @@ function showEnd(){
   $('summary').textContent=(practice?'演练不结算':game.status==='cashed'?'本局兑现 '+Math.round(game.settledAmount||0).toLocaleString():game.status==='lost'?'未兑现损失 '+Math.round(game.lostAmount||0).toLocaleString():'第 '+game.round+' 圈 · 未兑现 '+Math.round(game.money).toLocaleString())+' · 银行 '+Math.round(game.bank).toLocaleString()+(bankWritable?'':'（存储失败，本次仅在内存保留）');
   const s=complete?game.lap:game.total;for(const [id,value] of [['saved',s.clutchSaves],['recovered',s.cargoSaved.toLocaleString()],['critical',s.criticalSeconds.toFixed(1)+'s'],['repaired',s.repairs]])$(id).textContent=value;
   $('riskPanel').textContent='下一圈风险：'+riskName[game.risk()]+' · 动力 '+Math.ceil(game.cars[0].hp/game.cars[0].max*100)+'% · 生命 '+Math.ceil(game.player.hp)+' · '+game.cars.length+' 节车厢 · 下一倍率 ×'+Math.pow(1.22,game.round).toFixed(2)+'（风险为车况提示，非成功率预测）';
-  $('cash').textContent='安全兑现 '+Math.round(game.money).toLocaleString();$('more').textContent=game.cars.length>=12?'继续 · 列车已达上限':'接车 · 再来一圈';renderPrep();
+  $('cash').textContent='安全兑现 '+Math.round(game.money).toLocaleString();$('more').textContent=game.cars.length>=12?'继续 · 列车已达上限':'接车 · 再来一圈';renderPrep();design.end(game);
   
 }
 function debugOpen(){clearInput();if(active())game.pause(true);audio.silence();$('debug').hidden=false;debugRefresh();}
@@ -151,7 +154,7 @@ function ui(){
   $('centerHint').hidden=!!job||!!notice||!game.alive;$('centerHint').textContent=game.status==='arriving'?'安全回站 · '+Math.max(0,B.arrivalTime-game.arrivalElapsed).toFixed(1)+'s':input.repair?game.repairHint:game.player.roof?'车顶移动 +25% · 提前留意净空':'近设备长按修理 · 黄梯切层';
   if(game.status!==lastStatus){lastStatus=game.status;if(['complete','lost','cashed','practice_complete'].includes(game.status))showEnd();if(game.status==='arriving')clearInput();}
 }
-function frame(ts){if(frameError)return;try{const raw=last?ts-last:0,dt=Math.min(.05,raw/1000);last=ts;view.recordFrame(raw);clock.advance(game,raw/1000,input);audio.update(game);view.render(dt);ui();devtools?.update(ts);requestAnimationFrame(frame);}catch(e){fatal(e);}}
+function frame(ts){if(frameError)return;try{const raw=last?ts-last:0,dt=Math.min(.05,raw/1000);last=ts;view.recordFrame(raw);clock.advance(game,raw/1000,input);audio.update(game);view.render(dt);ui();design.frame(game);devtools?.update(ts);requestAnimationFrame(frame);}catch(e){fatal(e);}}
 try{view=new View($('game'),game,(t,d)=>telemetry.log(t,d));view.reducedMotion=$('reduced').checked;await view.init();$('start').disabled=false;$('practice').disabled=false;$('start').textContent='从机库发车';showHub();$('event').textContent=game.event;resize();requestAnimationFrame(frame);}catch(e){fatal(e);}
 addEventListener('pageshow',()=>audio.restore('pageshow'));
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)audio.restore('visible');});
@@ -160,7 +163,7 @@ devtools=mode.dev?new DevTools({game:()=>game,audio,view:()=>view,clock,start:()
 window.__RH_DEBUG={snapshot,logs:()=>telemetry.events,renderer:()=>view.snapshot(),occlusion:()=>view.occlusion(),pixels:()=>view.pixels()};
 if(mode.test)window.__RH_TEST={
   game:()=>game,view:()=>view,audio:()=>audio,clock:()=>clock,save:()=>save,input:()=>({...input}),
-  step:(seconds,controls={})=>{for(let left=seconds;left>1e-8;left-=.025)game.step(Math.min(.025,left),controls);view.render(.016);ui();},
+  step:(seconds,controls={})=>{for(let left=seconds;left>1e-8;left-=.025)game.step(Math.min(.025,left),controls);view.render(.016);ui();design.frame(game);},
   forceRoute:t=>{game.t=t;game.elapsed=Math.max(game.elapsed,3);game.phase=phaseAt(t,game.route);},
   forceCars:n=>{while(game.cars.length<Math.min(12,n)){const d=DEFS.cargo;game.cars.push({type:'cargo',hp:d.hp,max:d.hp,cargo:3});}view.rebuildCars();},
   forcePlayer:(x,roof=false)=>{game.player.x=clamp(x,.4,game.length-.4);game.player.roof=roof;game.player.y=roof?ROOF:FLOOR;game.player.layer=roof?'ROOF':'INTERIOR';game.player.z=.65;view.cameraX=game.player.x;view.render(.016);},

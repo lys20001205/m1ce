@@ -38,6 +38,7 @@ async def run(p,name):
         report['checks']['provenance_has_commit']=len(meta['build'].get('commit',''))==40
         raw=await page.evaluate('JSON.stringify(__RH_DEBUG.snapshot()).length');report['localSnapshotBytes']=raw
         await page.wait_for_timeout(200);report['checks']['no_upload_before_explicit_consent']=len(posts)==0 and not await page.locator('#telemetry').is_checked()
+        await page.locator('#helpSettings > summary').click()
         await page.locator('#telemetry').check();await page.wait_for_function('__RH_DEBUG.logs().some(e=>e.type==="telemetry_consent"&&e.enabled===true)')
         for _ in range(40):
             if posts:break
@@ -51,6 +52,7 @@ async def run(p,name):
         report['checks']['consent_can_be_revoked']=not await page.locator('#telemetry').is_checked() and len(posts)==before
         for query,mode in [('?test=1','test'),('?dev=1','dev')]:
             before=len(posts);await page.goto(origin+query,wait_until='networkidle');await page.wait_for_function('window.__RH_DEBUG?.snapshot().modelsLoaded===3')
+            await page.locator('#helpSettings > summary').click()
             await page.locator('#telemetry').check();await page.wait_for_timeout(200)
             report['checks'][mode+'_cannot_upload_to_formal_channel']=len(posts)==before
         report['checks']['no_page_errors']=not errors
