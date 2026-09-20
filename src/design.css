@@ -1,0 +1,15 @@
+
+/* Design pass 1: normal entry first; optional prep/help are secondary and scrollable. */
+#modal article{scrollbar-gutter:stable}#hubObjective{color:#c5e5cf;font-size:11px;margin:6px 0}#summary{font-size:10px;margin:5px 0}#intro{margin:5px 0}
+#routeChoices .firstRoute{border-color:#d5ad67}#routeChoices .routeReason{color:#e5ce9c;font-size:10px;line-height:1.4}
+#choices small{white-space:pre-line;line-height:1.5}.secondarySetup{display:flex;align-items:flex-start;gap:14px;margin-top:8px}.secondarySetup>details{flex:1}
+#practice{background:transparent;border-color:transparent;color:#a8bac1;font-size:10px;padding:5px 0;min-height:30px;flex:none}
+details>summary{cursor:pointer;font-size:11px;padding:7px 0;color:#b6cdd0;touch-action:manipulation}#prepDisclosure{margin-top:7px;border-top:1px solid #385665}#prepShop{margin:2px 0 6px}#helpSettings .note{display:block}
+#runActions{z-index:2}#outcomeStats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin:7px 0}#outcomeStats>div{padding:7px;border:1px solid #45616c;border-radius:6px;min-width:0}#outcomeStats small{display:block;font-size:10px;color:#a6c0c8}#outcomeStats b{font-size:15px;color:#bdedcc}#upgradesDetail{font-size:10px;color:#b6cdd0;margin:4px 0}#upgradesDetail:empty{display:none}#economyBreakdown{white-space:pre-line;font-size:11px;margin:3px 0}
+#depotMarkers{position:absolute;inset:0;pointer-events:none}#route .depotMarker{position:absolute;bottom:-2px;transform:translateX(-50%);font-size:9px;line-height:10px;color:#ffdb91}#phase,#progress{padding-bottom:3px}
+#centerHint{font-size:10px;line-height:1.4;overflow-wrap:anywhere}#kitStatus{display:block;font-size:9px;line-height:1.25;color:#d9d297}#speedHelp{display:block;margin-top:5px;max-width:285px;line-height:1.4;color:#bdd2cf}#armoryHelp{line-height:1.4}
+@media(max-height:430px){#modal article{padding:10px 16px}#modal h1{margin:2px 0 4px;font-size:22px}#endTitle{font-size:22px}#routeChoices{margin:5px 0}#routeChoices button{padding:8px}#routeChoices small{font-size:10px;line-height:1.4}#outcomeStats>div{padding:5px}#outcomeStats b{font-size:13px}#armoryPanel{width:238px}#kitStatus{font-size:8px}}
+
+#resultStats{display:block}#resultStats>#outcomeStats{border:0;padding:0}#incidentStats{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}#incidentStats small{display:block;font-size:10px}#incidentStats b{font-size:13px}
+/* An offer is not an equipped car: do not paint the inherited draft choice as selected. */
+#choices .selected{border-width:1px;border-color:#4b6472}
