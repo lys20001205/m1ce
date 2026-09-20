@@ -1,36 +1,23 @@
-name: Recorded QA exploration (not human release signoff)
+name: Public Freight replay with confirmed departure (not human signoff)
 on:
   push:
-    branches: [qa/v11-completion]
+    branches: [qa/v11-public-departure]
   workflow_dispatch:
 permissions:
   contents: read
 concurrency:
-  group: qa-exploration-${{ github.ref }}
+  group: qa-public-departure-${{ github.ref }}
   cancel-in-progress: true
 jobs:
   explore:
     runs-on: ubuntu-latest
     timeout-minutes: 18
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - scenario: normal-freight
-            browser: chromium
-          - scenario: normal-industrial
-            browser: chromium
-          - scenario: normal-tunnel
-            browser: chromium
-          - scenario: probe-edges
-            browser: chromium
-          - scenario: probe-edges
-            browser: webkit
     env:
       LIBGL_ALWAYS_SOFTWARE: '1'
       WEBKIT_DISABLE_DMABUF_RENDERER: '1'
-      QA_CASE: ${{ matrix.scenario }}
-      QA_BROWSER: ${{ matrix.browser }}
+      QA_CASE: normal-freight
+      QA_BROWSER: chromium
+      QA_EXPECTED_PUBLIC_COMMIT: e1f3660aec90fce20c6a551bedbabed06417cd0a
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-node@v4
@@ -44,11 +31,11 @@ jobs:
           python-version: '3.13'
       - run: |
           pip install playwright==1.56.0
-          python -m playwright install --with-deps $QA_BROWSER
-          python -m py_compile tools/qa_exploratory.py tools/qa_extended.py
-      - name: Record actual page actions and failures
-        run: xvfb-run -a python tools/qa_extended.py
-      - name: Capture exact source and runner limits
+          python -m playwright install --with-deps chromium
+          python -m py_compile tools/qa_exploratory.py tools/qa_extended.py tools/qa_departure_confirm.py
+      - name: Record public-URL actions with departure postconditions
+        run: xvfb-run -a python tools/qa_departure_confirm.py
+      - name: Preserve exact driver and limits
         if: always()
         run: |
           mkdir -p qa-evidence
@@ -56,12 +43,13 @@ jobs:
           git diff --binary HEAD > qa-evidence/uncommitted.patch
           cp tools/qa_exploratory.py qa-evidence/executed-script.py
           cp tools/qa_extended.py qa-evidence/executed-extension.py
+          cp tools/qa_departure_confirm.py qa-evidence/executed-departure.py
           cp dist/build.json qa-evidence/local-build.json
           uname -a > qa-evidence/runner.txt
-          echo 'Software-rendered CI. Not real device FPS or human gameplay; no subjective audio approval.' >> qa-evidence/runner.txt
+          echo 'Read-only diagnostic pilot on public URL. No injected state/resources. Not blind play, listening or real-device FPS. local-build.json is the harness checkout, NOT the public game version; see siteBuild in report.' >> qa-evidence/runner.txt
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: qa-${{ matrix.scenario }}-${{ matrix.browser }}
+          name: qa-freight-confirmed-e1f3660
           path: qa-evidence/
           retention-days: 14
