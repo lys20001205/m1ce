@@ -11,7 +11,7 @@ class PagesTests(unittest.TestCase):
         self.data['index.html']=b'stale v10';
         with self.assertRaises(ValueError):pages.verify(self.base,self.gate,self.fetch)
     def test_new_presentation_files_are_mandatory_and_verified(self):
-        for name in ['src/design_ui.js','src/design.css']:
+        for name in ['src/design_ui.js','src/design.css','src/control_ui.js','src/mobile_art.css','src/polish3d.js']:
             self.assertIn(name,pages.FILES)
             old=self.data[name];self.data[name]=b'stale presentation'
             with self.assertRaises(ValueError):pages.verify(self.base,self.gate,self.fetch)

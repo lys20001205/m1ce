@@ -4,7 +4,7 @@ from datetime import datetime,timezone
 from pathlib import Path
 from urllib.request import Request,urlopen
 
-FILES=['build.json','index.html','src/main.js','src/design_ui.js','src/design.css','src/telemetry_contract.js','assets/train-cutaway.json']
+FILES=['build.json','index.html','src/main.js','src/design_ui.js','src/design.css','src/control_ui.js','src/mobile_art.css','src/polish3d.js','src/telemetry_contract.js','assets/train-cutaway.json']
 
 def verify(base,gate,fetch):
     if base.rstrip('/')!='https://lys20001205.github.io/m1ce':raise ValueError('unexpected Pages origin')
