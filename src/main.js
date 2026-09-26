@@ -7,8 +7,10 @@ import {DevTools} from './devtools.js';
 import {AudioCues} from './audio.js?v=11';
 import {ROUTES,SPEED_MODES,INPUT_BINDINGS_SSOT,PREP_ITEMS} from './content.js';
 import {V11} from './balance.js';
+import {ControlUI,steeringDirection,depotActionLabel} from './control_ui.js';
+import {WorldPolish} from './polish3d.js';
 import {DesignUI,carPreview,routeReason} from './design_ui.js';
-const design=new DesignUI(document);
+const design=new DesignUI(document),controlUI=new ControlUI(document);let polish=null;
 const $=id=>document.getElementById(id);
 const mode=runtimeMode(location.search),save=new SaveStore({mode}),clock=new SimulationClock();let devtools=null;
 let game,view,telemetry,input={move:0,attack:false,ranged:false,repair:false},last=0,lastStatus='',selected='battery',frameError=false,bankWritable=true;
@@ -33,7 +35,12 @@ for(const [action,binding] of Object.entries(INPUT_BINDINGS_SSOT)){
   if(!binding.hold){el.onclick=()=>actions[action]?.();continue;}
   el.addEventListener('pointerdown',e=>{e.preventDefault();if(game.paused||game.status!=='running'||!game.alive)return;el.setPointerCapture(e.pointerId);pressed.set(e.pointerId,action);refreshInputs();telemetry.log('input_down',{key:binding.button,x:game.player.x});});
   // Capture belongs to one pointer, not to every source holding the same action.
-  const release=e=>{e.preventDefault();if(pressed.get(e.pointerId)!==action)return;pressed.delete(e.pointerId);refreshInputs();telemetry.log('input_up',{key:binding.button,x:game.player.x});};
+  const release=e=>{e.preventDefault();if(!pressed.has(e.pointerId))return;pressed.delete(e.pointerId);refreshInputs();telemetry.log('input_up',{key:binding.button,x:game.player.x});};
+  if(action==='left'||action==='right')el.addEventListener('pointermove',e=>{
+    if(!pressed.has(e.pointerId))return;
+    const next=steeringDirection(e.clientX,e.clientY,$('movementPad').getBoundingClientRect());
+    if(pressed.get(e.pointerId)!==next){pressed.set(e.pointerId,next);refreshInputs();}
+  });
   el.addEventListener('pointerup',release);el.addEventListener('pointercancel',release);el.addEventListener('lostpointercapture',release);
 }
 const keyActions=new Map(Object.entries(INPUT_BINDINGS_SSOT).flatMap(([action,binding])=>binding.keys.map(code=>[code,{action,binding}])));
@@ -145,7 +152,7 @@ function ui(){
   }
   $('event').textContent=message;$('event').dataset.state=game.rescue?'stalled':engine;$('viewport').dataset.health=game.player.hp<=20?'critical':'normal';
   $('speedPanel').hidden=game.status!=='running'||!game.atConsole||!game.consoleOpen;document.querySelectorAll('[data-speed]').forEach(b=>{b.classList.toggle('selected',b.dataset.speed===game.speedMode);b.disabled=game.engineState==='stalled'||b.dataset.speed==='FAST'&&game.batteryCharge<=0;});
-  buttonText('layer',game.playerLayer==='DEPOT'?'RETURN':game.player.roof?'下车内':'上车顶');buttonText('interact',game.playerLayer==='DEPOT'?(game.player.carry?'RETURN':'PICKUP'):game.player.roof?(game.player.carry?'LOAD':'DEPOT'):game.player.carry?'放货':game.cars[game.currentCar].type==='engine'?(game.atArmory?'ARMORY':'SPEED'):game.cars[game.currentCar].type==='cargo'?'搬货':'交互');
+  buttonText('layer',game.playerLayer==='DEPOT'?'RETURN':game.player.roof?'下车内':'上车顶');buttonText('interact',game.playerLayer==='DEPOT'?(typeof depotActionLabel==='function'?depotActionLabel(game):(game.player.carry?'RETURN':'PICKUP')):game.player.roof?(game.player.carry?'LOAD':'DEPOT'):game.player.carry?'放货':game.cars[game.currentCar].type==='engine'?(game.atArmory?'ARMORY':'SPEED'):game.cars[game.currentCar].type==='cargo'?'搬货':'交互');
   $('armoryPanel').hidden=!game.armoryOpen||!game.atArmory||!game.alive||game.status!=='running';
   $('armoryScrap').textContent=game.scrap+' SCRAP · WORLD RUNNING';
   for(const slot of ['melee','ranged']){const b=document.querySelector('[data-armory='+slot+']'),offer=game.armoryOffer(slot);const text=slot.toUpperCase()+' · '+(offer?(offer.locked?'LOCKED UNTIL COMBAT TIER 3':offer.name+' · '+offer.cost+' SCRAP'):'MAX TIER');if(b.textContent!==text)b.textContent=text;b.disabled=!offer||offer.locked||game.scrap<offer.cost;}
@@ -154,8 +161,8 @@ function ui(){
   $('centerHint').hidden=!!job||!!notice||!game.alive;$('centerHint').textContent=game.status==='arriving'?'安全回站 · '+Math.max(0,B.arrivalTime-game.arrivalElapsed).toFixed(1)+'s':input.repair?game.repairHint:game.player.roof?'车顶移动 +25% · 提前留意净空':'近设备长按修理 · 黄梯切层';
   if(game.status!==lastStatus){lastStatus=game.status;if(['complete','lost','cashed','practice_complete'].includes(game.status))showEnd();if(game.status==='arriving')clearInput();}
 }
-function frame(ts){if(frameError)return;try{const raw=last?ts-last:0,dt=Math.min(.05,raw/1000);last=ts;view.recordFrame(raw);clock.advance(game,raw/1000,input);audio.update(game);view.render(dt);ui();design.frame(game,input);devtools?.update(ts);requestAnimationFrame(frame);}catch(e){fatal(e);}}
-try{view=new View($('game'),game,(t,d)=>telemetry.log(t,d));view.reducedMotion=$('reduced').checked;await view.init();$('start').disabled=false;$('practice').disabled=false;$('start').textContent='从机库发车';showHub();$('event').textContent=game.event;resize();requestAnimationFrame(frame);}catch(e){fatal(e);}
+function frame(ts){if(frameError)return;try{const raw=last?ts-last:0,dt=Math.min(.05,raw/1000);last=ts;view.recordFrame(raw);clock.advance(game,raw/1000,input);audio.update(game);polish?.update();view.render(dt);ui();controlUI.update(game);design.frame(game,input);devtools?.update(ts);requestAnimationFrame(frame);}catch(e){fatal(e);}}
+try{view=new View($('game'),game,(t,d)=>telemetry.log(t,d));view.reducedMotion=$('reduced').checked;await view.init();polish=new WorldPolish(view);polish.update();$('start').disabled=false;$('practice').disabled=false;$('start').textContent='从机库发车';showHub();$('event').textContent=game.event;resize();requestAnimationFrame(frame);}catch(e){fatal(e);}
 addEventListener('pageshow',()=>audio.restore('pageshow'));
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)audio.restore('visible');});
 for(const type of ['pointerdown','keydown'])addEventListener(type,()=>{if(audio.context&&audio.context.state!=='running')audio.unlock('recovery_gesture');},{capture:true});

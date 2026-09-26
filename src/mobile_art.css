@@ -1,0 +1,46 @@
+/* Steel / amber / signal cyan. Cosmetic hierarchy; gameplay never depends on color alone. */
+:root{--panel:#122630;--edge:#42606e;--ink:#e4eef1;--signal:#82dacc;--accent:#eac086}
+body{background:radial-gradient(ellipse at 50% 0,#273c46,#0a151d 70%);color:var(--ink)}
+#app{background:linear-gradient(160deg,#152935,#0e1e27 65%)}
+#hud{border-bottom:1px solid #42607155}#hud small{letter-spacing:.04em;color:#a9c0c8}#hud b{font-variant-numeric:tabular-nums}
+#vitals{display:flex;gap:10px;min-width:142px}#vitals .vital{display:grid;grid-template-columns:auto auto;align-items:center;gap:3px 5px;min-width:66px}
+.vital>small{font-size:10px!important}.vital>b{font-size:12px!important}.vital .vitalMeter{grid-column:1/-1;height:3px;background:#28414d;border-radius:2px;overflow:hidden}
+.vitalMeter:before{content:'';display:block;width:var(--level,100%);height:100%;background:#7cd1c5}.vitalMeter[data-band=damaged]:before{background:#e5c484}.vitalMeter[data-band=critical]:before{background:#ef957e}
+#health{position:absolute!important;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
+#viewport{box-shadow:inset 0 0 0 1px #6c909844,0 4px 18px #050e1533;border-radius:10px}
+#playerTag{font-size:11px;color:#dbfbff;background:#0d2934d9;border:1px solid #8ddae088;border-radius:4px;padding:2px 6px;letter-spacing:.02em}
+#playerTag[data-layer=DEPOT]{color:#ffe0a5;border-color:#e7bb7d}#carTags .tag{border-left:2px solid #87b4bf;padding:3px 6px}
+#event{border-left:3px solid #deb77b;background:#0b1e2acc;padding:5px 8px;max-width:calc(100% - 24px)}
+#route{background:#203844}#fill{background:linear-gradient(90deg,#35565f,#517b7d)}
+#controls button,nav button{box-shadow:inset 0 1px 0 #e3f1ef19,0 2px 4px #020a1033}
+#controls button{border-radius:10px;color:#e6f0f1;transition:background-color .08s,border-color .08s;touch-action:none}
+#controls button.active{background:#567987;border-color:#a4e7e7;box-shadow:inset 0 0 0 1px #c4f1ef}
+#utilityControls #brake{border-color:#bb775b;color:#ffd1af;background:#3b302b}#utilityControls #fix{border-color:#609d85}
+#combatControls #attack{background:linear-gradient(#875d39,#61452f);border-color:#d9b078}#combatControls #ranged{background:linear-gradient(#38687b,#244856)}
+#controls button[data-ready=false]{filter:saturate(.55)}#ranged:disabled{opacity:.52}
+#movementPad{border:1px solid #426878;background:#0b202b;padding:3px;border-radius:15px;gap:3px;touch-action:none}
+#movementPad button{border:0;border-radius:11px;background:#253f4d}.group{flex-shrink:0}
+#controls{gap:8px}#centerStack{min-width:60px}#utilityControls{gap:5px}#combatControls{gap:6px}
+#hud .equipmentBlock{min-width:0}#modal article,#debug article{background:linear-gradient(140deg,#1a3541,#10232d);box-shadow:0 16px 50px #02091080}
+#routeChoices button,#choices button{background:linear-gradient(150deg,#2a4651,#1c333f);border-radius:9px}
+#routeChoices .firstRoute{box-shadow:inset 0 2px 0 #c5a066}#runActions #start,#runActions #more{background:linear-gradient(#84633b,#654a30);font-weight:800}
+#armoryPanel,#speedPanel{background:#102932f5;box-shadow:0 6px 18px #020a1055;border-color:#759b9e}
+#closeArmory{min-width:40px;min-height:32px}#armoryPanel>button{min-height:40px}#speedChoices button{min-height:40px}
+#controls button:focus-visible,nav button:focus-visible{outline:2px solid #e9d1a1;outline-offset:2px}
+/* Fixed dedicated footer: both thumb zones and the scene stay unobstructed. */
+#app.touchUI{grid-template-rows:42px 22px minmax(0,1fr) 84px 0}
+.touchUI #hud{gap:10px}.touchUI #hud .equipmentBlock{display:none}.touchUI #hud .brand{display:none}
+.touchUI #controls{display:grid;grid-template-columns:126px minmax(208px,1fr) 146px;grid-template-rows:20px 56px;column-gap:10px;row-gap:4px;align-items:stretch;padding:0 0 4px}
+.touchUI #centerStack{grid-column:1/-1;grid-row:1;max-width:none;min-width:0;display:flex;justify-content:center;align-items:center;gap:10px;line-height:1.2;overflow:hidden}
+.touchUI #centerHint{font-size:11px;line-height:1.2;color:#c1d5db;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.touchUI #kitStatus{font-size:9px;white-space:nowrap}.touchUI #success{display:flex;align-items:center;gap:8px}.touchUI #success b{font-size:11px}.touchUI #success small{font-size:10px;margin:0}.touchUI #repairPanel{display:flex;align-items:center;gap:8px}.touchUI #repairPanel small{display:none}.touchUI #repairPanel .meter{width:120px;margin:0}.touchUI #repairText{font-size:11px}
+.touchUI #movementPad{grid-column:1;grid-row:2;display:flex}.touchUI #movementPad button{width:50%;height:48px;min-width:0;font-size:24px;padding:0}
+.touchUI #utilityControls{grid-column:2;grid-row:2;display:grid;grid-template-columns:repeat(4,minmax(44px,1fr));gap:6px}
+.touchUI #combatControls{grid-column:3;grid-row:2;display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.touchUI #utilityControls button,.touchUI #combatControls button{height:56px;min-width:44px;width:100%;font-size:11px;padding:5px 3px;white-space:nowrap}
+.touchUI #utilityControls button:before,.touchUI #combatControls button:before{content:attr(data-caption);display:block;font-size:9px;line-height:1.5;opacity:.78;font-weight:400}
+.touchUI #controls #attack.active,.touchUI #controls #ranged.active{border-color:#fff0c1;box-shadow:inset 0 0 0 1px #ffe0a3;background:#916e42}
+.touchUI #event{font-size:11px}.touchUI #hud nav button{min-width:36px;min-height:32px}
+@media(max-height:350px){#app.touchUI{grid-template-rows:36px 20px minmax(0,1fr) 80px 0}.touchUI #controls{grid-template-rows:18px 54px}.touchUI #utilityControls button,.touchUI #combatControls button{height:54px}.touchUI #centerHint{font-size:10px}.touchUI #movementPad button{height:46px}.touchUI #hud{gap:8px}}
+@media(max-width:760px){.touchUI #controls{grid-template-columns:114px minmax(184px,1fr) 130px;column-gap:7px}.touchUI #hud{gap:7px}.touchUI #vitals{min-width:126px;gap:6px}.touchUI .vital{min-width:60px!important}.touchUI #hud nav{gap:3px}}
+@media(prefers-reduced-motion:reduce){#controls button{transition:none}}
