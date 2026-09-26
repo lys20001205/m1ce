@@ -14,6 +14,7 @@ export function depotActionLabel(g){
   const nearby=g.cargoCrates.some(c=>c.location==='depot'&&c.depotId===p.depotId&&Math.abs(c.x-p.depotX)<=V11.depot.crateRadius);
   return nearby?'PICKUP':'RETURN';
 }
+export function rangedCaption(g){return g.ranged?'远程 · 按住':g.combatTier<3?'先购 AXE':'武器台购枪';}
 export function controlStatus(g){
   const live=g.status==='running'&&!g.paused&&g.alive;
   const free=live&&!g.player.carry&&g.player.stun<=0;
@@ -37,6 +38,7 @@ export class ControlUI{
       // Keep rejected taps available to the game's explanatory feedback, not silent disabled buttons.
       n.dataset.ready=String(!!ready);attr(n,'aria-label',n.textContent+(id==='attack'||id==='ranged'||id==='fix'?'，按住':'')+(!ready?'，当前状态不可用':''));
     }
+    const ranged=d.getElementById('ranged');if(ranged)attr(ranged,'data-caption',rangedCaption(g));
     const tag=d.getElementById('playerTag');if(tag)tag.dataset.layer=g.playerLayer;
     const app=d.getElementById('app');if(app){app.dataset.worldRoute=g.route||'hub';app.dataset.play=live.live?'active':g.paused?'paused':'idle';}
   }

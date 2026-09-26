@@ -8,7 +8,7 @@ class GateTests(unittest.TestCase):
             for suffix,count in gate.SUITES.items():
                 name=browser+'-'+(suffix+'-' if suffix else '')+'report.json'
                 (path/name).write_text(json.dumps({'browser':browser,'passed':True,'checks':{str(i):True for i in range(count)},'errors':[]}))
-        for name,count in [('unit.txt',326),('model-tests.txt',6)]:
+        for name,count in [('unit.txt',327),('model-tests.txt',6)]:
             (path/name).write_text(f'# tests {count}\n# pass {count}\n# fail 0\n# cancelled 0\n# skipped 0\n# todo 0\n')
     def test_gate_fails_closed(self):
         with tempfile.TemporaryDirectory() as directory:

@@ -9,7 +9,7 @@ ART=Path('artifacts');ART.mkdir(exist_ok=True)
 BASE='http://127.0.0.1:8792/?test=1'
 SIZES=[(812,332),(844,390),(932,430),(1280,720)]
 VIEW_KEYS=['actual_size','targets_44','controls_no_overlap','footer_outside_world','canvas_area','distinct_vitals']
-CASE_KEYS=['normal_entry','move_response','hold_slide_reverse','neutral_stops','capture_release_stops','second_key_survives',
+CASE_KEYS=['normal_entry','locked_ranged_explained','move_response','hold_slide_reverse','neutral_stops','capture_release_stops','second_key_survives',
  'empty_context_says_return','empty_context_returns','crate_context_says_pickup','crate_pickup','carry_return','load_credits',
  'portrait_pauses','portrait_clears','landscape_stays_paused','resume_works','player_marker_present',
  'polish_instance_budget','polish_rebuild_bounded','polish_geometry_bounded','tunnel_visible','all_route_livery',
@@ -36,6 +36,8 @@ async def run(p,name):
         before=await page.evaluate('__RH_TEST.game().player.x');await page.keyboard.down('KeyD');await page.wait_for_timeout(400);await page.keyboard.up('KeyD')
         check('move_response',await page.evaluate('__RH_TEST.game().player.x')>before+.4)
         await page.evaluate(RESET)
+        await page.wait_for_function('document.getElementById("ranged").dataset.caption==="先购 AXE"')
+        check('locked_ranged_explained',True)
         for w,h in SIZES:
             await page.set_viewport_size({'width':w,'height':h});await page.wait_for_timeout(400)
             rect=await page.evaluate("""()=>{const r=id=>{const b=document.getElementById(id).getBoundingClientRect();return {x:b.x,y:b.y,w:b.width,h:b.height,bottom:b.bottom,right:b.right}};
@@ -60,7 +62,7 @@ async def run(p,name):
         await page.keyboard.down('KeyD');await page.mouse.move(left['x']+20,left['y']+20);await page.mouse.down();await page.mouse.up()
         check('second_key_survives',await page.evaluate('__RH_TEST.input().move===1'));await page.keyboard.up('KeyD')
         if name=='chromium':
-            await page.evaluate("window.mobileEvents=[];document.addEventListener('pointerdown',e=>mobileEvents.push({id:e.pointerId,type:e.pointerType,trusted:e.isTrusted,primary:e.isPrimary}),true)")
+            await page.evaluate("window.mobileEvents=[];for(const event of ['pointerdown','pointerup','pointercancel','lostpointercapture'])document.addEventListener(event,e=>mobileEvents.push({event,id:e.pointerId,type:e.pointerType,target:e.target.id,trusted:e.isTrusted,primary:e.isPrimary}),true)")
             cdp=await context.new_cdp_session(page);attack=await page.locator('#attack').bounding_box()
             def point(box,id):return {'x':round(box['x']+box['width']/2),'y':round(box['y']+box['height']/2),'id':id}
             l=point(left,1);a=point(attack,2);r=point(right,1)
@@ -70,10 +72,14 @@ async def run(p,name):
             check('native_multitouch_move_attack',True)
             await cdp.send('Input.dispatchTouchEvent',{'type':'touchMove','touchPoints':[r,a]})
             await page.wait_for_function('__RH_TEST.input().move===1&&__RH_TEST.input().attack');check('native_multitouch_slide',True)
-            await cdp.send('Input.dispatchTouchEvent',{'type':'touchEnd','touchPoints':[a]})
-            await page.wait_for_function('__RH_TEST.input().move===0&&__RH_TEST.input().attack');check('native_independent_lift',True)
+            # Chromium targets the supplied touch ID for a partial lift (empirically checked).
+            # Send the MOVEMENT point, not the remaining attack point; verify native targets below.
+            await cdp.send('Input.dispatchTouchEvent',{'type':'touchEnd','touchPoints':[r]})
+            await page.wait_for_function('__RH_TEST.input().move===0&&__RH_TEST.input().attack')
+            check('native_independent_lift',await page.evaluate("mobileEvents.some(e=>e.event==='pointerup'&&e.target==='L')&&!mobileEvents.some(e=>e.event==='pointerup'&&e.target==='attack')"))
             await cdp.send('Input.dispatchTouchEvent',{'type':'touchCancel','touchPoints':[]})
-            await page.wait_for_function('!__RH_TEST.input().attack&&__RH_TEST.input().move===0');check('native_cancel_clears',True)
+            await page.wait_for_function('!__RH_TEST.input().attack&&__RH_TEST.input().move===0')
+            check('native_cancel_clears',await page.evaluate("mobileEvents.some(e=>e.event==='pointercancel'&&e.target==='attack')"))
             proof=await page.evaluate('mobileEvents');report['samples'].append({'multiTouchEvents':proof})
             check('touch_trusted_events',len(proof)>=2 and all(e['trusted'] and e['type']=='touch' for e in proof) and any(not e['primary'] for e in proof))
         # Label must agree with interaction at a reachable bridge, but away from a crate.
@@ -116,6 +122,8 @@ async def run(p,name):
         if page and not page.is_closed():
             try:
                 report['failureState']=await page.evaluate('__RH_DEBUG.snapshot()')
+                report['failureInput']=await page.evaluate('__RH_TEST.input()')
+                report['failurePointerEvents']=await page.evaluate('window.mobileEvents||[]')
                 await page.screenshot(path=str(ART/f'{name}-mobile-art-failure.png'))
             except Exception:pass
     finally:

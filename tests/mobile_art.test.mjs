@@ -5,7 +5,7 @@ import vm from 'node:vm';
 import {Game} from '../src/sim.js';
 import {V11} from '../src/balance.js';
 import {INPUT_BINDINGS_SSOT} from '../src/content.js';
-import {steeringDirection,depotActionLabel,controlStatus,ControlUI} from '../src/control_ui.js';
+import {steeringDirection,depotActionLabel,controlStatus,ControlUI,rangedCaption} from '../src/control_ui.js';
 const rect={left:10,top:100,width:126,height:56};
 for(const [x,y,want] of [[25,125,'left'],[120,125,'right'],[73,125,'neutral'],[73,126,'neutral'],[5,130,'left'],[160,130,'right'],[-30,130,'neutral'],[180,130,'neutral'],[25,65,'neutral'],[25,190,'neutral'],[NaN,120,'neutral']])test(`steering ${x}/${y} => ${want}`,()=>assert.equal(steeringDirection(x,y,rect),want));
 function game(){const g=new Game({seed:314159});g.chooseRoute('freight');g.chooseCar('cargo');g.start();g.t=.26;g.elapsed=5;g.phase='yard';g.speedMode='STOP';g.player.x=12.45;g.setPlayerLayer('ROOF');assert(g.enterDepot());return g;}
@@ -30,3 +30,5 @@ test('moving outside pad neutralizes only its pointer, then release cannot stick
 test('UI updates expose separate engine and player meters without changing simulation',()=>{const nodes=new Map();const doc={getElementById:id=>{if(!nodes.has(id))nodes.set(id,{textContent:id,style:{setProperty(){}},dataset:{},setAttribute(){}});return nodes.get(id);}};const g=game();g.cars[0].hp=90;g.player.hp=34;const before=JSON.stringify(g.snapshot());new ControlUI(doc).update(g);assert.equal(nodes.get('engineVital').textContent,'50%');assert.equal(nodes.get('playerVital').textContent,'34');assert.equal(JSON.stringify(g.snapshot()),before);});
 
 test('root cosmetic route does not collide with route-choice selectors',()=>{const nodes=new Map();const doc={getElementById:id=>{if(!nodes.has(id))nodes.set(id,{textContent:id,style:{setProperty(){}},dataset:{},setAttribute(){}});return nodes.get(id);}};new ControlUI(doc).update(game());assert.equal(nodes.get('app').dataset.worldRoute,'freight');assert.equal(nodes.get('app').dataset.route,undefined);});
+
+test('locked ranged caption explains the actual next step',()=>{const g=game();assert.equal(rangedCaption(g),'先购 AXE');g.meleeTier=3;assert.equal(rangedCaption(g),'武器台购枪');g.rangedTier=1;assert.equal(rangedCaption(g),'远程 · 按住');});
