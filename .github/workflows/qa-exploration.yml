@@ -1,12 +1,12 @@
-name: Public Freight replay with confirmed departure (not human signoff)
+name: Mobile-art public Freight replay (diagnostic assisted)
 on:
   push:
-    branches: [qa/v11-public-departure]
+    branches: [qa/v11-mobile-art-public]
   workflow_dispatch:
 permissions:
   contents: read
 concurrency:
-  group: qa-public-departure-${{ github.ref }}
+  group: qa-mobile-art-public-${{ github.ref }}
   cancel-in-progress: true
 jobs:
   explore:
@@ -17,7 +17,7 @@ jobs:
       WEBKIT_DISABLE_DMABUF_RENDERER: '1'
       QA_CASE: normal-freight
       QA_BROWSER: chromium
-      QA_EXPECTED_PUBLIC_COMMIT: e1f3660aec90fce20c6a551bedbabed06417cd0a
+      QA_EXPECTED_PUBLIC_COMMIT: 32d393b43f8d97a983a8c9fc3d43901768d3b087
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-node@v4
@@ -46,10 +46,10 @@ jobs:
           cp tools/qa_departure_confirm.py qa-evidence/executed-departure.py
           cp dist/build.json qa-evidence/local-build.json
           uname -a > qa-evidence/runner.txt
-          echo 'Read-only diagnostic pilot on public URL. No injected state/resources. Not blind play, listening or real-device FPS. local-build.json is the harness checkout, NOT the public game version; see siteBuild in report.' >> qa-evidence/runner.txt
+          echo 'Read-only diagnostic pilot on public URL with normal controls. No DEV, injected state or resources. Not blind play, subjective listening or real-device FPS. local-build.json is the harness checkout, NOT the public game version; see siteBuild in report.' >> qa-evidence/runner.txt
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: qa-freight-confirmed-e1f3660
+          name: qa-mobile-art-public-freight
           path: qa-evidence/
           retention-days: 14
