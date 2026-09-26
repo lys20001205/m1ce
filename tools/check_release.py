@@ -18,7 +18,7 @@ def inspect(art=ART):
                 totals[browser]+=len(checks);reports[name]=len(checks)
             except Exception as e:failures.append(name+': '+str(e))
     tap={}
-    for name,minimum in [('unit.txt',325),('model-tests.txt',6)]:
+    for name,minimum in [('unit.txt',326),('model-tests.txt',6)]:
         try:
             text=(art/name).read_text();stats={k:int(re.search(r'^# '+k+r' (\d+)\s*$',text,re.M).group(1)) for k in ['tests','pass','fail','cancelled','skipped','todo']}
             if stats['tests']<minimum or stats['pass']!=stats['tests'] or any(stats[k] for k in ['fail','cancelled','skipped','todo']):failures.append(name+': nonpassing TAP')

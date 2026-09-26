@@ -38,6 +38,6 @@ export class ControlUI{
       n.dataset.ready=String(!!ready);attr(n,'aria-label',n.textContent+(id==='attack'||id==='ranged'||id==='fix'?'，按住':'')+(!ready?'，当前状态不可用':''));
     }
     const tag=d.getElementById('playerTag');if(tag)tag.dataset.layer=g.playerLayer;
-    const app=d.getElementById('app');if(app){app.dataset.route=g.route||'hub';app.dataset.play=live.live?'active':g.paused?'paused':'idle';}
+    const app=d.getElementById('app');if(app){app.dataset.worldRoute=g.route||'hub';app.dataset.play=live.live?'active':g.paused?'paused':'idle';}
   }
 }
