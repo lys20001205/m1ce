@@ -12,6 +12,8 @@ export class Feedback3D {
     this.spawnRing=new T.Mesh(new T.TorusGeometry(.70,.035,6,28),view.mat(0x93e5ee));this.spawnRing.rotation.x=Math.PI/2;this.group.add(this.spawnRing);
     this.speedStreaks=new T.InstancedMesh(view.cube,view.mat(0x90b7bd),18);this.speedStreaks.frustumCulled=false;this.group.add(this.speedStreaks);this.speedScratch=new T.Object3D();
     this.station=new T.Mesh(new T.ConeGeometry(.10,.24,6),new T.MeshBasicMaterial({color:0xeac481}));this.station.rotation.z=Math.PI;this.group.add(this.station);
+    this.swingArc=new T.Mesh(new T.TorusGeometry(1.05,.035,5,24,Math.PI*.95),new T.MeshBasicMaterial({color:0xffd18a,transparent:true,opacity:.72,depthWrite:false}));this.swingArc.name='Melee-swing-arc';this.group.add(this.swingArc);
+    this.muzzleFlash=new T.Mesh(new T.OctahedronGeometry(.15,0),new T.MeshBasicMaterial({color:0xffe0a3,transparent:true,opacity:.9,depthWrite:false}));this.muzzleFlash.name='Muzzle-flash';this.group.add(this.muzzleFlash);
   }
   updateLabels(){
     const g=this.view.game,fx=g.effects.filter(e=>e.text&&['scrap','buy'].includes(e.type)).slice(-this.labels.length);
@@ -30,5 +32,9 @@ export class Feedback3D {
     const job=g.repairJob;this.repairRing.visible=!!job;this.repairRing.position.set(g.player.x,1.135,.65);if(job)this.repairRing.scale.setScalar(.8+.4*job.progress/job.duration);
     const index=g.currentCar;this.station.position.set(stationX(index),3.12,.88);this.station.visible=g.status==='running'&&g.alive&&(g.cars[index].hp<g.cars[index].max||index===0&&g.director.fault);
     if(!reduced&&this.station.visible)this.station.position.y+=Math.sin(t*3)*.04;
+    const p=g.player,attack=p.meleeAttack;this.swingArc.visible=g.alive&&p.swing>0&&!p.carry;
+    if(this.swingArc.visible){const duration=attack?.duration||g.meleeStats.duration,u=Math.max(0,Math.min(1,1-p.swing/duration));this.swingArc.position.set(p.x,p.y+1.05,p.z??.84);this.swingArc.rotation.set(0,0,p.face>0?-.45:Math.PI-.45);this.swingArc.scale.setScalar((g.meleeStats.range/1.85)*(.85+.15*u));this.swingArc.material.opacity=.78*(1-u*.65);}
+    this.muzzleFlash.visible=g.alive&&p.rangedFlash>0&&!!g.ranged;
+    if(this.muzzleFlash.visible){const m=this.view.muzzle();this.muzzleFlash.position.set(m.x,m.y,m.z??.9);this.muzzleFlash.scale.setScalar(reduced?.85:.75+.45*Math.abs(Math.sin(t*48)));}
   }
 }
