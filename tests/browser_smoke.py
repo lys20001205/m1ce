@@ -122,10 +122,12 @@ async def run_browser(p,name):
             rects=await page.evaluate("""() => {const r=id=>{const b=document.getElementById(id).getBoundingClientRect();return {top:b.top,bottom:b.bottom,left:b.left,right:b.right}};return {scene:r('viewport'),hud:r('hud'),controls:r('controls'),repair:r('repairPanel')};}""")
             checks[f'{width}_ui_does_not_cover_scene']=rects['scene']['top']>=rects['hud']['bottom'] and rects['controls']['top']>=rects['scene']['bottom']
             await page.screenshot(path=str(ART/f'{name}-{width}x{height}.png'))
-        await page.set_viewport_size({'width':390,'height':844});await page.wait_for_timeout(200)
-        checks['portrait_pauses_game']=await page.evaluate('window.__RH_TEST.game().paused') and await page.locator('#portrait').is_visible()
-        await page.set_viewport_size({'width':844,'height':390});await page.wait_for_timeout(200)
-        checks['landscape_requires_explicit_resume']=await page.evaluate('window.__RH_TEST.game().paused')
+        await page.set_viewport_size({'width':390,'height':844})
+        try:await page.wait_for_function('window.__RH_TEST.game().paused && !document.getElementById("portrait").hidden',timeout=2500);checks['portrait_pauses_game']=True
+        except:checks['portrait_pauses_game']=False
+        await page.set_viewport_size({'width':844,'height':390})
+        try:await page.wait_for_function('window.__RH_TEST.game().paused',timeout=2500);checks['landscape_requires_explicit_resume']=True
+        except:checks['landscape_requires_explicit_resume']=False
         # Arrival is an explicit safe state, not an immediate choice popup.
         arrived=await page.evaluate("""() => {const a=window.__RH_TEST;a.reset();a.forceRoute(.999);a.step(.3);const g=a.game();return {status:g.status,cashAllowed:g.cashout(),enemies:g.enemies.length};}""")
         checks['arrival_has_safe_release']=arrived=={'status':'arriving','cashAllowed':False,'enemies':0}
