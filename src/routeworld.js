@@ -4,9 +4,9 @@ import {V11} from './balance.js';
 import {ringPose,depotPose} from './contracts.js';
 // Render-only railway frame. One selected ring; the train remains in stable local space.
 const ART={
- industrial:{sky:0x354952,body:0x687779,accent:0xd4a050,secondary:0x846d58,name:'FOUNDRY / EXHAUST TOWERS'},
- freight:{sky:0x34535d,body:0x397e88,accent:0xe3984a,secondary:0x547493,name:'FREIGHT GANTRY / STACK YARD'},
- tunnel:{sky:0x111923,body:0x414553,accent:0xe26056,secondary:0x6a6679,name:'VENTILATION / EMERGENCY CONDUIT'}
+ industrial:{sky:0x263840,body:0x586b70,accent:0xd9a24a,secondary:0x745f54,name:'FOUNDRY / EXHAUST TOWERS'},
+ freight:{sky:0x244852,body:0x327784,accent:0xd98a3e,secondary:0x405f7a,name:'FREIGHT GANTRY / STACK YARD'},
+ tunnel:{sky:0x090f17,body:0x303844,accent:0xdf5c4c,secondary:0x565267,name:'VENTILATION / EMERGENCY CONDUIT'}
 };
 export class RouteWorld {
  constructor(view){
@@ -54,22 +54,29 @@ export class RouteWorld {
  makeSegment(i,theme){
   const v=this.view,a=ART[theme],parts=new T.Group(),far=new T.Group();
   if(theme==='industrial'){
-   v.box(parts,0,3,0,8,6,6,a.body);v.box(parts,0,6.15,0,8.4,.3,6.3,a.secondary);
-   for(const x of [-2.5,0,2.5])v.box(parts,x,3.3,3.04,1.6,.9,.08,0xb3cbcd);
-   for(const x of [-2.6,2.5]){v.cyl(parts,x,9,-1.5,.65,7,a.secondary);v.cyl(parts,x,12.6,-1.5,.82,.25,a.accent);}
+   v.box(parts,0,3,0,8,6,6,a.body);v.box(parts,0,6.15,0,8.4,.3,6.3,a.secondary);v.box(parts,0,.55,2.8,9,.8,.35,0x28363b);
+   for(const x of [-2.5,0,2.5]){v.box(parts,x,3.3,3.04,1.6,.9,.08,0xb8d0d0);v.box(parts,x,4.55,3.02,1.65,.10,.09,a.accent);}
+   for(const x of [-2.6,2.5]){v.cyl(parts,x,9,-1.5,.65,7,a.secondary);v.cyl(parts,x,12.6,-1.5,.82,.25,a.accent);v.box(parts,x,6.9,-1.5,.16,5.5,.16,0x3a484b);}
    v.box(parts,0,4,-5,13,.6,.7,a.accent);for(const x of [-5.5,5.5])v.box(parts,x,2,-5,.4,4,.4,a.body);
-   if(i%3===0){const arm=v.box(parts,5.5,7,2,.55,6,.7,a.accent);arm.rotation.z=.6;v.box(parts,4,9,2,5,.6,.7,a.accent);}
-   v.box(far,0,5,-1,8,10,6,a.body);
+   for(const y of [1.45,2.25,3.05]){const pipe=v.cyl(parts,0,y,-3.0,.16,10.5,0x59696c);pipe.rotation.z=Math.PI/2;}
+   if(i%3===0){const arm=v.box(parts,5.5,7,2,.55,6,.7,a.accent);arm.rotation.z=.6;v.box(parts,4,9,2,5,.6,.7,a.accent);v.box(parts,1.5,7.9,2,.4,.4,.4,0xe5c26d);}
+   if(i%10===2){for(const x of [-4.2,4.2]){v.cyl(parts,x,9.8,-2.4,.82,9,0x4a5b5e);v.cyl(parts,x,14.4,-2.4,1.0,.35,a.accent);}const link=v.cyl(parts,0,9.5,-2.4,.24,8.4,a.accent);link.rotation.z=Math.PI/2;}
+   v.box(far,0,5,-1,8,10,6,0x415257);
   }else if(theme==='freight'){
-   for(let k=0;k<6;k++)v.box(parts,(k%2)*6.5-3.3,1.35+Math.floor(k/2)*2.7,(i%2)*-1,6,2.55,3.8,k%2?a.accent:a.body);
-   for(const x of [-5.8,-3.5,-1.2,1.2,3.5,5.8])v.box(parts,x,2.6,2.01,.10,5.1,.08,0xa1b8b6);
-   if(i%3===0){for(const x of [-8,8])v.box(parts,x,5,-3,.6,10,.8,a.secondary);v.box(parts,0,10.1,-3,17,.7,1.1,a.accent);}
-   v.box(far,0,4,0,12,8,4,a.body);
+   for(let k=0;k<6;k++){const c=k%2?a.accent:a.body,x=(k%2)*6.5-3.3,y=1.35+Math.floor(k/2)*2.7;v.box(parts,x,y,(i%2)*-1,6,2.55,3.8,c);v.box(parts,x,y+1.0,1.93,5.2,.08,.06,0xd1c39b);}
+   for(const x of [-5.8,-3.5,-1.2,1.2,3.5,5.8])v.box(parts,x,2.6,2.01,.10,5.1,.08,0xaac1bf);
+   v.box(parts,0,.7,-2.2,15,.18,1.2,0x253a43);for(const x of [-6,-2,2,6])v.box(parts,x,.95,-2.1,2.8,.08,.08,0xd0b06c);
+   if(i%3===0){for(const x of [-8,8]){v.box(parts,x,5,-3,.6,10,.8,a.secondary);v.box(parts,x,1.2,-2.7,.9,.18,.9,0x253746);}v.box(parts,0,10.1,-3,17,.7,1.1,a.accent);v.box(parts,0,8.8,-2.7,1.2,1.6,.5,0x314b57);}
+   if(i%10===2){for(const x of [-6,6])v.box(parts,x,6.3,-1.8,.45,8,.5,0x314d59);v.box(parts,0,10.3,-1.8,13,.45,.7,0xd49a4a);const hook=v.box(parts,1.8,7.3,-1.5,.18,5.1,.2,0x735b44);hook.rotation.z=-.12;}
+   v.box(far,0,4,0,12,8,4,0x2b5660);
   }else{
-   for(const x of [-5.7,5.7]){v.box(parts,x,6,0,1.1,12,8,a.body);v.box(parts,x,7.3,4.1,1.4,.35,.25,a.accent);}
+   for(const x of [-5.7,5.7]){v.box(parts,x,6,0,1.1,12,8,a.body);v.box(parts,x,7.3,4.1,1.4,.35,.25,a.accent);for(const y of [1.4,3.8,6.2,8.6])v.box(parts,x*.92,y,2.7,.22,.16,2.0,0x727181);}
    v.box(parts,0,12.1,0,13,1.4,8,a.secondary);v.box(parts,0,3,-3,10,6,.6,a.body);
-   for(const y of [2,3.2,4.4]){const pipe=v.cyl(parts,0,y,3.5,.26,13,0x797585);pipe.rotation.z=Math.PI/2;}
-   v.box(parts,0,5.6,3.9,7,.2,.18,a.accent);v.box(far,0,7,-2,13,14,5,a.body);
+   for(const y of [2,3.2,4.4]){const pipe=v.cyl(parts,0,y,3.5,.26,13,0x777785);pipe.rotation.z=Math.PI/2;}
+   for(const x of [-4,-2,0,2,4])v.box(parts,x,5.65,3.92,.52,.13,.12,i%2?a.accent:0x8a7f91);
+   for(const x of [-5.9,5.9])for(const y of [2.1,5.2,8.3])v.box(parts,x,y,3.95,.22,.55,.18,a.accent);
+   if(i%10===2){const fan=v.cyl(parts,0,6.7,-2.6,1.8,.25,0x68707d,20);fan.rotation.x=Math.PI/2;for(const a2 of [0,Math.PI/2]){const blade=v.box(parts,0,6.7,-2.75,3.1,.22,.12,0x303945);blade.rotation.z=a2;}}
+   v.box(far,0,7,-2,13,14,5,0x202733);
   }
   const near=this.batch(parts);far.traverse(o=>{if(o.isMesh)o.castShadow=false;});
   const group=new T.Group();group.add(near,far);this.root.add(group);
