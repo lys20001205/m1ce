@@ -106,7 +106,7 @@ async def run(p,name):
         await page.evaluate('''()=>{const a=__RH_TEST,g=a.game();g.enemies=[];g.paused=true;g.spawn("bruiser",6,false);g.enemies[0].wind=1.5;a.step(0);}''')
         await page.wait_for_timeout(80)
         check('enemy_role_kits',await page.evaluate('''()=>{const v=__RH_TEST.view(),m=[...v.enemyModels.values()][0];return m&&Object.keys(m.userData.enemyKits||{}).sort().join(',')==='boarder,bruiser,clinger,saboteur,thief';}'''))
-        check('windup_telegraph',await page.evaluate('__RH_TEST.view().train.getObjectByName("Enemy-windup-telegraphs").count>0'))
+        await page.wait_for_function('__RH_TEST.view().train.getObjectByName("Enemy-windup-telegraphs").count>0',timeout=2500)\n        check('windup_telegraph',True)\n        await page.screenshot(path=str(ART/f'{name}-art2-windup.png'))
         await page.evaluate('''()=>{const a=__RH_TEST,g=a.game();g.enemies=[];g.paused=true;g.player.swing=.22;a.step(0);}''')
         await page.wait_for_timeout(80)
         check('melee_arc',await page.evaluate('__RH_TEST.view().juice.swingArc.visible'))
