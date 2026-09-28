@@ -22,7 +22,11 @@ export class ActorPresentation {
       else{v.box(gun,1.13,0,0,.40,.08,.09,0xb3bbac);v.box(gun,.30,-.03,0,.30,.18,.14,0x70694e);v.box(gun,.70,.16,0,.28,.10,.11,0x273943);}
       const socket=new T.Object3D();socket.name='Muzzle';socket.position.x=spec.muzzle;gun.add(socket);
     }
-    d.wrench=wrench;d.activeMuzzle=d.rangedModels.handgun.getObjectByName('Muzzle');
+    const kit=new T.Group();kit.name='Player-visual-kit';rig.add(kit);
+    v.box(kit,0,1.43,.32,.56,.18,.18,0x55c9dd);v.box(kit,0,1.80,.30,.38,.08,.27,0xd6fbff);
+    for(const x of [-.37,.37])v.box(kit,x,1.37,.23,.18,.12,.28,0x2c6b7d);
+    v.box(kit,-.02,.92,-.30,.54,.60,.12,0x173540);v.box(kit,0,1.12,-.37,.30,.08,.18,0xe9bd72);
+    d.playerKit=kit;d.wrench=wrench;d.activeMuzzle=d.rangedModels.handgun.getObjectByName('Muzzle');
   }
   player(rig,p){
     const d=rig.userData,g=this.view.game,repair=!!g.repairJob,carried=!!p.carry;
@@ -32,21 +36,24 @@ export class ActorPresentation {
     d.arm.rotation.z=p.swing>0?1.20-(1-p.swing/duration)*2.3:-.20;
     if(repair)d.arm.rotation.z=-.3+Math.sin(g.elapsed*16)*.18;
     d.gunArm.rotation.z=0;d.activeMuzzle=(d.rangedModels[g.ranged?.id||'handgun']).getObjectByName('Muzzle');
+    if(d.playerKit)d.playerKit.rotation.z=this.view.reducedMotion?0:Math.sin(g.elapsed*8)*.012;
     rig.scale.setScalar(V11.rig.scale);
   }
   decorateEnemy(rig){
     const v=this.view,kits={};
     for(const type of Object.keys(V11.enemies)){const group=new T.Group();group.name='EnemyKit-'+type;rig.add(group);kits[type]=group;}
-    v.box(kits.boarder,-.13,1.12,.3,.24,.14,.10,0xea8d64);
-    for(const x of [-.38,.38]){v.box(kits.clinger,x,.75,-.35,.12,.75,.15,0x94b9d9);v.box(kits.clinger,x,1.16,-.25,.15,.13,.45,0x94b9d9);}
-    v.box(kits.thief,-.1,.9,-.38,.58,.58,.36,0x8ca860);v.box(kits.thief,0,1.70,0,.64,.10,.55,0x374c3c);
-    v.box(kits.saboteur,0,1.72,0,.64,.16,.56,0xe8b752);v.box(kits.saboteur,-.39,.78,.15,.22,.40,.30,0xe8b752);v.box(kits.saboteur,.35,1.24,.13,.25,.20,.27,0x4f606a);
-    v.box(kits.bruiser,0,1.0,.25,.88,.64,.24,0x74848b);for(const x of [-.46,.46])v.box(kits.bruiser,x,1.24,0,.30,.36,.58,0x8b9290);v.box(kits.bruiser,0,1.49,.30,.62,.27,.16,0x525d63);
+    for(const x of [-.34,.34])v.box(kits.boarder,x,1.32,.24,.23,.18,.30,0xc95f50);
+    v.box(kits.boarder,-.13,1.12,.3,.26,.16,.12,0xf09a6f);v.box(kits.boarder,0,1.68,.25,.46,.07,.30,0xffc08c);
+    for(const x of [-.40,.40]){v.box(kits.clinger,x,.75,-.35,.13,.76,.16,0x79a8d2);v.box(kits.clinger,x,1.18,-.25,.16,.14,.48,0x9dc8ed);v.box(kits.clinger,x*1.35,1.45,.18,.34,.07,.08,0xc5e5ff);}
+    v.box(kits.thief,-.1,.94,-.42,.66,.66,.42,0x708d4f);v.box(kits.thief,0,1.70,0,.66,.11,.57,0x314334);v.box(kits.thief,.28,1.08,.34,.09,.72,.08,0xd1d26f);
+    v.box(kits.saboteur,0,1.72,0,.66,.17,.58,0xe2ad40);v.box(kits.saboteur,-.39,.78,.15,.23,.42,.32,0xf0bd4b);v.box(kits.saboteur,.35,1.24,.13,.27,.22,.29,0x435965);
+    v.box(kits.saboteur,-.28,1.20,-.38,.38,.70,.18,0x8a6130);v.box(kits.saboteur,-.28,1.75,-.38,.06,.52,.06,0xf4d36f);
+    v.box(kits.bruiser,0,1.0,.25,.92,.68,.26,0x657880);for(const x of [-.50,.50]){v.box(kits.bruiser,x,1.28,0,.34,.42,.62,0x7f9298);v.box(kits.bruiser,x,.85,.25,.27,.62,.28,0x515f66);}v.box(kits.bruiser,0,1.52,.30,.66,.30,.18,0x46535a);
     rig.userData.enemyKits=kits;
   }
   enemy(rig,e){
     const kits=rig.userData.enemyKits;for(const [type,group] of Object.entries(kits))group.visible=type===e.type;
-    const base=e.type==='bruiser'?1.28:e.type==='clinger'?.91:1;rig.scale.setScalar(base*(e.flash>0?1.06:1));
+    const base=e.type==='bruiser'?1.30:e.type==='clinger'?.92:1;rig.scale.setScalar(base*(e.flash>0?1.06:1));
     if(e.wind>0)rig.userData.arm.rotation.z=-.25-(e.wind/V11.enemies[e.type].windup)*1.30;
     if(e.state==='attach'||e.state==='climb'){rig.userData.arm.rotation.z=-1.6;rig.userData.legL.rotation.z=.6;rig.userData.legR.rotation.z=-.6;}
   }
