@@ -12,7 +12,7 @@ const ROUTE_MOOD={
 };
 export class WorldPolish{
   constructor(view){
-    this.view=view;this.cars=null;this.groups=[];this.scratch=new T.Object3D();this.route=null;
+    this.view=view;this.cars=null;this.groups=[];this.scratch=new T.Object3D();this.route=null;this.roleMaterials=new Map();this.roleColors=new Set(Object.values(CAR_COLORS));
     this.marker=new T.Mesh(new T.RingGeometry(.40,.54,28),new T.MeshBasicMaterial({color:0x9cecff,side:T.DoubleSide,transparent:true,opacity:.78,depthWrite:false}));
     this.marker.name='Player-contact-marker';this.marker.rotation.x=-Math.PI/2;this.marker.renderOrder=3;view.actorGroup.add(this.marker);
     this.beacon=new T.Mesh(new T.OctahedronGeometry(.105,0),new T.MeshBasicMaterial({color:0xc6fbff,transparent:true,opacity:.92,depthWrite:false}));
@@ -29,6 +29,7 @@ export class WorldPolish{
     this.windupMat=new T.MeshBasicMaterial({color:0xf29b67,transparent:true,opacity:.32,side:T.DoubleSide,depthWrite:false});
     this.windups=new T.InstancedMesh(new T.RingGeometry(.48,.68,24),this.windupMat,V11.enemyLimit);this.windups.name='Enemy-windup-telegraphs';this.windups.frustumCulled=false;view.train.add(this.windups);
   }
+  roleMat(color){if(!this.roleMaterials.has(color)){const c=new T.Color(color);this.roleMaterials.set(color,new T.MeshStandardMaterial({color,roughness:.58,metalness:.24,emissive:c,emissiveIntensity:.16}));}return this.roleMaterials.get(color);}
   rebuild(){
     const v=this.view;
     for(const mesh of this.groups){mesh.removeFromParent();mesh.dispose();}this.groups=[];this.cars=v.cars;
@@ -44,7 +45,7 @@ export class WorldPolish{
       add(c,x,4.15,.25,1.40,.028,.065);add(c,x,4.15,-.75,1.40,.028,.065);
       add(0x8fa8ae,x,1.02,-1.18,6.75,.035,.025);add(c,x,3.36,-1.18,2.2,.035,.028);
     });
-    for(const [color,items] of batches){const m=new T.InstancedMesh(v.cube,v.mat(color),items.length);m.name='Livery-'+color;m.frustumCulled=false;
+    for(const [color,items] of batches){const m=new T.InstancedMesh(v.cube,this.roleColors.has(color)?this.roleMat(color):v.mat(color),items.length);m.name='Livery-'+color;m.frustumCulled=false;
       items.forEach(([x,y,z,sx,sy,sz],i)=>{this.scratch.position.set(x,y,z);this.scratch.rotation.set(0,0,0);this.scratch.scale.set(sx,sy,sz);this.scratch.updateMatrix();m.setMatrixAt(i,this.scratch.matrix);});
       m.instanceMatrix.needsUpdate=true;v.train.add(m);this.groups.push(m);
     }
@@ -92,5 +93,5 @@ export class WorldPolish{
     this.updateBackdrop(route,focus,travel);this.updateWindups();
   }
   snapshot(){return {liveryBatches:this.groups.length,liveryInstances:this.groups.reduce((n,m)=>n+m.count,0),contactMarker:this.marker.visible,polishDrawObjects:this.groups.length+7,backdropInstances:this.far.count+this.mid.count+this.signals.count,windupCount:this.windups.count};}
-  dispose(){for(const m of [...this.groups,this.track,this.far,this.mid,this.signals,this.windups,this.shadow]){m.removeFromParent();m.dispose();}for(const m of [this.marker,this.beacon]){m.removeFromParent();m.geometry.dispose();m.material.dispose();}for(const m of [this.farMat,this.midMat,this.signalMat,this.windupMat])m.dispose();this.groups=[];}
+  dispose(){for(const m of [...this.groups,this.track,this.far,this.mid,this.signals,this.windups,this.shadow]){m.removeFromParent();m.dispose();}for(const m of [this.marker,this.beacon]){m.removeFromParent();m.geometry.dispose();m.material.dispose();}for(const m of [this.farMat,this.midMat,this.signalMat,this.windupMat,...this.roleMaterials.values()])m.dispose();this.groups=[];}
 }
