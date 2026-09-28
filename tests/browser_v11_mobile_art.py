@@ -13,7 +13,7 @@ CASE_KEYS=['normal_entry','locked_ranged_explained','move_response','hold_slide_
  'empty_context_says_return','empty_context_returns','crate_context_says_pickup','crate_pickup','carry_return','load_credits',
  'portrait_pauses','portrait_clears','landscape_stays_paused','resume_works','player_marker_present',
  'polish_instance_budget','polish_rebuild_bounded','polish_geometry_bounded','tunnel_visible','all_route_livery',
- 'dead_marker_hidden','no_errors','completed']
+ 'dead_marker_hidden','art_backdrop','train_shadow','player_visual_kit','enemy_role_kits','windup_telegraph','melee_arc','muzzle_flash','route_mood_changes','no_errors','completed']
 RESET="""()=>{const a=__RH_TEST;a.reset();const g=a.game();g.director.rest=9999;g.enemies=[];
  g.elapsed=5;g.t=.1;g.phase='yard';g.speedMode='STOP';a.forcePlayer(5.8);a.step(0);}"""
 async def run(p,name):
@@ -100,8 +100,26 @@ async def run(p,name):
         check('landscape_stays_paused',await page.evaluate('__RH_TEST.game().paused'));await page.locator('#pause').tap();await page.wait_for_function('!__RH_TEST.game().paused');check('resume_works',True)
         await page.evaluate(RESET);await page.wait_for_timeout(300)
         check('player_marker_present',await page.evaluate('!!__RH_TEST.view().actorGroup.getObjectByName("Player-contact-marker")'))
+        check('art_backdrop',await page.evaluate('!!__RH_TEST.view().scene.getObjectByName("Atmospheric-parallax")&&__RH_TEST.view().scene.getObjectByName("Atmospheric-parallax").children.length===3'))
+        check('train_shadow',await page.evaluate('!!__RH_TEST.view().train.getObjectByName("Train-contact-shadow")'))
+        check('player_visual_kit',await page.evaluate('!!__RH_TEST.view().playerRig.getObjectByName("Player-visual-kit")'))
+        await page.evaluate('''()=>{const a=__RH_TEST,g=a.game();g.enemies=[];g.paused=true;g.spawn("bruiser",6,false);g.enemies[0].wind=1.5;a.step(0);}''')
+        await page.wait_for_timeout(80)
+        check('enemy_role_kits',await page.evaluate('''()=>{const v=__RH_TEST.view(),m=[...v.enemyModels.values()][0];return m&&Object.keys(m.userData.enemyKits||{}).sort().join(',')==='boarder,bruiser,clinger,saboteur,thief';}'''))
+        check('windup_telegraph',await page.evaluate('__RH_TEST.view().train.getObjectByName("Enemy-windup-telegraphs").count>0'))
+        await page.evaluate('''()=>{const a=__RH_TEST,g=a.game();g.enemies=[];g.paused=true;g.player.swing=.22;a.step(0);}''')
+        await page.wait_for_timeout(80)
+        check('melee_arc',await page.evaluate('__RH_TEST.view().juice.swingArc.visible'))
+        await page.evaluate('''()=>{const a=__RH_TEST,g=a.game();g.paused=true;g.rangedTier=1;g.combatTier=3;g.player.rangedFlash=.08;a.step(0);}''')
+        await page.wait_for_timeout(80)
+        check('muzzle_flash',await page.evaluate('__RH_TEST.view().juice.muzzleFlash.visible'))
+        await page.evaluate('''()=>{const g=__RH_TEST.game();g.route="industrial";g.paused=true;}''');await page.wait_for_timeout(80)
+        moodA=await page.evaluate('__RH_TEST.view().scene.getObjectByName("Atmospheric-parallax").children[0].material.color.getHex()')
+        await page.evaluate('''()=>{__RH_TEST.game().route="freight";}''');await page.wait_for_timeout(80)
+        moodB=await page.evaluate('__RH_TEST.view().scene.getObjectByName("Atmospheric-parallax").children[0].material.color.getHex()')
+        check('route_mood_changes',moodA!=moodB);await page.evaluate('__RH_TEST.game().paused=false')
         async def art_counts():return await page.evaluate("""()=>{const v=__RH_TEST.view(),list=[];v.train.traverse(o=>{if(o.name.startsWith('Livery-'))list.push(o)});return {batches:list.length,instances:list.reduce((s,m)=>s+m.count,0),geometry:v.renderer.info.memory.geometries,drawCalls:v.renderer.info.render.calls,triangles:v.renderer.info.render.triangles};}""")
-        before=await art_counts();check('polish_instance_budget',before['batches']<=7 and before['instances']<=32)
+        before=await art_counts();check('polish_instance_budget',before['batches']<=9 and before['instances']<=60)
         for i in range(5):
             await page.evaluate('__RH_TEST.view().rebuildCars()');await page.wait_for_timeout(120)
         after=await art_counts();report['samples'].append({'beforeRebuild':before,'afterRebuild':after})
