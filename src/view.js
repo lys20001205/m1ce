@@ -2,13 +2,13 @@ import * as T from '../vendor/three.module.min.js';
 import {LENGTH,FLOOR,ROOF,clamp,B} from './sim.js?v=11';
 import {Feedback3D} from './feedback3d.js?v=11';
 import {Stations3D} from './stations3d.js';
-import {ActorPresentation} from './actors3d.js';
-import {RouteWorld} from './routeworld.js';
+import {ActorPresentation} from './actors3d.js?v=11-art2';
+import {RouteWorld} from './routeworld.js?v=11-art2';
 import {V11} from './balance.js';
 const v=new T.Vector3();
 export class View {
  constructor(canvas,game,log){this.game=game;this.log=log;this.canvas=canvas;this.frames=0;this.loaded=0;this.carCount=0;this.inspect=false;this.cameraX=game.player.x;this.syncs=0;this.floorCrates=[];this.enemyModels=new Map();this.enemyPool=[];this.enemyMaterials=new Map();this.cylinderCache=new Map();this.bulletPool=[];this.particlePool=[];this.matCache=new Map();
-  this.renderer=new T.WebGLRenderer({canvas,antialias:true,alpha:false,powerPreference:'low-power'});this.renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.5));this.renderer.shadowMap.enabled=true;this.renderer.shadowMap.type=T.PCFSoftShadowMap;this.renderer.outputColorSpace=T.SRGBColorSpace;this.renderer.toneMapping=T.ACESFilmicToneMapping;this.renderer.toneMappingExposure=1.22;
+  this.renderer=new T.WebGLRenderer({canvas,antialias:true,alpha:false,powerPreference:'low-power'});this.renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.5));this.renderer.shadowMap.enabled=true;this.renderer.shadowMap.type=T.PCFSoftShadowMap;this.renderer.outputColorSpace=T.SRGBColorSpace;this.renderer.toneMapping=T.ACESFilmicToneMapping;this.renderer.toneMappingExposure=1.14;
   this.scene=new T.Scene();this.scene.background=new T.Color(0x20384a);this.scene.fog=new T.Fog(0x20384a,80,420);this.camera=new T.PerspectiveCamera(25,1,.1,900);
   this.hemi=new T.HemisphereLight(0xccecff,0x25322d,1.65);this.scene.add(this.hemi);this.sun=new T.DirectionalLight(0xffe1ad,2.7);this.sun.castShadow=true;Object.assign(this.sun.shadow.camera,{left:-24,right:24,top:20,bottom:-20,near:.1,far:65});this.sun.shadow.mapSize.set(1024,1024);this.sun.shadow.bias=-.0015;this.sun.shadow.normalBias=.035;this.scene.add(this.sun,this.sun.target);
   this.train=new T.Group();this.scene.add(this.train);this.carGroup=new T.Group();this.actorGroup=new T.Group();this.train.add(this.carGroup,this.actorGroup);this.ground=new T.Group();this.scene.add(this.ground);this.box(this.ground,0,-.23,0,220,.4,110,0x253c45).receiveShadow=true;
@@ -18,7 +18,7 @@ export class View {
   this.rangeLine=new T.Line(new T.BufferGeometry().setFromPoints([new T.Vector3(),new T.Vector3(2,0,0)]),new T.LineDashedMaterial({color:0xf5c678,dashSize:.18,gapSize:.13,transparent:true,opacity:.68}));this.train.add(this.rangeLine);
   this.bulletGroup=new T.Group();this.train.add(this.bulletGroup);this.particles=new T.Group();this.train.add(this.particles);this.projectileGeometry=new T.BoxGeometry(.38,.065,.07);this.particleGeometry=new T.BoxGeometry(.075,.075,.075);this.stations=new Stations3D(this);this.actorPresentation=new ActorPresentation(this);this.juice=new Feedback3D(this);this.resize();
  }
- mat(c){if(!this.matCache.has(c))this.matCache.set(c,new T.MeshStandardMaterial({color:c,roughness:.84,metalness:.10}));return this.matCache.get(c)}
+ mat(c){if(!this.matCache.has(c))this.matCache.set(c,new T.MeshStandardMaterial({color:c,roughness:.76,metalness:.14}));return this.matCache.get(c)}
  box(g,x,y,z,sx,sy,sz,c){this.cube??=new T.BoxGeometry(1,1,1);const m=new T.Mesh(this.cube,this.mat(c));m.position.set(x,y,z);m.scale.set(sx,sy,sz);m.castShadow=true;m.receiveShadow=true;g.add(m);return m}
  cyl(g,x,y,z,r,h,c,segments=12){const m=new T.Mesh((this.cylinderCache.get(segments)||(()=>{const g=new T.CylinderGeometry(1,1,1,segments);this.cylinderCache.set(segments,g);return g})()),this.mat(c));m.position.set(x,y,z);m.scale.set(r,h,r);m.castShadow=true;m.receiveShadow=true;g.add(m);return m}
  async init(){const loader=new T.ObjectLoader();[this.carTemplate,this.robotTemplate,this.crateTemplate]=await Promise.all(['train-cutaway','crew-robot','cargo-crate'].map(n=>loader.loadAsync(new URL('../assets/'+n+'.json?v=11',import.meta.url).href)));this.loaded=3;this.playerRig=this.makeRobot(false);this.actorGroup.add(this.playerRig);this.rebuildCars();this.log('models_loaded',{count:3});this.render(0)}
