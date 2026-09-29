@@ -33,8 +33,18 @@ async def run(p,name):
         # Ordinary UI ingress before the independent fixture scenarios.
         await page.locator('[data-route=freight]').click();await page.locator('[data-car=cargo]').click();await page.locator('#start').click()
         await page.wait_for_function('__RH_TEST.game().status==="running"');check('normal_entry',True)
-        before=await page.evaluate('__RH_TEST.game().player.x');await page.keyboard.down('KeyD');await page.wait_for_timeout(400);await page.keyboard.up('KeyD')
-        check('move_response',await page.evaluate('__RH_TEST.game().player.x')>before+.4)
+        # The first post-START shader frame may outlast a wall-clock key tap in software CI.
+        # Hold the real key until measured simulation/render progress, retaining the same distance.
+        await page.keyboard.down('KeyD')
+        await page.wait_for_function('__RH_TEST.input().move===1',timeout=2500)
+        before=await page.evaluate('({x:__RH_TEST.game().player.x,time:__RH_TEST.game().elapsed,frames:__RH_TEST.view().frames,wall:performance.now()})')
+        try:
+            await page.wait_for_function('(s)=>__RH_TEST.game().elapsed-s.time>=.125&&__RH_TEST.view().frames>=s.frames+2',arg=before,timeout=2500)
+            after=await page.evaluate('({x:__RH_TEST.game().player.x,time:__RH_TEST.game().elapsed,frames:__RH_TEST.view().frames,wall:performance.now()})')
+            report['samples'].append({'case':'initial_native_movement_timing','before':before,'after':after})
+        finally:
+            await page.keyboard.up('KeyD')
+        check('move_response',after['x']>before['x']+.4)
         await page.evaluate(RESET)
         await page.wait_for_function('document.getElementById("ranged").dataset.caption==="先购 AXE"')
         check('locked_ranged_explained',True)
