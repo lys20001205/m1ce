@@ -12,8 +12,8 @@ export class Feedback3D {
     this.spawnRing=new T.Mesh(new T.TorusGeometry(.70,.035,6,28),view.mat(0x93e5ee));this.spawnRing.rotation.x=Math.PI/2;this.group.add(this.spawnRing);
     this.speedStreaks=new T.InstancedMesh(view.cube,view.mat(0x90b7bd),18);this.speedStreaks.frustumCulled=false;this.group.add(this.speedStreaks);this.speedScratch=new T.Object3D();
     this.station=new T.Mesh(new T.ConeGeometry(.10,.24,6),new T.MeshBasicMaterial({color:0xeac481}));this.station.rotation.z=Math.PI;this.group.add(this.station);
-    this.swingArc=new T.Mesh(new T.TorusGeometry(1.05,.035,5,24,Math.PI*.95),new T.MeshBasicMaterial({color:0xffd18a,transparent:true,opacity:.72,depthWrite:false}));this.swingArc.name='Melee-swing-arc';this.group.add(this.swingArc);
-    this.muzzleFlash=new T.Mesh(new T.OctahedronGeometry(.15,0),new T.MeshBasicMaterial({color:0xffe0a3,transparent:true,opacity:.9,depthWrite:false}));this.muzzleFlash.name='Muzzle-flash';this.group.add(this.muzzleFlash);
+    this.swingArc=new T.Mesh(new T.TorusGeometry(1.05,.035,5,24,Math.PI*.95),new T.MeshBasicMaterial({color:0xffd18a,transparent:true,opacity:.72,depthWrite:false}));this.swingArc.name='Melee-swing-arc';this.swingArc.visible=false;this.group.add(this.swingArc);
+    this.muzzleFlash=new T.Mesh(new T.OctahedronGeometry(.15,0),new T.MeshBasicMaterial({color:0xffe0a3,transparent:true,opacity:.9,depthWrite:false}));this.muzzleFlash.name='Muzzle-flash';this.muzzleFlash.visible=false;this.group.add(this.muzzleFlash);
   }
   updateLabels(){
     const g=this.view.game,fx=g.effects.filter(e=>e.text&&['scrap','buy'].includes(e.type)).slice(-this.labels.length);

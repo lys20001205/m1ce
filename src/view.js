@@ -1,6 +1,6 @@
 import * as T from '../vendor/three.module.min.js';
 import {LENGTH,FLOOR,ROOF,clamp,B} from './sim.js?v=11';
-import {Feedback3D} from './feedback3d.js?v=11';
+import {Feedback3D} from './feedback3d.js?v=11-art2';
 import {Stations3D} from './stations3d.js';
 import {ActorPresentation} from './actors3d.js?v=11-art2';
 import {RouteWorld} from './routeworld.js?v=11-art2';

@@ -60,10 +60,13 @@ async def run(p, name):
             held = await page.evaluate('__RH_TEST.input()')
             check(action+'_keyboard_survives_pointer_release', held[field] == value)
             if action == 'right':
-                before = await page.evaluate('__RH_TEST.game().player.x')
-                await page.wait_for_timeout(160)
-                after = await page.evaluate('__RH_TEST.game().player.x')
-                check('movement_continues_after_capture_loss', after-before > .25)
+                before = await page.evaluate('({x:__RH_TEST.game().player.x,time:__RH_TEST.game().elapsed,frames:__RH_TEST.view().frames,wall:performance.now()})')
+                # Require real simulation/render progress, not an assumed 160ms frame budget.
+                # No stepping, state repair, or relaxed distance assertion.
+                await page.wait_for_function('(s)=>__RH_TEST.game().elapsed-s.time>=.075&&__RH_TEST.view().frames>=s.frames+2',arg=before,timeout=2500)
+                after = await page.evaluate('({x:__RH_TEST.game().player.x,time:__RH_TEST.game().elapsed,frames:__RH_TEST.view().frames,wall:performance.now()})')
+                report['samples'].append({'case':'held_movement_timing','before':before,'after':after})
+                check('movement_continues_after_capture_loss', after['x']-before['x'] > .25)
             await page.keyboard.up(key)
             check(action+'_last_release_clears_input_and_highlight', await page.evaluate(
                 '''({button,field})=>!__RH_TEST.input()[field]&&!document.getElementById(button).classList.contains('active')''',
@@ -81,7 +84,7 @@ async def run(p, name):
         await page.evaluate(RESET)
         await page.keyboard.down('KeyD')
         await page.set_viewport_size({'width':390,'height':844})
-        await page.wait_for_timeout(250)
+        await page.wait_for_function('__RH_TEST.game().paused&&!__RH_TEST.input().move',timeout=2500)
         check('portrait_pauses_without_stuck_input', await page.evaluate('''__RH_TEST.game().paused&&!__RH_TEST.input().move'''))
         await page.keyboard.up('KeyD')
         await page.set_viewport_size({'width':844,'height':390})
