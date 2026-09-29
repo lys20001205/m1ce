@@ -44,3 +44,32 @@ body{background:radial-gradient(ellipse at 50% 0,#273c46,#0a151d 70%);color:var(
 @media(max-height:350px){#app.touchUI{grid-template-rows:36px 20px minmax(0,1fr) 80px 0}.touchUI #controls{grid-template-rows:18px 54px}.touchUI #utilityControls button,.touchUI #combatControls button{height:54px}.touchUI #centerHint{font-size:10px}.touchUI #movementPad button{height:46px}.touchUI #hud{gap:8px}}
 @media(max-width:760px){.touchUI #controls{grid-template-columns:114px minmax(184px,1fr) 130px;column-gap:7px}.touchUI #hud{gap:7px}.touchUI #vitals{min-width:126px;gap:6px}.touchUI .vital{min-width:60px!important}.touchUI #hud nav{gap:3px}}
 @media(prefers-reduced-motion:reduce){#controls button{transition:none}}
+
+
+/* Art pass 2: deeper scene framing and cleaner industrial UI without changing play rules. */
+/* Color is authored in the scene; avoid full-canvas filter compositing on phones. */
+#viewport:before{content:'';position:absolute;inset:0;z-index:1;pointer-events:none;border-radius:10px;background:linear-gradient(180deg,rgba(5,14,20,.10),transparent 38%,rgba(3,9,13,.18));box-shadow:inset 0 0 32px rgba(0,0,0,.16)}
+#app[data-world-route=industrial] #viewport:before{background:radial-gradient(circle at 72% 28%,rgba(228,170,78,.10),transparent 34%),linear-gradient(180deg,rgba(8,18,23,.08),transparent 42%,rgba(4,9,12,.18))}
+#app[data-world-route=freight] #viewport:before{background:radial-gradient(circle at 66% 24%,rgba(83,201,191,.10),transparent 36%),linear-gradient(180deg,rgba(7,24,29,.06),transparent 46%,rgba(2,12,17,.20))}
+#app[data-world-route=tunnel] #viewport:before{background:radial-gradient(circle at 50% 38%,rgba(93,128,171,.10),transparent 38%),linear-gradient(180deg,rgba(2,5,9,.18),transparent 34%,rgba(2,4,7,.28))}
+/* Opaque-enough panels retain legibility without sampling/blur of the animated canvas. */
+#hud{background:linear-gradient(180deg,rgba(17,36,46,.92),rgba(12,27,36,.82));padding:0 6px;border-radius:8px 8px 0 0;box-shadow:0 6px 22px rgba(0,0,0,.12)}
+#route{border:1px solid rgba(111,153,166,.18);box-shadow:inset 0 1px 0 rgba(255,255,255,.03)}
+#carTags .tag{background:rgba(9,25,32,.82);border:1px solid rgba(122,173,185,.32);border-left:3px solid #87b4bf;box-shadow:0 3px 9px rgba(0,0,0,.18)}
+#playerTag{background:rgba(4,29,38,.86);box-shadow:0 0 0 1px rgba(126,224,235,.15),0 4px 12px rgba(0,0,0,.22)}
+#controls{position:relative}
+#controls:before{content:'';position:absolute;inset:-3px -4px 0;z-index:-1;border-radius:14px;background:linear-gradient(180deg,rgba(14,35,45,.72),rgba(8,20,28,.92));border:1px solid rgba(84,125,139,.20)}
+#movementPad{box-shadow:inset 0 0 0 1px rgba(132,205,214,.08),0 3px 10px rgba(0,0,0,.16)}
+#movementPad button{background:linear-gradient(180deg,#294956,#1b3541)}
+#utilityControls button{background:linear-gradient(180deg,#284551,#1c3440)}
+#utilityControls #fix{background:linear-gradient(180deg,#2b5d50,#1f453d)}
+#utilityControls #brake{background:linear-gradient(180deg,#5a4034,#382a28)}
+#combatControls #attack{background:linear-gradient(180deg,#8b603b,#65472f)}
+#combatControls #ranged{background:linear-gradient(180deg,#3e7285,#264d5c)}
+#controls button[data-ready=true]{border-color:rgba(157,206,213,.42)}
+#controls button.active{box-shadow:inset 0 0 0 1px rgba(212,250,248,.65),0 0 14px rgba(103,205,211,.12)}
+#modal article,#debug article{border-color:rgba(100,150,162,.48);box-shadow:0 22px 60px rgba(0,0,0,.55),inset 0 1px 0 rgba(255,255,255,.03)}
+#routeChoices button,#choices button{box-shadow:inset 0 1px 0 rgba(255,255,255,.04),0 4px 12px rgba(0,0,0,.12)}
+#routeChoices button:hover,#choices button:hover{border-color:#7797a2}
+#speedPanel,#armoryPanel{border-color:rgba(119,177,179,.68);box-shadow:0 8px 26px rgba(0,0,0,.38),inset 0 1px 0 rgba(255,255,255,.03)}
+@media(max-height:350px){#hud{border-radius:6px 6px 0 0}#viewport:before{box-shadow:inset 0 0 20px rgba(0,0,0,.13)}}

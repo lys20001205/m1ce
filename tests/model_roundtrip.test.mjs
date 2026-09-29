@@ -7,3 +7,5 @@ test('cargo model has depth and no textures/external images',()=>{const o=load('
 test('camera side wall absent at torso height',()=>{const o=load('train-cutaway');o.updateMatrixWorld(true);const ray=new T.Raycaster(new T.Vector3(1,2.3,10),new T.Vector3(0,0,-1),.1,9.5);assert.equal(ray.intersectObject(o,true).length,0)});
 
 await import("./weapon_models.test.mjs");
+
+await import("./art2_runtime.test.mjs");

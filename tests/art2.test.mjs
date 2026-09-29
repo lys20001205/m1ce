@@ -1,0 +1,17 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+const read=p=>fs.readFileSync(new URL('../'+p,import.meta.url),'utf8');
+const polish=read('src/polish3d.js'),actors=read('src/actors3d.js'),feedback=read('src/feedback3d.js'),route=read('src/routeworld.js'),css=read('src/mobile_art.css'),main=read('src/main.js'),html=read('index.html');
+test('art2 adds a grounded train contact shadow',()=>{assert.match(polish,/Train-contact-shadow/);assert.match(polish,/PlaneGeometry\(1,1\)/);});
+test('art2 adds three bounded parallax depth batches',()=>{assert.match(polish,/Atmospheric-parallax/);assert.match(polish,/new T\.InstancedMesh\(view\.cube,this\.farMat,22\)/);assert.match(polish,/new T\.InstancedMesh\(view\.cube,this\.midMat,26\)/);assert.match(polish,/new T\.InstancedMesh\(view\.cube,this\.signalMat,18\)/);});
+test('art2 supplies route-specific mood without game writes',()=>{for(const id of ['industrial','freight','tunnel'])assert.match(polish,new RegExp(id+':\\{far:'));assert.doesNotMatch(polish,/\.setSpeed\(|\.hurt\(|\.damageCar\(/);});
+test('enemy windup telegraph is render-only and pooled',()=>{assert.match(polish,/Enemy-windup-telegraphs/);assert.match(polish,/V11\.enemyLimit/);assert.match(polish,/this\.windups\.count=n/);});
+test('expanded livery stays batched and disposable',()=>{assert.match(polish,/new T\.InstancedMesh\(v\.cube,this\.roleColors\.has\(color\)\?this\.roleMat\(color\):v\.mat\(color\),items\.length\)/);assert.match(polish,/mesh\.dispose\(\)/);assert.match(polish,/this\.shadow/);});
+test('player receives a physical readability kit',()=>{assert.match(actors,/Player-visual-kit/);assert.match(actors,/0x55c9dd/);assert.match(actors,/0xd6fbff/);});
+test('all five enemies retain distinct physical dressing',()=>{for(const id of ['boarder','clinger','thief','saboteur','bruiser'])assert.match(actors,new RegExp('kits\\.'+id));});
+test('combat feedback adds melee arc and muzzle flash',()=>{assert.match(feedback,/Melee-swing-arc/);assert.match(feedback,/Muzzle-flash/);assert.match(feedback,/p\.rangedFlash>0/);});
+test('route geometry includes route-specific landmark detail',()=>{assert.match(route,/i%10===2/);assert.match(route,/FOUNDRY \/ EXHAUST TOWERS/);assert.match(route,/FREIGHT GANTRY \/ STACK YARD/);assert.match(route,/VENTILATION \/ EMERGENCY CONDUIT/);});
+test('viewport has route-specific art direction overlays',()=>{for(const id of ['industrial','freight','tunnel'])assert.match(css,new RegExp('data-world-route='+id));assert.match(css,/#viewport:before/);});
+test('art2 modules are cache-busted from the main entry',()=>{assert.match(html,/mobile_art\.css\?v=11-art2/);assert.match(html,/main\.js\?v=11-art2/);assert.match(main,/view\.js\?v=11-art2/);assert.match(main,/polish3d\.js\?v=11-art2/);});
+test('view cache-busts actor and route presentation modules',()=>{const view=read('src/view.js');assert.match(view,/actors3d\.js\?v=11-art2/);assert.match(view,/routeworld\.js\?v=11-art2/);});

@@ -1,5 +1,5 @@
 import {Game,BUILD,B,DEFS,LENGTH,FLOOR,ROOF,phaseAt,phaseLabel,clamp,stationX} from './sim.js?v=11';
-import {View} from './view.js?v=11';
+import {View} from './view.js?v=11-art2';
 import {Telemetry} from './telemetry.js?v=11';
 import {runtimeMode,SimulationClock} from './runtime.js';
 import {SaveStore} from './save.js';
@@ -8,7 +8,7 @@ import {AudioCues} from './audio.js?v=11';
 import {ROUTES,SPEED_MODES,INPUT_BINDINGS_SSOT,PREP_ITEMS} from './content.js';
 import {V11} from './balance.js';
 import {ControlUI,steeringDirection,depotActionLabel} from './control_ui.js';
-import {WorldPolish} from './polish3d.js';
+import {WorldPolish} from './polish3d.js?v=11-art2';
 import {DesignUI,carPreview,routeReason} from './design_ui.js';
 const design=new DesignUI(document),controlUI=new ControlUI(document);let polish=null;
 const $=id=>document.getElementById(id);
