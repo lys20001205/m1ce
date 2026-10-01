@@ -45,10 +45,10 @@ async def run(p,name):
         picked=await tap_interact(page,'!!__RH_TEST.game().heldCargo')
         report['checks']['pickup_has_identity']=picked and await page.evaluate('!!__RH_TEST.game().heldCargo')
         await page.evaluate('__RH_TEST.game().pause(false)')
-        exited=await tap_interact(page,'__RH_TEST.game().playerLayer==="ROOF"')
+        exited=await tap_interact(page,'__RH_TEST.game().playerLayer==="INTERIOR"&&!__RH_TEST.game().player.carry')
         if exited: await page.evaluate('__RH_TEST.game().pause(false)')
-        loaded=await tap_interact(page,'__RH_TEST.game().cars[1].cargo===1&&!__RH_TEST.game().player.carry') if exited else False
-        report['checks']['bridge_and_roof_loading']=loaded and await page.evaluate('(()=>{const g=__RH_TEST.game();return g.playerLayer==="ROOF"&&g.cars[1].cargo===1&&g.cargoValue===450&&!g.player.carry})()')
+        loaded=exited and await page.evaluate('__RH_TEST.game().cars[1].cargo===1&&!__RH_TEST.game().player.carry')
+        report['checks']['bridge_return_auto_loading']=loaded and await page.evaluate('(()=>{const g=__RH_TEST.game();return g.playerLayer==="INTERIOR"&&g.cars[1].cargo===1&&g.cargoValue===450&&!g.player.carry})()')
         await page.screenshot(path=str(ART/f'{name}-depot-loaded.png'))
         await page.evaluate('(()=>{const a=__RH_TEST,g=a.game();g.pause(false);a.forcePlayer(5.8);g.setSpeed("SLOW");a.forcePlayer(12.45,true);g.interact();a.step(3/5.1,{move:-1});g.interact();g.pause(true)})()')
         report['checks']['slow_carry_on_platform']=await page.evaluate('__RH_TEST.game().playerLayer==="DEPOT"&&!!__RH_TEST.game().heldCargo')

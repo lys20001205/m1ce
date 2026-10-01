@@ -7,7 +7,7 @@ BASE='http://127.0.0.1:8789/?test=1'
 VIEWPORTS=[(812,332),(844,390),(932,430),(1280,720)]
 VIEW_CHECKS=['css_size','routes_in_first_screen','zero_bank_folded','practice_secondary','shop_native_toggle',
              'cargo_preview','battery_preview','departure_objective','start_visible','depot_markers','reserved_footer']
-OTHER_CHECKS=['armory_unlock_explained','three_native_purchases','one_scrap_goal','net_excludes_starting_funds',
+OTHER_CHECKS=['armory_choices_explained','first_gun_without_melee_gate','three_native_purchases','one_scrap_goal','net_excludes_starting_funds',
  'kills_upgrades_visible','zero_incidents_secondary','ledger_reconciles','cashout_keeps_history','cashout_shop',
  'restart_clears_history','depot_stock','depot_pickup_unsecured','loaded_delta','reload_no_duplicate_credit',
  'full_return_guidance','stall_wins','death_hides_ordinary_guide','inventory_zero_bank_opens','formal_save_untouched',
@@ -72,10 +72,14 @@ async def run(p,name):
         check('repair_unavailable_hint',await page.evaluate('__RH_TEST.game().repairJob===null'))
         await page.keyboard.up('KeyE')
         await page.keyboard.press('KeyF');await page.locator('#armoryPanel').wait_for(state='visible')
-        check('armory_unlock_explained','AXE（COMBAT TIER 3）' in await page.locator('#armoryHelp').inner_text())
-        for slot in ['melee','melee','ranged']:
-            await page.locator(f'[data-armory={slot}]').click();await page.wait_for_timeout(120)
-        check('three_native_purchases',await page.evaluate('__RH_TEST.game().meleeTier===3&&__RH_TEST.game().rangedTier===1&&__RH_TEST.game().scrap===0'))
+        help_text=await page.locator('#armoryHelp').inner_text()
+        check('armory_choices_explained',all(text in help_text for text in ['按玩法选择武器','已购免费切换','商店不暂停']))
+        for weapon in ['handgun','knife','axe']:
+            await page.locator(f'[data-weapon={weapon}]').click()
+            await page.wait_for_function('''id=>{const g=__RH_TEST.game();return g.melee.id===id||g.ranged?.id===id;}''',arg=weapon)
+            if weapon=='handgun':
+                check('first_gun_without_melee_gate',await page.evaluate('__RH_TEST.game().melee.id==="wrench"&&__RH_TEST.game().scrap===30'))
+        check('three_native_purchases',await page.evaluate('__RH_TEST.game().meleeTier===3&&__RH_TEST.game().rangedTier===1&&__RH_TEST.game().scrap===0&&["wrench","knife","axe"].every(id=>__RH_TEST.game().weaponInventory.melee.includes(id))&&__RH_TEST.game().weaponInventory.ranged.includes("handgun")'))
         await page.locator('#closeArmory').click()
         await page.evaluate('''()=>{const a=__RH_TEST,g=a.game();g.scrap=23;g.inc('kills',28);g.finish();g.completeArrival();a.step(0);}''')
         await page.locator('#outcomeStats').wait_for(state='visible')
@@ -102,18 +106,19 @@ async def run(p,name):
         await page.wait_for_function('document.getElementById("centerHint").textContent.includes("尚未装车")')
         check('depot_pickup_unsecured',await page.evaluate('__RH_TEST.game().money===1000'))
         await page.screenshot(path=str(ART/f'{name}-design-carry.png'))
-        await page.keyboard.press('KeyW');await page.wait_for_function('__RH_TEST.game().playerLayer==="ROOF"')
-        await page.keyboard.press('KeyF');await page.wait_for_function('__RH_TEST.game().storedCargo===1')
-        await page.wait_for_function('document.getElementById("centerHint").textContent.includes("新增未兑现 +450")')
+        await page.keyboard.press('KeyW');await page.wait_for_function('__RH_TEST.game().playerLayer==="INTERIOR"&&__RH_TEST.game().storedCargo===1')
+        # Bridge return has already loaded the crate; check the persistent accounting row.
+        await page.wait_for_function('document.getElementById("cargoLedger").textContent.includes("本局新增 450")&&document.getElementById("cargoLedger").textContent.includes("待结算总额 1,450")')
         check('loaded_delta',await page.evaluate('__RH_TEST.game().money===1450'))
         await page.screenshot(path=str(ART/f'{name}-design-loaded.png'))
-        await page.keyboard.press('KeyW');await page.wait_for_function('__RH_TEST.game().playerLayer==="INTERIOR"')
+        # Outside the depot gangway, F can unload the stored crate before reloading.
+        await page.evaluate('__RH_TEST.forceRoute(.3);__RH_TEST.forcePlayer(12.45)')
         await page.keyboard.press('KeyF');await page.wait_for_function('!!__RH_TEST.game().heldCargo')
         await page.keyboard.press('KeyF');await page.wait_for_function('!__RH_TEST.game().heldCargo')
-        await page.wait_for_function('document.getElementById("centerHint").textContent.includes("不重复")')
+        await page.wait_for_function('__RH_TEST.game().cargoLedger.change?.text.includes("未重复")&&document.getElementById("cargoLedger").textContent.includes("待结算总额 1,450")')
         check('reload_no_duplicate_credit',await page.evaluate('__RH_TEST.game().money===1450'))
         await page.evaluate('''()=>{const a=__RH_TEST,g=a.game();g.createCargo(450,'stored',{carIndex:1,secured:true});g.createCargo(450,'stored',{carIndex:1,secured:true});
-          g.elapsed+=3;a.forcePlayer(12.45,true);g.enterDepot();a.step(0);}''')
+          g.elapsed+=3;g.t=.26;a.forcePlayer(12.45,true);g.enterDepot();a.step(0);}''')
         check('full_return_guidance','CARGO FULL' in await page.locator('#centerHint').inner_text() and 'RETURN' in await page.locator('#centerHint').inner_text())
         await page.evaluate('''()=>{const a=__RH_TEST,g=a.game();g.engineShield=0;g.damageCar(0,g.cars[0].hp);a.step(0);}''')
         check('stall_wins','动力停机' in await page.locator('#event').inner_text() and 'RETURN' in await page.locator('#event').inner_text())

@@ -12,7 +12,7 @@ export class RouteWorld {
  constructor(view){
   this.view=view;this.route=null;this.segments=[];this.landmarks=[];this.depots=[];
   this.scratch=new T.Object3D();this.point=new T.Vector3();
-  this.hub=new T.Group();this.hub.name='Roundhouse-Three-Exit';view.scene.add(this.hub);
+  this.hub=new T.Group();this.hub.name='Roundhouse-Three-Exit';view.railFrame.add(this.hub);
   this.deck=new T.Group();this.hub.add(this.deck);
   this.platform=view.cyl(this.deck,0,.02,0,13,.18,0x587682,48);
   this.rim=new T.Mesh(new T.TorusGeometry(13,.14,6,64),view.mat(0xe1b961));
@@ -26,8 +26,8 @@ export class RouteWorld {
    for(const z of [-.9,.9])view.box(gate,3,.16,z,9,.18,.13,0x9ea9a7);
    view.box(gate,.02,5.64,0,.2,.32,4.5,color);this.hub.add(gate);this.gates.push({id:r.id,mesh:gate,angle});
   });
-  this.root=new T.Group();this.root.name='Selected-Continuous-Ring';view.scene.add(this.root);
-  this.rails=new T.Group();view.scene.add(this.rails);
+  this.root=new T.Group();this.root.name='Selected-Continuous-Ring';view.railFrame.add(this.root);
+  this.rails=new T.Group();view.railFrame.add(this.rails);
   for(const radius of [V11.world.radius-.9,V11.world.radius+.9]){
    const rail=new T.Mesh(new T.TorusGeometry(radius,.095,4,256),view.mat(0x88969c));
    rail.rotation.x=Math.PI/2;rail.position.set(0,.13,-V11.world.radius);this.rails.add(rail);
@@ -53,6 +53,7 @@ export class RouteWorld {
  }
  makeSegment(i,theme){
   const v=this.view,a=ART[theme],parts=new T.Group(),far=new T.Group();
+  if(v.assets?.segment(parts,i,theme)){const near=this.batch(parts);const group=new T.Group();group.add(near,far);this.root.add(group);return {marker:i/V11.world.segments,group,near,far};}
   if(theme==='industrial'){
    v.box(parts,0,3,0,8,6,6,a.body);v.box(parts,0,6.15,0,8.4,.3,6.3,a.secondary);v.box(parts,0,.55,2.8,9,.8,.35,0x28363b);
    for(const x of [-2.5,0,2.5]){v.box(parts,x,3.3,3.04,1.6,.9,.08,0xb8d0d0);v.box(parts,x,4.55,3.02,1.65,.10,.09,a.accent);}
@@ -94,7 +95,7 @@ export class RouteWorld {
    for(const x of [-10,-5,0,5,10]){v.box(group,x,2,0,.6,4,2.8,0x405766);v.box(group,x,4.15,1.86,2,.06,.18,ART[route].accent);}
    for(const x of [-11.6,11.6]){v.box(group,x,5.7,-1.8,.18,3.2,.18,0x8fa7ab);v.box(group,x,7.35,-1.8,.7,.15,.45,ART[route].accent);}
    const bridge=v.box(group,0,4,3.25,2.5,.24,2.6,0x8ba2a4);bridge.name='Roof-Depot-Bridge';
-   const cargo=new T.Group();group.add(cargo);this.root.add(group);
+   v.assets?.depot(group);const cargo=new T.Group();group.add(cargo);this.root.add(group);
    const crates=[];for(let k=0;k<V11.routes[route].crates;k++){const m=v.crateTemplate.clone(true);cargo.add(m);crates.push(m);}
    this.depots.push({id:route+'-'+i,marker,group,bridge,cargo,crates});
   });
@@ -102,7 +103,7 @@ export class RouteWorld {
  update(){
   const g=this.view.game,focus=g.alive?g.player.x:V11.respawnX,route=g.route||g.previousRoute||'industrial';this.select(route);
   const hub=ringPose(g.t,0);this.hub.position.set(g.length*.5+hub.x,0,hub.z);this.hub.rotation.y=-hub.angle;
-  this.hub.visible=Math.hypot(hub.x-focus,hub.z)<V11.world.farCull;
+  this.hub.visible=(g.status==='ready'||g.t===0)&&Math.hypot(hub.x-focus,hub.z)<V11.world.farCull;
   this.visibleSegments=0;this.nearSegments=0;
   for(const s of this.segments){
    const p=ringPose(g.t,s.marker,-15);s.group.position.set(p.x,0,p.z);s.group.rotation.y=-p.angle;
@@ -117,12 +118,12 @@ export class RouteWorld {
   const travel=g.t*2*Math.PI*V11.world.radius,base=Math.floor(focus/18)*18;
   this.tangent.position.x=base;const s=this.scratch;
   for(let i=0;i<160;i++){s.position.set(base-80+i*1.8+travel%1.8,.025,0);s.rotation.set(0,0,0);s.scale.set(1.04,.18,2.6);s.updateMatrix();this.sleepers.setMatrixAt(i,s.matrix);}
-  this.sleepers.instanceMatrix.needsUpdate=true;
+  this.sleepers.instanceMatrix.needsUpdate=true;this.view.assets?.trackStep(this,focus,travel);
  }
  get sky(){return ART[this.route||'industrial'].sky;}
  worldScreen(object,y=0){const p=object.getWorldPosition(new T.Vector3());p.y+=y;const world=p.toArray();p.project(this.view.camera);return {world,screen:[(p.x*.5+.5)*this.view.w,(-.5*p.y+.5)*this.view.h]};}
  snapshot(){return {
-  gateCount:this.gates.length,gateAngles:Object.fromEntries(this.gates.map(g=>[g.id,g.angle])),turntableAngle:this.deck.rotation.y,
+  gateCount:this.gates.length,gateAngles:Object.fromEntries(this.gates.map(g=>[g.id,g.angle])),renderedTurntableLocalAngle:this.deck.rotation.y,
   gateScreens:this.gates.map(g=>({id:g.id,...this.worldScreen(g.mesh,3)})),
   routeWorld:this.route,routeSegmentsVisible:this.visibleSegments,routeSegmentsNear:this.nearSegments,routeSegmentsTotal:this.segments.length,loadedRouteWorlds:1,
   landmarks:this.landmarks.map(l=>({id:l.id,name:l.name,marker:l.segment.marker,visible:l.segment.group.visible,...this.worldScreen(l.segment.group,3)})),

@@ -13,12 +13,16 @@ export class ActorPresentation {
     v.box(knife,.49,0,0,.26,.10,.10,0x34454c);v.box(knife,.74,0,0,.34,.085,.045,0xdbe3df);
     v.box(axe,.56,0,0,.74,.075,.08,0x775b43);v.box(axe,.88,.08,0,.24,.46,.10,0xc1d0d2);
     d.meleeModels={wrench,knife,axe};d.rangedModels={handgun:d.gun};
-    for(const type of ['smg','rifle']){
-      const gun=new T.Group();gun.name=type==='smg'?'SMG':'HighDamageRifle';d.gunArm.add(gun);d.rangedModels[type]=gun;
+    for(const type of ['smg','rifle','shotgun']){
+      const gun=new T.Group();gun.name=type==='smg'?'SMG':type==='shotgun'?'Shotgun':'PiercingRifle';d.gunArm.add(gun);d.rangedModels[type]=gun;
       const spec=V11.weapons[type];
-      v.box(gun,.64,0,0,.48,.16,.16,type==='smg'?0x4a6975:0x607361);
+      v.box(gun,.64,0,0,.48,.16,.16,type==='smg'?0x4a6975:type==='shotgun'?0x936d47:0x607361);
       v.box(gun,.58,-.18,0,.11,.30,.10,0x283c46);
-      if(type==='smg')v.box(gun,.97,0,0,.16,.09,.10,0x9baab0);
+      if(type==='shotgun'){
+        for(const z of [-.07,.07])v.box(gun,.95,0,z,.24,.105,.065,0xb8bfc5);
+        v.box(gun,.73,-.10,0,.23,.09,.19,0xc89555);v.box(gun,.32,-.035,0,.24,.18,.17,0x735132);
+      }
+      else if(type==='smg')v.box(gun,.97,0,0,.16,.09,.10,0x9baab0);
       else{v.box(gun,1.13,0,0,.40,.08,.09,0xb3bbac);v.box(gun,.30,-.03,0,.30,.18,.14,0x70694e);v.box(gun,.70,.16,0,.28,.10,.11,0x273943);}
       const socket=new T.Object3D();socket.name='Muzzle';socket.position.x=spec.muzzle;gun.add(socket);
     }

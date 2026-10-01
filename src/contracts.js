@@ -4,6 +4,7 @@ export const cargoCapacity = cars => cars.filter(c=>c.type==='cargo').length*V11
 export const threatCap = (round,repeat=false) => V11.caps[Math.min(V11.caps.length-1,Math.max(0,Math.floor(round)-1))]+(repeat?1:0);
 export const weaponAt = (slot,tier) => WEAPONS[slot]?.[tier-1] || null;
 export const weaponStats = (slot,tier) => V11.weapons[weaponAt(slot,tier)?.id] || null;
+export const weaponById = (slot,id) => WEAPONS[slot]?.find(w=>w.id===id) || null;
 export const isAlive = state => state===LIFE.ALIVE || state===LIFE.PROTECTED;
 export const canRespawn = terminal => !terminal;
 export const scrapReward = (type,priorKills=0) => Math.max(1,Math.floor(V11.enemies[type].scrap*(priorKills>=V11.stopQuota?V11.reinforcementReward:1)));

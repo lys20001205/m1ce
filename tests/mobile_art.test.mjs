@@ -21,7 +21,7 @@ function inputs(){
  const nodes=new Map(),events=new Map();const el=id=>{if(!nodes.has(id)){const handlers={};nodes.set(id,{handlers,addEventListener:(k,f)=>handlers[k]=f,setPointerCapture(){},getBoundingClientRect:()=>rect,classList:{toggle(){}}});}return nodes.get(id);};
  const game={status:'running',paused:false,alive:true,player:{x:3},cancelRepair(){}};
  const ctx=vm.createContext({game,$:el,INPUT_BINDINGS_SSOT,steeringDirection,telemetry:{log(){}},document:{querySelectorAll:()=>[]},addEventListener:(k,f)=>events.set(k,f),pressed:new Map(),input:{move:0,attack:false,ranged:false,repair:false}});
- const source=fs.readFileSync(new URL('../src/main.js',import.meta.url),'utf8');vm.runInContext(source.slice(source.indexOf('const actions='),source.indexOf('const mobileInput=')),ctx);
+ const source=fs.readFileSync(new URL('../src/main.js',import.meta.url),'utf8');vm.runInContext(source.slice(source.indexOf('const directActions='),source.indexOf('const mobileInput=')),ctx);
  return {read:()=>ctx.input,event:(id,type,pointerId,x=25,y=125)=>el(id).handlers[type]({pointerId,clientX:x,clientY:y,preventDefault(){}}),key:(type,code)=>events.get(type)({code,target:{tagName:'BODY'},preventDefault(){}})};
 }
 test('same captured pointer slides left to right and releases after changing action',()=>{const c=inputs();c.event('L','pointerdown',1);assert.equal(c.read().move,-1);c.event('L','pointermove',1,125);assert.equal(c.read().move,1);c.event('L','pointerup',1);assert.equal(c.read().move,0);c.event('L','lostpointercapture',1);assert.equal(c.read().move,0);});
@@ -31,4 +31,4 @@ test('UI updates expose separate engine and player meters without changing simul
 
 test('root cosmetic route does not collide with route-choice selectors',()=>{const nodes=new Map();const doc={getElementById:id=>{if(!nodes.has(id))nodes.set(id,{textContent:id,style:{setProperty(){}},dataset:{},setAttribute(){}});return nodes.get(id);}};new ControlUI(doc).update(game());assert.equal(nodes.get('app').dataset.worldRoute,'freight');assert.equal(nodes.get('app').dataset.route,undefined);});
 
-test('locked ranged caption explains the actual next step',()=>{const g=game();assert.equal(rangedCaption(g),'先购 AXE');g.meleeTier=3;assert.equal(rangedCaption(g),'武器台购枪');g.rangedTier=1;assert.equal(rangedCaption(g),'远程 · 按住');});
+test('unowned ranged caption explains immediate purchase access',()=>{const g=game();assert.equal(rangedCaption(g),'军械台 12 Scrap 起');g.meleeTier=3;assert.equal(rangedCaption(g),'军械台 12 Scrap 起');g.rangedTier=1;assert.equal(rangedCaption(g),'远程 · 按住');});

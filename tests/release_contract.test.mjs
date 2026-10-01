@@ -29,7 +29,7 @@ test('stitched release rules emit the critical non-audio event chain from real G
   assert.equal(g.chooseRoute('freight'),true);assert.equal(g.chooseCar('cargo'),true);assert.equal(g.start(),true);
   g.elapsed=3;g.player.x=5.8;assert.equal(g.setSpeed('FAST'),true);assert.equal(g.emergencyStop(),true);
   g.t=.26;g.phase='yard';g.speedMode='STOP';g.setPlayerLayer('ROOF');g.player.x=12.45;
-  assert.equal(g.interact(),true);assert.equal(g.playerLayer,'DEPOT');assert.equal(g.interact(),true);assert.ok(g.heldCargo);assert.equal(g.interact(),true);assert.equal(g.playerLayer,'ROOF');assert.equal(g.interact(),true);assert.equal(g.cargoUsed,1);
+  assert.equal(g.interact(),true);assert.equal(g.playerLayer,'DEPOT');assert.equal(g.interact(),true);assert.ok(g.heldCargo);assert.equal(g.interact(),true);assert.equal(g.playerLayer,'INTERIOR');assert.equal(g.cargoUsed,1);
   g.setPlayerLayer('DEPOT');g.player.depotId=g.depots[0].id;assert.equal(g.killPlayer('train_lost'),true);stepFor(g,5.05);assert.ok(g.alive);
   g.setPlayerLayer('INTERIOR');g.player.x=3;const e=g.spawn('boarder',3.7,false);e.hp=1;g.hitEnemy(e,99);assert.ok(g.scrap>0);
   g.scrap=100;g.player.x=1.7;assert.equal(g.openArmory(),true);assert.equal(g.buyWeapon('melee'),true);

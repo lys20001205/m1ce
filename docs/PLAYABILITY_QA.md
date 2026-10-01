@@ -1,0 +1,103 @@
+# ROUNDHOUSE playability candidate — 2026-09-30
+
+## R6 follow-up (supersedes earlier Python/uncovered statements)
+
+Independent R5 ordinary input verified a450 recovery in about1.8s with pending1900 unchanged, and desktop/844×390 bottom weapon access. It also found the theft instruction surviving at least85s after risk reached zero (`task-2/qa-baseline/r5-scenario.jsonl`). R6 fixes only this product defect: live stolen value controls the chase instruction, recovered/lost notices replace it and expire after6s, arrival/settlement/failure/continuation/restart clear prior feedback. Cargo prices, credits, debits, rewards and Bank rules are unchanged. Frozen R5 is preserved.
+
+R6 `artifacts/unit-r6.txt`:363/363 pass. `artifacts/models-r6.txt`:26/26 pass. `artifacts/cargo-notice-r6/report.json` and01–10 PNGs verify active theft, normal-J fixture recovery with pending1900 unchanged, no old chase after85s, one450 loss to1450, transient expiry, arrival,2850 settlement, restart and failure. The85s wait is diagnostic simulation stepping, not85s of normal-input play. The first controller read failure visibility before the next rendered frame; preserved in `cargo-notice-r6-attempt1`, corrected with a rendered-state wait.
+
+Previously uncompleted normal cases: `artifacts/normal-extra/report.json` confirms third box3/3, cargo1350, pending2350, Bank0; fourth pickup blocked without changing amounts. Normal Knife32.2s, Axe88.15s and SMG151.85s acquisition/attacks passed; the second lap naturally failed before Rifle and the entire session is correctly labeled failed. `artifacts/normal-rifle/report.json` separately confirms fresh normal direct Rifle40 purchase at99.975s/18kills and actual projectile telemetry after heldK. Earlier Rifle controller attempts assumed a non-offered car and a nonexistent muzzle weapon field; their failures remain preserved, not claimed as product defects.
+
+Python is available: existing uv-managed3.12.11; independent workspace environment `artifacts/gate-venv` has Playwright1.56.0/Pillow12.0.0 as pinned by the repository workflow. Chromium and WebKit both actually launch; downloaded runtimes stay under `artifacts/gate-browsers`. Python gate self-test2/2 and Pages verifier self-test4/4 pass. Earlier wording saying the host lacked usable Python was premature and is superseded here. Real browser-suite execution and fail-closed release results are recorded in `artifacts/python-gates/results.json` and `artifacts/release-gate.json`; absence/failure is not a pass.
+
+Old hardcoded BUILD checks now read the unique authored BUILD in `src/balance.js`. Missing, duplicate or malformed identities reject. Commit provenance, version11.0.0, both engines, all assertion minima, errors, skips and dirty-source checks remain required. This aligns identity with the candidate and does not waive missing/failed browser evidence. Full result and user-readable handoff live locally in `artifacts/REPORT-20260930.md`; no artifact upload or publishing is authorized.
+
+This is a local candidate, not a published release or a claim that the game is now subjectively fun. Base: `1c1506f001f5229ec80a42bf63323ab1ff0786e6`; branch: `improve/roundhouse-playability-20260930`. Original checkout and frozen R1–R4 builds are preserved. No push, merge, issue closure or deployment was performed.
+
+## Entry, environment and evidence meaning
+
+Workspace: `C:\Users\mice\Documents\Codex\2026-09-30\task\m1ce`, host Singularity. Node 22; pinned Three 0.180.0 and Playwright 1.63.0. Own headless Chrome contexts use SwiftShader WebGL2 and never control the user's foreground browser or Blender. Public cloud Chrome failed WebGL initialization; that failure was an environment blocker, not gameplay evidence.
+
+Normal sessions open `/`, choose FREIGHT/INDUSTRIAL/TUNNEL, choose CARGO, and press START. Only keyboard and visible DOM clicks change gameplay. Read-only snapshots provide reproducible timings, HP, seeds and accounting. These are AI assisted normal-input sessions, not human blind play. Separate `?test=1` fixtures are explicitly diagnostic and use an isolated save namespace.
+
+Run locally: `npm ci --ignore-scripts --cache .npm-cache`, `npm test`, then `node tools/local-server.mjs dist 8779`. Open `http://127.0.0.1:8779/`. To serve a frozen copy without npm, run the same server with the snapshot directory as its first argument and an unused loopback port as its second. No firewall or public forwarding is needed.
+
+All artifact paths below are relative to the workspace and ignored by Git. Raw JSON, PNGs and WebM recordings remain locally available to the parent and independent QA.
+
+## Baseline actually observed
+
+`artifacts/baseline/normal-input.json`: first normal attempt used an unsuitable early STOP position. Held attacks faced away from an enemy, later W/F attempts did not reach the station, and the player died. This does not prove the station was inaccessible; that attempt's action label saying it waited in Depot was inaccurate—the snapshot says INTERIOR.
+
+`artifacts/baseline-adaptive-2/normal-play.json`: 180.461 seconds, original `1c1506f` build, zero runtime errors. At 39.80s W climbed to the roof, 39.85s F entered, 40.425s F picked up 450, 40.525s F returned while carrying, 40.625s F separately loaded it. First box required five discrete W/F actions after positioning. Subsequent second-box attempts did not collect a second box; the screenshot named `06-second-loaded.png` is not proof of a second load. At 67.975s engine HP was 28/180; by the end the one box was lost (450), income returned to 1000, and no recovery occurred.
+
+Parent-managed independent baseline QA recorded three fragments, missed first stations, unclear bridge/position/speed requirements, nine kills without a weapon upgrade, and deaths while reading UI. It did not complete a first box and cannot independently prove baseline theft timing. Report: `C:\Users\mice\Documents\Codex\2026-09-30\task-2\qa-baseline\BASELINE-PARTIAL.md`.
+
+The old 0.8s theft windup, 2.8m/s escape and roughly 1.41s cargo-center-to-tail distance are source-derived timing estimates, not measured normal-input rescue results. STOP's old 1.8 pressure multiplier implies a roughly 2.67s spawn-clock opportunity, not an observed enemy birth interval; capacity and recovery also apply.
+
+## Changes and before/after acceptance
+
+| Player problem | Implemented behavior | Evidence and remaining limits |
+| --- | --- | --- |
+| Depot actions and unclear failures | Interior cargo gangway; F requests physical SLOW docking with automatic STOP; no teleport. Walking picks crates up; F at center returns and loads automatically. Direction/distance/missed bridge feedback; stunned discrete actions buffered 1.2s. | First box now three F actions including an explicit pickup when standing still, without a ladder. Second requires F, movement out/back, F. R4 three routes each load two boxes; independent QA reports three two-box successes in 2.2–2.5s after first loading. Roof positioning and early docking still require attention. |
+| First box disappears while getting another | Only first NEW crate at a depot per lap receives an 18s seal and an 8s spawn breather. Theft winds up 3s, then thief waits 6s before escaping. Projected warning/countdown follows the thief. | R4 second box finishes 2.70s after first load in freight. R5 normal recovery responds from Depot while carrying a second box in 2.05 wall seconds. R4 failed rescue/loss also retained as real failure evidence. |
+| Reading UI causes immediate engine failure | First entry per depot/lap gives 24s of 75% equipment damage reduction while STOP/SLOW. Initial spawning gets a 6s breather; STOP spawn-clock pressure becomes 0.65. Player damage, theft and later engine damage remain. | R4 deliberately reads for 20s in each route: freight 180→180, industrial 210→178, tunnel 216→192 by first loading. Diagnostic two-saboteur 20s test stays above 100 HP. Later tunnel HP reaches 60, repair and survival remain necessary. This is finite assistance, not permanent invulnerability. |
+| Unclear cargo income and theft debits | Persistent held/stored/thief/lost ledger; distinguish cargo awaiting settlement, net run gain, pending total and settled Bank. Cargo HUD counts stored boxes only. | Busy R5 screenshot: held450, thief450, stored0, Bank0, pending1450. After second load and recovery: loaded900, pending1900, Bank0. Diagnostic escape debits only450; recovery/reloading never credits twice. |
+| Weak run growth, compulsory weapon order | Direct Armory choices; handgun12 without knife/axe purchases; shotgun14 has five short-range falling-damage pellets; rifle pierces up to three ordered targets with declining damage. Owned weapons freely re-equipped. Kills/Scrap always visible; standing held attacks face nearby same-layer targets. | Corrected R5 normal run (seed3418329255) buys handgun at32.375s /5 kills, shotgun at63.325s /12 kills, freely re-equips handgun64.30s then shotgun64.50s with Scrap1 unchanged, then fires normally. Zero starting Scrap/career. Weapon models, muzzle transforms, pellets and piercing have simulation coverage. No claim of normal full-run testing for every gun. |
+| Weak cross-run growth | Permanent Bank purchases: carry speed +0.4m/s per level, hull +30HP per level, starting handgun +6Scrap kit. Caps 3/3/1. Active benefits change at next departure. Old v11 Bank/prep kept with career defaults zero. | R4 earns, buys and starts the next normal run with HP210, carry3.2, handgun and6Scrap. Further runs have HP240/270. Diagnostic browser reload verifies persisted levels and exact Bank. Independent QA also bought kit normally and saw handgun/6Scrap next run. |
+| Poor art and recognition | Authored teal cargo body, gold straps and pale seal badge/top strap replace the indistinct brown crate. Freight world illumination and distant/mid contrast improved. Coherent steel/teal/amber UI; cargo vs combat button accents, facing tag, thief targeting/countdown and persistent cargo states. Shotgun has its own 3D model and firing cue. | See visual evidence below. Existing robot/train/scenery geometry largely remains. This is a concrete first consistency/readability pass, not a wholesale art replacement or subjective aesthetic sign-off. |
+| New ledger obstructs controls and shop Bank is stale | R5 places ledger in its own app grid row outside the world viewport. Floating speed/Armory controls retain the viewport. Career purchases re-render PREP SHOP and outcome/Hub balances. | The independent QA found both in an older candidate; source confirms both persisted in R4. R5 focused browser checks PASS: CRUISE and bottom shotgun clickable at 1440×900, 844×390 and 667×375. Ledger below world viewport in all three sizes. After permanent purchase, PREP SHOP and outcome both show Bank2050. These are emulated viewport geometry checks, not real phone gesture tests. |
+
+## Completed continuous normal play
+
+R3: `artifacts/candidate-r3-normal/normal-play.json`, 724.083s (12m04s), zero browser errors, normal inputs and five random route starts. A tunnel engine failure and normal restart occurred. R3 predates the new depot equipment guard and is not used to certify its protection.
+
+R4 runner PID728 was read after completion, not restarted: `artifacts/candidate-r4-read20/runner-result.json`, completed **10:10:10 UTC**, exit0. `normal-play.json`: **600.296s**, 53 recorded checkpoints/actions, zero browser errors. WebM and 35 PNGs are alongside the JSON. All routes intentionally include 20 seconds reading UI after first pickup.
+
+| Run | Seed / initial save | Two-box and risk outcome | Cashout / next-run growth |
+| --- | --- | --- | --- |
+| Freight | 357595083; fresh browser profile, Bank0, career0/0/0, Scrap0, engine180/180 | first load60.85s, second63.55s; theft warning63.90s; response failed; both later lost900 | 175.875s cashout2400, with NO cargo value delivered. Buy boots/hull/kit; Bank550. |
+| Industrial | 2823017304; Bank550, career1/1/1, engine210, handgun6Scrap, carry3.2 | first load116.325s, second118.925s; both300 boxes retained | cashout196.50s, Bank3550 =550+1000 opening amount+1400 route reward+600 cargo. |
+| Tunnel | 1977214496; Bank2600, career2/2/1, engine240 | loads51.975s/54.675s, two275 boxes retained; later HP60, repairs and normal player death/respawn | cashout208.25s, Bank5550 =2600+2950; buy levels3/3. |
+| Freight | 2504923387; Bank4600, career3/3/1, engine270 | session ends early in fourth run | Confirms next departure applied final hull level. |
+
+Initial **180/180 is the unupgraded base engine**, not a diagnostic boost or hull save. The second and later runs deliberately use earned upgrades and are labeled separately. Normal snapshots confirm carry speed/max health; these were not inferred from percent HUD alone.
+
+## Normal busy-scene rescue on R5
+
+`artifacts/normal-recovery/report.json`, fresh release entry/empty profile, zero errors, 66.166 wall seconds. First crate loads39.925s. Second crate held at40.90s; no combat input during the deliberate observation window. First theft observed61.20s: held450 / stolen450 / stored0, engine152/180, thief hold5.825s left. D850ms → F → move to thief → held J. At63.20s: recovered450, stored900, pending1900, lost0, Bank0. Observed-to-success wall response approximately2.047s including screenshot capture. This finally covers actual normal-input recovery; it does not retroactively turn R4's failed rescue into a pass.
+
+## Visual evidence
+
+- Before: `artifacts/baseline-adaptive-2/03-depot.png` — brown crates, old LOAD workflow, no persistent ledger.
+- R4 after: `artifacts/candidate-r4-read20/07-second-loaded.png` — distinct sealed crates, two loads, guardian/seal countdown; old overlay placement.
+- R5 busy: `artifacts/normal-recovery/busy-held-and-stolen.png` — teal sealed crate in thief's hands, world countdown, simultaneous held/stolen values, ledger in reserved footer.
+- R5 recovered: `artifacts/normal-recovery/response.png` — risk resolved and ledger correct.
+- R5 panels: `artifacts/final-browser/speed-*.png`, `armory-*.png`, `career-bank-synced.png`; normal weapon purchase/equip screenshots in the same directory.
+
+Compare the real screenshot files; none were redrawn or image-generated. Baseline `normal-entry.png` was later overwritten by an entry probe and is deliberately excluded from before/after evidence.
+
+## Tests, exploit boundaries and independent assessment
+
+- R5 `npm test`: **361 passed, 0 failed, 0 skipped**, `artifacts/unit-r5.txt`. Build included current authored assets. Includes weapon-choice, combat, projectile, model and playability contracts.
+- Additional model/Art2 runtime checks: 26 passed, `artifacts/models-final.txt`.
+- Playability fixtures cover four seeds, first/second/third box, full hold, repeated unload/load, re-entry, recovered crate, one credit/debit, next-lap seal reset, expired old seals, malformed career, old-save defaults and persisted new stats. New guard applies only enemy equipment attacks, expires normally, cannot renew on same-station re-entry, leaves player damage intact. Third box has no renewed first-box seal.
+- Diagnostic Chromium: `artifacts/diagnostic/report.json`, all checks pass, no page errors (R3 mechanics, supplemented by R4 guard units and normal R4/R5 play). Includes normal-key fixture recovery, loss, one settlement, save reload, buffered stunned F and emulated landscape.
+- `git diff --check` passes. At the R5 checkpoint Python had not yet run; that missing gate was subsequently resolved with the existing uv Python. Actual R6/R8 Python results and remaining Windows WebKit audio failures are reported in the follow-up and local handoff. The fail-closed publication gate is not claimed green.
+- R5 focused browser run: 78.254 wall seconds, normal weapon acquisition/free switching plus separate diagnostic UI fixture checks all pass; errors[]. Evidence: `artifacts/final-browser/report.json` and PNGs. The normal portion uses an empty context and seed3418329255; the UI fixture portion intentionally gives Scrap/station/end state and is not counted as earned progression.
+- Focused weapon controller attempt1 recorded a successful normal handgun purchase, then failed waiting for an Armory close button after combat moved the player away and the panel closed. The raw failed attempt is preserved at `artifacts/final-browser-attempt1`. The corrected controller only repeats the unfinished focused acceptance, not the completed continuous run.
+
+Independent parent-managed QA: `C:\Users\mice\Documents\Codex\2026-09-30\task-2\qa-baseline\CANDIDATE-QA-20260930.md`, ~20m of ordinary candidate input in its own browser, without debug snapshots/fixtures. It tested older sim hash `1bd39d21c52d232d…`, not R4/R5. Verified three two-box loads, one safe900 cargo cashout3300 (Bank550→3850), a long-stop900 loss, and permanent handgun/6Scrap next run. It found the real 20s engine failure, ledger overlap and stale Prep Bank addressed afterward. Its recovery and in-run weapon switching were not covered. Independent R5 retest has since passed two-box900 cashout Bank0→3300, balances1450 synchronized after purchases/over-budget disabled, next-run210HP+Handgun+6Scrap, and desktop/844x390 CRUISE/bottom weapons. See `task-2/qa-baseline/R5-QA-20260930.md`. Recovery/no-double-credit was a separate R5 run, not the same full chain. The stale chase found there is fixed in R7/R8; independent lifecycle-only final acceptance is pending.
+
+Remaining manual acceptance: real mobile gestures/multitouch, heat/performance on actual phone/GPU, subjective sound quality, and human enjoyment/art judgment. Separate completed normal cases now cover Knife/Axe/SMG/Rifle and third/full hold; the extra session still records its natural failure and does not claim a successful second-lap Rifle purchase. Their detailed timings and limits are in the follow-up. Normal page reload persistence is diagnostic save/reload coverage, whereas cross-run earned progression is also normal and independently observed.
+
+### R7 chase lifecycle follow-up
+
+R6 screenshots exposed a second instance of the stale warning in the top event banner after the ledger had cleared. R7 updates the simulation event when cargo is recovered (including remaining stolen value for a partial recovery), and replaces it on continuation, settlement and failure. No economic calculations changed. The rendered diagnostic in `artifacts/cargo-notice-r7/report.json` asserts both ledger and banner across recovery, 85 seconds, escape/loss, arrival, cashout, restart and failure (10 screenshots; zero errors). R7 unit suite: 363 pass. Independent normal-input R5 QA remains separate evidence; request only lifecycle retest on R7.
+
+### R8 short-landscape and actual Python follow-up
+
+The actual 812x332 rendered gate discovered the R5 reserved ledger row left only about140px world height. R8 uses two compact ledger rows only below350px landscape height; all amounts remain visible and controls stay outside the world. R5/R7 frozen snapshots remain unchanged. Python Chromium and WebKit are installed and all17 original browser suites ran. Old sequential weapon/extra LOAD assertions were adapted to named direct-choice cards/automatic load, retaining precise costs, native input, live accounting, and minima (muzzle coverage increased). An occupied8765 preview was isolated by choosing an owned ephemeral smoke-test port instead of stopping an existing server. Windows WebKit26.0 exposes neither AudioContext nor webkitAudioContext (capability evidence `artifacts/webkit-capability.txt`), so its audio-dependent gates remain unverified/failing on this host. No autoplay bypass or fake pass was added. Full results must be read from the final report.
+
+### Final collected gate result
+
+All17 original Python browser suites actually ran. Completed changed-case reruns pass depot, enemies, smoke, both mobile-art engines (63/58 checks), design (68 checks each), muzzle (75 each), stitched release and ship. The remaining four failing reports are Chromium combat's non-touch desktop fixture (native Windows maxTouchPoints10, correct touch-profile selection; its combat checks passed), and WebKit audio/dev/lifecycle (neither AudioContext API exists). They are not bypassed. Full Node suite389 pass, model/runtime suite27 pass. Fail-closed release remains failed. Existing passed R6 evidence is reused only for unchanged mechanics and labeled separately from R7/R8 reruns; no old long session was replayed. Complete user-readable local report and raw matrix: `artifacts/REPORT-20260930.md`, `artifacts/FINAL-GATE-MATRIX.json`. R8 frozen product build commit5f59913 is preserved while final test-only commit may advance the branch.

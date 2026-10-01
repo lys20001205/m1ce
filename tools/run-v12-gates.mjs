@@ -1,0 +1,8 @@
+import fs from'node:fs';import path from'node:path';import{spawn}from'node:child_process';
+const root='artifacts/v12-gates';fs.mkdirSync(root,{recursive:true});const results=[],python=path.resolve('artifacts/gate-venv/Scripts/python.exe'),env={...process.env,PLAYWRIGHT_BROWSERS_PATH:path.resolve('artifacts/gate-browsers')};
+for(const file of ['gate.test.py','pages_verify.test.py','browser_smoke.py','browser_v11.py','browser_v11_combat.py','browser_v11_depot.py','browser_v11_enemies.py','browser_v11_life.py','browser_v11_prep.py','browser_v11_release.py','browser_v11_train.py','browser_v11_ship.py','browser_v11_qa.py','browser_v11_muzzle.py','browser_v11_design.py','browser_v11_mobile_art.py','browser_v11_audio.py','browser_v11_dev.py','browser_v11_lifecycle.py']){
+ const startedUTC=new Date().toISOString(),log=fs.openSync(root+'/'+file+'.log','w'),child=spawn(python,['tests/'+file],{env,stdio:['ignore',log,log]});fs.writeFileSync(root+'/progress.json',JSON.stringify({running:file,pid:child.pid,startedUTC,results},null,2));const code=await new Promise(r=>child.on('exit',r));fs.closeSync(log);results.push({file,exitCode:code,startedUTC,completedUTC:new Date().toISOString()});fs.writeFileSync(root+'/results.json',JSON.stringify({build:'V12-KENNEY-REVERSE-R1-20260930',results},null,2));console.log(file,code);
+}
+// Preserve actual per-engine reports alongside this run; no stale report is relabelled.
+for(const file of fs.readdirSync('artifacts').filter(f=>/^(chromium|webkit)-.*report\.json$/.test(f)))fs.copyFileSync('artifacts/'+file,root+'/'+file);
+fs.writeFileSync(root+'/progress.json',JSON.stringify({running:null,results},null,2));

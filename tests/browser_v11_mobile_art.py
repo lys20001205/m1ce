@@ -46,7 +46,7 @@ async def run(p,name):
             await page.keyboard.up('KeyD')
         check('move_response',after['x']>before['x']+.4)
         await page.evaluate(RESET)
-        await page.wait_for_function('document.getElementById("ranged").dataset.caption==="先购 AXE"')
+        await page.wait_for_function('document.getElementById("ranged").disabled&&document.getElementById("ranged").dataset.caption==="军械台 12 Scrap 起"')
         check('locked_ranged_explained',True)
         for w,h in SIZES:
             await page.set_viewport_size({'width':w,'height':h});await page.wait_for_timeout(400)
@@ -95,15 +95,15 @@ async def run(p,name):
         # Label must agree with interaction at a reachable bridge, but away from a crate.
         await page.evaluate("""()=>{const a=__RH_TEST;a.reset();const g=a.game();g.route='freight';g.prepareDepots();g.director.rest=9999;
           g.elapsed=5;g.t=.26;g.phase='yard';g.speedMode='STOP';a.forcePlayer(12.45,true);g.enterDepot();g.player.depotX=2.4;g.syncDepotPlayer();a.step(0);}""")
-        await page.wait_for_function('document.getElementById("interact").textContent==="RETURN"')
+        await page.wait_for_function('document.getElementById("interact").textContent==="取箱 / 回车"')
         check('empty_context_says_return',await page.evaluate('__RH_TEST.game().playerLayer==="DEPOT"'))
         await page.locator('#interact').tap();await page.wait_for_function('__RH_TEST.game().playerLayer==="ROOF"');check('empty_context_returns',True)
         await page.keyboard.press('KeyF');await page.wait_for_function('__RH_TEST.game().playerLayer==="DEPOT"')
-        await page.wait_for_function('document.getElementById("interact").textContent==="PICKUP"');check('crate_context_says_pickup',True)
+        await page.wait_for_function('document.getElementById("interact").textContent==="取箱 / 回车"');check('crate_context_says_pickup',True)
         await page.locator('#interact').tap();await page.wait_for_function('!!__RH_TEST.game().heldCargo');check('crate_pickup',True)
         await page.screenshot(path=str(ART/f'{name}-mobile-art-cargo.png'))
-        await page.locator('#layer').tap();await page.wait_for_function('__RH_TEST.game().playerLayer==="ROOF"');check('carry_return',True)
-        await page.locator('#interact').tap();await page.wait_for_function('__RH_TEST.game().storedCargo===1');check('load_credits',await page.evaluate('__RH_TEST.game().money===1450'))
+        await page.locator('#layer').tap();await page.wait_for_function('__RH_TEST.game().playerLayer==="INTERIOR"');check('carry_return',True)
+        await page.wait_for_function('__RH_TEST.game().storedCargo===1');check('load_credits',await page.evaluate('__RH_TEST.game().money===1450'))
         await page.keyboard.down('KeyD');await page.set_viewport_size({'width':390,'height':844});await page.wait_for_timeout(600)
         check('portrait_pauses',await page.evaluate('__RH_TEST.game().paused'));check('portrait_clears',await page.evaluate('__RH_TEST.input().move===0'))
         await page.keyboard.up('KeyD');await page.set_viewport_size({'width':844,'height':390});await page.wait_for_timeout(600)

@@ -55,7 +55,7 @@ async def run(p,name):
 
         # Freight -> first Depot -> cargo load, using rendered INTERACT input.
         await page.evaluate('(()=>{const a=__RH_TEST,g=a.game();g.pause(true);a.forceRoute(.26);a.forcePlayer(5.8);g.pause(false);g.setSpeed("STOP");g.pause(true);a.forcePlayer(12.45,true);g.pause(false)})()')
-        await tap(page,'#interact','__RH_TEST.game().playerLayer==="DEPOT"');await tap(page,'#interact','!!__RH_TEST.game().heldCargo');await tap(page,'#interact','__RH_TEST.game().playerLayer==="ROOF"');await tap(page,'#interact','__RH_TEST.game().cars[1].cargo===1')
+        await tap(page,'#interact','__RH_TEST.game().playerLayer==="DEPOT"');await tap(page,'#interact','!!__RH_TEST.game().heldCargo');await tap(page,'#interact','__RH_TEST.game().playerLayer==="INTERIOR"&&__RH_TEST.game().cars[1].cargo===1&&!__RH_TEST.game().player.carry')
         report['checks']['e2e_depot_load']=await page.evaluate('__RH_TEST.game().cargoValue===450&&__RH_TEST.game().cargoUsed===1')
 
         # Second SLOW boarding: one real boarding input, then no extra interaction. The platform must carry the player away until production TRAIN LOST fires naturally.
@@ -81,8 +81,8 @@ async def run(p,name):
             # Finish the previous swing/cooldown naturally, without resetting combat state.
             await page.evaluate('__RH_TEST.step(.6)')
         scrap=await page.evaluate('__RH_DEBUG.snapshot().scrap');report['checks']['e2e_scrap_from_kills']=scrap>=10
-        await page.evaluate('__RH_TEST.forcePlayer(1.7)');await tap(page,'#interact','__RH_TEST.game().armoryOpen===true');await page.locator('[data-armory=melee]').tap();await wait_state(page,'__RH_DEBUG.snapshot().meleeWeapon==="knife"')
-        report['checks']['e2e_armory_upgrade']=await page.evaluate('__RH_DEBUG.snapshot().meleeTier===2')
+        await page.evaluate('__RH_TEST.forcePlayer(1.7)');await tap(page,'#interact','__RH_TEST.game().armoryOpen===true');await page.locator('[data-weapon=knife]').tap();await wait_state(page,'__RH_DEBUG.snapshot().meleeWeapon==="knife"')
+        report['checks']['e2e_armory_upgrade']=await page.evaluate('(before)=>__RH_DEBUG.snapshot().meleeTier===2&&__RH_TEST.game().weaponInventory.melee.includes("knife")&&__RH_TEST.game().scrap===before-10',scrap)
         await page.evaluate('__RH_TEST.forcePlayer(5.8)');await tap(page,'#interact');await page.locator('[data-speed=FAST]').tap();await wait_state(page,'__RH_DEBUG.snapshot().speedMode==="FAST"')
         report['checks']['e2e_fast']=await page.evaluate('__RH_DEBUG.snapshot().batteryCharge>0')
 

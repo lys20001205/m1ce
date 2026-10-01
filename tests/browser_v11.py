@@ -56,7 +56,10 @@ async def run(p,name):
    for _ in range(6):
     visible=await page.locator('#speedPanel').is_visible()
     if visible:break
-    await page.click('#interact');await page.wait_for_timeout(180)
+    await page.click('#interact')
+    # Wait for this input to reach the HUD before retrying a toggle. CI software
+    # WebGL frames can exceed 180ms; a second F would close an accepted panel.
+    await page.wait_for_function('(()=>{const g=__RH_TEST.game(),p=document.getElementById("speedPanel");return p.hidden!==(g.status==="running"&&g.atConsole&&g.consoleOpen)})()')
     attempts.append(await page.evaluate('(()=>{const g=__RH_TEST.game();return {x:g.player.x,stun:g.player.stun,alive:g.alive,status:g.status,paused:g.paused,console:g.consoleOpen,atConsole:g.atConsole}})()'))
    report.setdefault('consoleAttempts',{})[route]=attempts
    report['checks'][route+'_console_interaction_admitted']=await page.locator('#speedPanel').is_visible()

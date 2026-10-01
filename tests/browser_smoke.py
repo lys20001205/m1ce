@@ -1,10 +1,14 @@
 """HTTP + actual WebGL in both engines. Deterministic scenario time is separate from CI GPU speed."""
-import os,shutil
+import os,shutil,socket
 import asyncio,json,subprocess,sys,io,os
 from pathlib import Path
 from PIL import Image,ImageChops
 from playwright.async_api import async_playwright
 ART=Path('artifacts');ART.mkdir(exist_ok=True)
+# Isolate the test server from existing owned previews; never probe or stop them.
+with socket.socket() as sock:
+    sock.bind(('127.0.0.1',0));PORT=sock.getsockname()[1]
+BASE=f'http://127.0.0.1:{PORT}/?test=1'
 async def run_browser(p,name):
     checks={};errors=[];result={'browser':name,'checks':checks};browser=None
     try:
@@ -19,10 +23,10 @@ async def run_browser(p,name):
         async def slow_model(route):
             await asyncio.sleep(1.8);await route.continue_()
         await page.route('**/crew-robot.json*',slow_model)
-        await page.goto('http://127.0.0.1:8765/?test=1',wait_until='networkidle')
+        await page.goto(BASE,wait_until='networkidle')
         await page.wait_for_function('window.__RH_DEBUG?.snapshot().modelsLoaded === 3',timeout=30000)
         s=await page.evaluate('window.__RH_DEBUG.snapshot()');result['boot']=s
-        checks['build_is_v11']=s['build'].startswith('V11-')
+        checks['build_is_v12']=s['build'].startswith('V12-')
         checks['slow_model_loading_no_errors']=not errors
         checks['actual_webgl2']=s['renderer']=='WebGL2'
         checks['external_model_files_loaded']=s['modelsLoaded']==3
@@ -102,7 +106,7 @@ async def run_browser(p,name):
         await page.evaluate('window.__RH_TEST.game().pause(false);window.__RH_TEST.step(8)')
         checks['deadline_failure_has_reason']=await page.evaluate('window.__RH_TEST.game().status==="lost"&&window.__RH_TEST.game().failReason==="engine_timeout"')
         # Cargo recovery feedback and no duplicate credit.
-        cargo=await page.evaluate("""() => {const a=window.__RH_TEST;a.reset();a.forcePlayer(4.2);const g=a.game();for(let i=0;i<3;i++)g.createCargo(250,'stored',{carIndex:1,secured:true});const e=g.spawn('thief',12.4,false);e.climb=0;a.step(1);const before=g.money;g.hitEnemy(e,99);g.hitEnemy(e,99);g.pause(true);a.view().render(0);return {before,after:g.money,saved:g.total.cargoSaved,cargo:g.cars[1].cargo,scrap:g.scrap};}""")
+        cargo=await page.evaluate("""() => {const a=window.__RH_TEST;a.reset();a.forcePlayer(4.2);const g=a.game();for(let i=0;i<3;i++)g.createCargo(250,'stored',{carIndex:1,secured:true});const e=g.spawn('thief',12.4,false);e.climb=0;a.step(3);const before=g.money;g.hitEnemy(e,99);g.hitEnemy(e,99);g.pause(true);a.view().render(0);return {before,after:g.money,saved:g.total.cargoSaved,cargo:g.cars[1].cargo,scrap:g.scrap};}""")
         checks['cargo_recovery_feedback_and_accounting']=cargo=={'before':1000,'after':1000,'saved':250,'cargo':3,'scrap':3}
         await page.evaluate('window.__RH_TEST.reset();window.__RH_TEST.forceCars(12);window.__RH_TEST.forceRoute(.9)')
         visible=True;result['camera_samples']=[]
@@ -163,7 +167,7 @@ async def run_browser(p,name):
         result['passed']=all(checks.values());(ART/f'{name}-report.json').write_text(json.dumps(result,ensure_ascii=False,indent=2));print(json.dumps(result,ensure_ascii=False,indent=2),flush=True)
     return result
 async def main():
-    server=subprocess.Popen([sys.executable,'-m','http.server','8765','--directory','dist','--bind','127.0.0.1'],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
+    server=subprocess.Popen([sys.executable,'-m','http.server',str(PORT),'--directory','dist','--bind','127.0.0.1'],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
     try:
         await asyncio.sleep(.5)
         async with async_playwright() as p:

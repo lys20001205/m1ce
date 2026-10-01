@@ -1,18 +1,20 @@
-import {Game,BUILD,B,DEFS,LENGTH,FLOOR,ROOF,phaseAt,phaseLabel,clamp,stationX} from './sim.js?v=11';
-import {View} from './view.js?v=11-art2';
-import {Telemetry} from './telemetry.js?v=11';
+import {Game,BUILD,B,DEFS,LENGTH,FLOOR,ROOF,phaseAt,phaseLabel,clamp,stationX} from './sim.js?v=12';
+import {View} from './view.js?v=12-art2';
+import {Telemetry} from './telemetry.js?v=12';
 import {runtimeMode,SimulationClock} from './runtime.js';
 import {SaveStore} from './save.js';
 import {DevTools} from './devtools.js';
-import {AudioCues} from './audio.js?v=11';
+import {AudioCues} from './audio.js?v=12';
 import {ROUTES,SPEED_MODES,INPUT_BINDINGS_SSOT,PREP_ITEMS} from './content.js';
 import {V11} from './balance.js';
+import {PlayabilityUI,hazardETA} from './playability_ui.js';
 import {ControlUI,steeringDirection,depotActionLabel} from './control_ui.js';
-import {WorldPolish} from './polish3d.js?v=11-art2';
+import {WorldPolish} from './polish3d.js?v=12-art2';
 import {DesignUI,carPreview,routeReason} from './design_ui.js';
 const design=new DesignUI(document),controlUI=new ControlUI(document);let polish=null;
 const $=id=>document.getElementById(id);
 const mode=runtimeMode(location.search),save=new SaveStore({mode}),clock=new SimulationClock();let devtools=null;
+let pendingAction=null;
 let game,view,telemetry,input={move:0,attack:false,ranged:false,repair:false},last=0,lastStatus='',selected='battery',frameError=false,bankWritable=true;
 const pressed=new Map(),audio=new AudioCues({emit:(type,data)=>telemetry?.log(type,data)});
 try{audio.enabled=save.storage.getItem('roundhouse_sound')!=='no';}catch{}
@@ -21,10 +23,13 @@ function readSave(){return save.read();}
 function seed(){const a=new Uint32Array(1);try{crypto.getRandomValues(a);return a[0];}catch{return Date.now()>>>0;}}
 function snapshot(){return{...game?.snapshot(),...(view?.loaded===3?view.snapshot():{modelsLoaded:0}),audio:audio.snapshot(),clock:clock.snapshot(),test:mode.test,session:telemetry?.session,standalone:!!navigator.standalone||matchMedia('(display-mode: standalone)').matches,errors:telemetry?.errors||0};}
 function emit(type,data){design.observe(game,type,data);if(type==='player_death')clearInput();telemetry?.log(type,data);audio.event(type,data);}
-const initialSave=readSave();telemetry=new Telemetry(snapshot,{...mode,storage:save.storage});game=new Game({bank:initialSave.bank,prep:initialSave.prep,seed:seed(),emit,dev:mode.dev});
-function clearInput(){input={move:0,attack:false,ranged:false,repair:false};pressed.clear();document.querySelectorAll('.active').forEach(e=>e.classList.remove('active'));}
+const playability=new PlayabilityUI(document,()=>{bankWritable=save.write(game);if(['cashed','lost'].includes(game.status))showEnd();else showHub();});
+const initialSave=readSave();telemetry=new Telemetry(snapshot,{...mode,storage:save.storage});game=new Game({bank:initialSave.bank,prep:initialSave.prep,career:initialSave.career,seed:seed(),emit,dev:mode.dev});
+function clearInput(){if(typeof pendingAction!=='undefined')pendingAction=null;input={move:0,attack:false,ranged:false,repair:false};pressed.clear();document.querySelectorAll('.active').forEach(e=>e.classList.remove('active'));}
 function fatal(error){clearInput();game.pause(true);audio.silence();frameError=true;$('modal').hidden=true;$('portrait').hidden=true;telemetry.log('runtime_error',{message:String(error?.message||error).slice(0,150)});$('fatal').hidden=false;$('fatal').textContent='3D 运行暂停：'+String(error?.message||error)+'\n日志已保留。请重新载入；此版本不会切回二维画面。';}
-const actions={climb:()=>game.layer(),interact:()=>game.interact(),brake:()=>game.emergencyStop()};
+const directActions={climb:()=>game.layer(),interact:()=>game.interact(),brake:()=>game.emergencyStop(),reverse:()=>game.changeDirection()};
+function requestAction(action){if(action!=='brake'&&game.status==='running'&&game.alive&&game.player.stun>0){pendingAction={action,until:game.elapsed+1.2};game.event='受击中 · '+(action==='climb'?'切层':'交互')+'已排队，恢复后执行';return;}directActions[action]?.();}
+const actions=Object.fromEntries(Object.keys(directActions).map(a=>[a,()=>requestAction(a)]));
 function refreshInputs(){
   const held=new Set(pressed.values()),repair=held.has('repair');if(input.repair&&!repair)game.cancelRepair('released');
   input={move:Number(held.has('right'))-Number(held.has('left')),attack:held.has('melee'),ranged:held.has('ranged'),repair};
@@ -64,7 +69,7 @@ $('pause').onclick=()=>{if(!active())return;clearInput();game.pause(!game.paused
 $('telemetry').checked=telemetry.enabled;$('telemetry').onchange=e=>telemetry.consent(e.target.checked);
 $('start').onclick=()=>{audio.unlock('start');if(game.start()){bankWritable=save.write(game);$('modal').hidden=true;last=0;lastStatus='running';audio.active=true;}};
 function replaceGame(practice=false){
-  clearInput();game=new Game({bank:game.bank,prep:game.prep,seed:seed(),practice,emit,dev:mode.dev});view.game=game;view.rebuildCars();view.cameraX=game.player.x;lastStatus='';last=0;$('modal').hidden=true;if(practice){game.chooseRoute('industrial');game.chooseCar('cargo');game.start();}else showHub();audio.active=true;audio.unlock();
+  clearInput();game=new Game({bank:game.bank,prep:game.prep,career:game.career,seed:seed(),practice,emit,dev:mode.dev});view.game=game;view.rebuildCars();view.cameraX=game.player.x;lastStatus='';last=0;$('modal').hidden=true;if(practice){game.chooseRoute('industrial');game.chooseCar('cargo');game.start();}else showHub();audio.active=true;audio.unlock();
   if(practice){game.phase='yard';game.t=.2;game.player.x=stationX(0);game.damageCar(0,game.cars[0].hp,'practice');game.event='抢修演练：你已站在控制柜旁，长按修理 3 秒。演练不结算、不写存款。';}
   view.render(0);ui();
 }
@@ -98,7 +103,7 @@ function showHub(){
     const info=document.createElement('small');info.textContent=r.theme+' · Cargo: '+r.cargo+' · Threat: '+r.threat+' · Recommended: '+r.recommended.toUpperCase()+(game.previousRoute===r.id?' · REPEAT PRESSURE +1':'')+(game.routeIntel?.route===r.id?' · INTEL: '+game.routeIntel.text:'');
     const reason=document.createElement('small');reason.className='routeReason';reason.textContent=routeReason(game,r.id);if(game.round===1&&game.cars.length===1&&r.id==='freight')b.classList.add('firstRoute');b.append(title,info,reason);b.onclick=()=>{audio.unlock('route_gesture');if(game.chooseRoute(r.id))showHub();};root.append(b);
   }
-  if(game.hubStage==='car')choices();else $('choices').replaceChildren();renderPrep();design.hub(game);
+  if(game.hubStage==='car')choices();else $('choices').replaceChildren();renderPrep();design.hub(game);playability.update(game,view);
 }
 const riskName={LOW:'低',MEDIUM:'中',HIGH:'高',EXTREME:'极高'};
 function showEnd(){
@@ -112,7 +117,7 @@ function showEnd(){
   $('summary').textContent=(practice?'演练不结算':game.status==='cashed'?'本局兑现 '+Math.round(game.settledAmount||0).toLocaleString():game.status==='lost'?'未兑现损失 '+Math.round(game.lostAmount||0).toLocaleString():'第 '+game.round+' 圈 · 未兑现 '+Math.round(game.money).toLocaleString())+' · 银行 '+Math.round(game.bank).toLocaleString()+(bankWritable?'':'（存储失败，本次仅在内存保留）');
   const s=complete?game.lap:game.total;for(const [id,value] of [['saved',s.clutchSaves],['recovered',s.cargoSaved.toLocaleString()],['critical',s.criticalSeconds.toFixed(1)+'s'],['repaired',s.repairs]])$(id).textContent=value;
   $('riskPanel').textContent='下一圈风险：'+riskName[game.risk()]+' · 动力 '+Math.ceil(game.cars[0].hp/game.cars[0].max*100)+'% · 生命 '+Math.ceil(game.player.hp)+' · '+game.cars.length+' 节车厢 · 下一倍率 ×'+Math.pow(1.22,game.round).toFixed(2)+'（风险为车况提示，非成功率预测）';
-  $('cash').textContent='安全兑现 '+Math.round(game.money).toLocaleString();$('more').textContent=game.cars.length>=12?'继续 · 列车已达上限':'接车 · 再来一圈';renderPrep();design.end(game);
+  $('cash').textContent='安全兑现 '+Math.round(game.money).toLocaleString();$('more').textContent=game.cars.length>=12?'继续 · 列车已达上限':'接车 · 再来一圈';renderPrep();design.end(game);playability.update(game,view);
   
 }
 function debugOpen(){clearInput();if(active())game.pause(true);audio.silence();$('debug').hidden=false;debugRefresh();}
@@ -131,9 +136,9 @@ function ui(){
   $('lifePanel').hidden=game.alive||!['running','arriving','complete'].includes(game.status);$('lifePanel').textContent=(game.player.deathReason==='train_lost'?'TRAIN LOST':'PLAYER DOWN')+' · RESPAWN '+game.player.respawnRemaining.toFixed(1);
   $('more').disabled=!game.alive;
   $('round').textContent=String(game.round).padStart(2,'0');$('money').textContent=Math.round(game.money).toLocaleString();$('health').textContent=Math.ceil(game.cars[0].hp/game.cars[0].max*100)+'% / '+Math.ceil(game.player.hp);$('health').dataset.state=engine;
-  $('weapon').textContent=game.weapon;$('scrapHud').textContent=String(game.scrap);$('attack').textContent=game.melee.name;$('ranged').textContent=game.ranged?.name==='HIGH-DAMAGE RIFLE'?'RIFLE':game.ranged?.name||'LOCKED';$('ranged').disabled=!game.ranged;$('phase').textContent=game.practice?'抢修演练 / 不结算':game.status==='arriving'?'安全回站 / 转盘锁定':game.engineState==='stalled'?'动力停机 / 路线暂停':({dock:'机库准备',depart:'出库 / 转盘对轨',yard:phaseLabel(game.phase,game.route),crane:'机械臂',approach:'隧道预告',tunnel:'低净空隧道',return:'返回机库'}[game.phase]||game.phase);
+  $('weapon').textContent=game.weapon;$('scrapHud').textContent=String(game.scrap);$('attack').textContent=game.melee.name;$('ranged').textContent=game.ranged?.name==='HIGH-DAMAGE RIFLE'?'RIFLE':game.ranged?.name||'LOCKED';$('ranged').disabled=!game.ranged;$('phase').textContent=game.practice?'抢修演练 / 不结算':game.status==='arriving'?'安全回站 / 转盘锁定':game.engineState==='stalled'?'动力停机 / 路线暂停':({dock:'机库准备',depart:game.t===0?'出库 / 转盘对轨':'出库 / 已对轨',yard:phaseLabel(game.phase,game.route),crane:'机械臂',approach:'隧道预告',tunnel:'低净空隧道',return:'返回机库'}[game.phase]||game.phase);
   $('fill').style.width=game.t*100+'%';buttonText('pause',game.paused?'继续':'暂停');
-  $('progress').textContent=game.rescue?'抢救剩余 '+game.rescue.remaining.toFixed(1)+' 秒':warn?(warn.kind==='crane'?'扫顶':'入隧道')+'约 '+warn.seconds.toFixed(1)+' 秒':threat.rest>0?'新威胁暂停 '+threat.rest.toFixed(1)+'s':threat.relief?'危急减压中':(ROUTES[game.route]?.name||'ROUNDHOUSE')+' · '+game.speedMode+' · CHARGE '+Math.round(game.batteryCharge)+' / '+game.batteryCapacity;
+  $('progress').textContent=game.rescue?'抢救剩余 '+game.rescue.remaining.toFixed(1)+' 秒':warn?hazardETA(warn):threat.rest>0?'新威胁暂停 '+threat.rest.toFixed(1)+'s':threat.relief?'危急减压中':(ROUTES[game.route]?.name||'ROUNDHOUSE')+' · '+game.speedMode+' · CHARGE '+Math.round(game.batteryCharge)+' / '+game.batteryCapacity;
   let message=game.event;
   if(game.status==='running'){
     if(game.rescue){
@@ -161,7 +166,7 @@ function ui(){
   $('centerHint').hidden=!!job||!!notice||!game.alive;$('centerHint').textContent=game.status==='arriving'?'安全回站 · '+Math.max(0,B.arrivalTime-game.arrivalElapsed).toFixed(1)+'s':input.repair?game.repairHint:game.player.roof?'车顶移动 +25% · 提前留意净空':'近设备长按修理 · 黄梯切层';
   if(game.status!==lastStatus){lastStatus=game.status;if(['complete','lost','cashed','practice_complete'].includes(game.status))showEnd();if(game.status==='arriving')clearInput();}
 }
-function frame(ts){if(frameError)return;try{const raw=last?ts-last:0,dt=Math.min(.05,raw/1000);last=ts;view.recordFrame(raw);clock.advance(game,raw/1000,input);audio.update(game);polish?.update();view.render(dt);ui();controlUI.update(game);design.frame(game,input);devtools?.update(ts);requestAnimationFrame(frame);}catch(e){fatal(e);}}
+function frame(ts){if(frameError)return;try{const raw=last?ts-last:0,dt=Math.min(.05,raw/1000);last=ts;view.recordFrame(raw);clock.advance(game,raw/1000,input);if(pendingAction){if(!game.alive||game.elapsed>pendingAction.until)pendingAction=null;else if(game.player.stun<=0&&!game.paused){const action=pendingAction.action;pendingAction=null;directActions[action]?.();}}audio.update(game);polish?.update();view.render(dt);ui();controlUI.update(game);design.frame(game,input);playability.update(game,view);devtools?.update(ts);requestAnimationFrame(frame);}catch(e){fatal(e);}}
 try{view=new View($('game'),game,(t,d)=>telemetry.log(t,d));view.reducedMotion=$('reduced').checked;await view.init();polish=new WorldPolish(view);polish.update();$('start').disabled=false;$('practice').disabled=false;$('start').textContent='从机库发车';showHub();$('event').textContent=game.event;resize();requestAnimationFrame(frame);}catch(e){fatal(e);}
 addEventListener('pageshow',()=>audio.restore('pageshow'));
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)audio.restore('visible');});

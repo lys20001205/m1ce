@@ -39,11 +39,11 @@ for(const route of ['industrial','freight','tunnel'])test('route reason is nonem
   const g=new Game();const s=JSON.stringify(g.snapshot());assert(routeReason(g,route));assert.equal(s,JSON.stringify(g.snapshot()));
 });
 test('upgrade goal shows the actual one-scrap gap and does not unlock Handgun early',()=>{
-  const {g}=setup();g.meleeTier=3;g.rangedTier=1;g.scrap=23;assert.match(upgradeGoal(g).text,/1 Scrap.*SMG/);
-  g.meleeTier=1;g.rangedTier=0;g.scrap=100;assert.equal(upgradeGoal(g).offer.weapon,'knife');
+  const {g}=setup();g.meleeTier=3;g.rangedTier=1;g.scrap=23;g.ownedWeapons={melee:['wrench','knife','axe'],ranged:['handgun','shotgun']};assert.match(upgradeGoal(g).text,/1 Scrap.*SMG/);
+  g.meleeTier=1;g.rangedTier=0;g.ownedWeapons=null;g.scrap=100;assert.equal(upgradeGoal(g).offer.weapon,'knife');
 });
 test('max gear gets a truthful no-upgrade goal',()=>{
-  const {g}=setup();g.meleeTier=3;g.rangedTier=3;assert.equal(upgradeGoal(g).offer,null);assert.match(upgradeGoal(g).text,/顶级/);
+  const {g}=setup();g.meleeTier=3;g.rangedTier=3;g.ownedWeapons={melee:['wrench','knife','axe'],ranged:['handgun','smg','rifle','shotgun']};assert.equal(upgradeGoal(g).offer,null);assert.match(upgradeGoal(g).text,/顶级/);
 });
 test('first lap displays only new income and excludes initial funds',()=>{
   const {g,r}=setup();g.inc('kills',28);g.finish();g.completeArrival();const s=r.summary(g);
@@ -52,8 +52,8 @@ test('first lap displays only new income and excludes initial funds',()=>{
 test('actual cargo load notification does not reward re-loading a secured box',()=>{
   const {g,r}=setup();g.t=.26;g.speedMode='STOP';g.player.x=12.45;g.setPlayerLayer('ROOF');assert(g.enterDepot());
   g.player.depotX=1;g.syncDepotPlayer();assert(g.interact());assert.match(depotGuide(g).text,/尚未装车/);
-  assert(g.exitDepot());g.player.x=12.45;assert(g.loadCargo());assert.equal(g.money,1450);assert.match(r.notice.text,/\+450/);
-  g.setPlayerLayer('INTERIOR');assert(g.interact());assert.match(depotGuide(g).text,/已计未兑现/);
+  assert(g.exitDepot());g.player.x=15;assert.equal(g.money,1450);assert.match(r.notice.text,/\+450/);
+  g.setPlayerLayer('INTERIOR');const box=g.cargoCrates.find(c=>c.location==='stored');assert(g.pickupCargo(box));assert.match(depotGuide(g).text,/已计未兑现/);
   assert(g.loadCargo());assert.equal(g.money,1450);assert.match(r.notice.text,/不重复/);
 });
 test('cargo loss and paid Workshop service reconcile without inventing new income',()=>{

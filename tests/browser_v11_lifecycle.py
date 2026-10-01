@@ -127,14 +127,23 @@ async def run(p, name):
                   and await page.evaluate('__RH_TEST.game().playerLayer==="DEPOT"&&bridgeProof.length===1&&bridgeProof[0].result===false'))
             await page.screenshot(path=str(ART/f'{name}-lifecycle-depot-bridge-{side}.png'))
             key = 'KeyA' if side > 0 else 'KeyD'
+            walk_start=await page.evaluate('__RH_TEST.game().elapsed')
             await page.keyboard.down(key)
-            await page.wait_for_function('Math.abs(__RH_TEST.game().player.depotX)<=2', timeout=2500)
+            # Software WebGL clamps each production frame's simulation delta.
+            # Preserve a 2.5s GAME-time budget; wall-clock slowness is not a
+            # movement failure. No forced stepping or deadline reset is used.
+            await page.wait_for_function('start=>Math.abs(__RH_TEST.game().player.depotX)<=2||__RH_TEST.game().elapsed-start>=2.5',arg=walk_start)
+            walk=await page.evaluate('start=>({elapsed:__RH_TEST.game().elapsed-start,x:__RH_TEST.game().player.depotX,alive:__RH_TEST.game().alive})',walk_start)
             await page.keyboard.up(key)
-            check(f'depot_{side}_walking_reaches_return_instruction', '先 RETURN 回列车' in await page.locator('#event').inner_text())
+            await page.wait_for_function('document.getElementById("event").textContent.includes("先 RETURN 回列车")||!__RH_TEST.game().alive')
+            check(f'depot_{side}_walking_reaches_return_instruction', walk['alive'] and abs(walk['x'])<=2 and walk['elapsed']<=2.525 and '先 RETURN 回列车' in await page.locator('#event').inner_text())
+            report['samples'].append({'case':f'depot_walk_{side}','productionGameTime':walk})
+            had_cargo = await page.evaluate('!!__RH_TEST.game().heldCargo')
             await page.locator('#layer').click(delay=120)
+            # Auto-pickup while walking may carry a crate; return loads it into the interior.
             # Input changes the layer synchronously; the HUD is painted by the next RAF.
             # Wait for both observable outcomes instead of reading the previous frame.
-            returned = "__RH_TEST.game().playerLayer===\"ROOF\"&&document.getElementById('event').textContent.includes('黄色梯子')"
+            returned = "__RH_TEST.game().playerLayer===\"INTERIOR\"&&!__RH_TEST.game().player.carry" if had_cargo else "__RH_TEST.game().playerLayer===\"ROOF\"&&document.getElementById('event').textContent.includes('黄色梯子')"
             await page.wait_for_function(returned, timeout=1500)
             check(f'depot_{side}_return_succeeds_after_following_hint', await page.evaluate(
                 returned+'&&bridgeProof.length===2&&bridgeProof[1].result===true'))

@@ -1,5 +1,5 @@
 // Prototype tuning, not measured completion-rate claims. One source for all gameplay numbers.
-export const BUILD = 'V11-RELEASE-20260917';
+export const BUILD = 'V12-KENNEY-REVERSE-R4C-20261001';
 export const B = Object.freeze({
   walk: 5.1, roofSpeed: 1.25, carrySpeed: 2.8,
   repairTime: 1.8, repairHP: 28, repairRadius: 1.9, repairCooldown: .3,
@@ -21,7 +21,7 @@ export const intervalFor = round => V11.spawnIntervals[Math.min(V11.spawnInterva
 export const V11 = Object.freeze({
   carHP:{engine:180,cargo:110,battery:100,workshop:120},poweredRepairThreshold:.25,workshopFaultTime:1.2,
   duration:140,turntableSeconds:3,maxCars:12,step:.025,maxFrame:.10,
-  speeds:Object.freeze({STOP:{speed:0,pressure:1.8},SLOW:{speed:.35,pressure:1.35},CRUISE:{speed:1,pressure:1},FAST:{speed:1.5,pressure:.8}}),
+  speeds:Object.freeze({REVERSE:{speed:-.28,pressure:.65},STOP:{speed:0,pressure:.65},SLOW:{speed:.35,pressure:1.35},CRUISE:{speed:1,pressure:1},FAST:{speed:1.5,pressure:.8}}),
   caps:[3,4,5,6,7,8],spawnIntervals:[4.8,4.5,4.1,3.8,3.5,3.2],
   routeWeights:{industrial:{boarder:5,clinger:3,thief:1,saboteur:5,bruiser:1},freight:{boarder:5,clinger:2,thief:6,saboteur:2,bruiser:1},tunnel:{boarder:4,clinger:5,thief:1,saboteur:2,bruiser:5}},
   firstSpecialWeight:.28,cargoThiefWeight:.6,enemyLimit:16,enemyBoardingSeconds:.7,enemyLadderSeconds:1.2,thiefEscapeWarning:4.6,
@@ -51,6 +51,7 @@ export const V11 = Object.freeze({
     axe:{cost:20,damage:54,cooldown:.88,active:.32,duration:.66,range:2.25,knockback:1.10},
     handgun:{cost:12,damage:23,cooldown:.42,range:12,velocity:35,knockback:.25,muzzle:.795},
     smg:{cost:24,damage:12,cooldown:.12,range:13,velocity:42,knockback:.10,muzzle:1.05},
-    rifle:{cost:40,damage:80,cooldown:1.05,range:24,velocity:60,knockback:.65,muzzle:1.33}
+    rifle:{cost:40,damage:80,cooldown:1.05,range:24,velocity:60,knockback:.65,muzzle:1.33,pierce:3,pierceFalloff:.8},
+    shotgun:{cost:14,damage:16,cooldown:.85,range:8,velocity:32,knockback:.45,muzzle:1.05,pellets:5,spread:.085,falloffStart:4,minDamageFraction:.3}
   }
 });

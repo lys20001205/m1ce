@@ -7,7 +7,7 @@ import {V11} from './balance.js';
 const CAR_COLORS={engine:0xf0b761,cargo:0x55c4b5,battery:0x64bfe7,workshop:0xd6d0a8};
 const ROUTE_MOOD={
   industrial:{far:0x21323a,mid:0x3f5052,signal:0xd8a24a,hemi:0xc9e2e2,ground:0x382f2b,sun:0xffd3a3},
-  freight:{far:0x173843,mid:0x2b5e69,signal:0xd98a3e,hemi:0xc3e9ed,ground:0x203238,sun:0xffd7aa},
+  freight:{far:0x224853,mid:0x447b7d,signal:0xd98a3e,hemi:0xe2ffff,ground:0x3b5158,sun:0xffe9bb},
   tunnel:{far:0x080d14,mid:0x1b2431,signal:0xdf5c4c,hemi:0x8297b2,ground:0x11131b,sun:0x9db8e8}
 };
 // Each instance retains its identity; wrapping happens beyond the visible span.
@@ -25,8 +25,8 @@ export class WorldPolish{
     this.beacon.name='Player-beacon';this.beacon.renderOrder=3;view.actorGroup.add(this.beacon);
     this.shadow=new T.Mesh(new T.PlaneGeometry(1,1),new T.MeshBasicMaterial({color:0x02070a,transparent:true,opacity:.30,depthWrite:false}));
     this.shadow.name='Train-contact-shadow';this.shadow.rotation.x=-Math.PI/2;this.shadow.position.y=.015;this.shadow.renderOrder=0;view.train.add(this.shadow);
-    this.track=new T.InstancedMesh(view.cube,view.mat(0x789096),40);this.track.name='Trackside-distance-posts';this.track.frustumCulled=false;view.scene.add(this.track);
-    this.backdrop=new T.Group();this.backdrop.name='Atmospheric-parallax';view.scene.add(this.backdrop);
+    this.track=new T.InstancedMesh(view.cube,view.mat(0x789096),40);this.track.name='Trackside-distance-posts';this.track.frustumCulled=false;view.railFrame.add(this.track);
+    this.backdrop=new T.Group();this.backdrop.name='Atmospheric-parallax';view.railFrame.add(this.backdrop);
     this.farMat=new T.MeshStandardMaterial({color:0x21323a,roughness:1,metalness:0});
     this.midMat=new T.MeshStandardMaterial({color:0x3f5052,roughness:.92,metalness:.04});
     this.signalMat=new T.MeshBasicMaterial({color:0xd8a24a,transparent:true,opacity:.82,depthWrite:false});
@@ -41,7 +41,7 @@ export class WorldPolish{
     for(const mesh of this.groups){mesh.removeFromParent();mesh.dispose();}this.groups=[];this.cars=v.cars;
     const batches=new Map();
     const add=(color,x,y,z,sx,sy,sz)=>{if(!batches.has(color))batches.set(color,[]);batches.get(color).push([x,y,z,sx,sy,sz]);};
-    v.game.cars.forEach((car,i)=>{
+    v.game.cars.forEach((car,i)=>{if(v.assets?.models.has('train/train-carriage-flatbed'))return;
       const x=i*LENGTH+4.15,c=CAR_COLORS[car.type];
       add(c,x,.84,1.61,7.72,.12,.04);add(c,x,3.53,-1.20,7.52,.14,.045);add(0x17242c,x,.43,.15,7.15,.28,.78);
       add(0x263c48,x,4.135,.78,7.82,.06,.11);add(0x0e171c,x,3.78,-1.22,7.35,.10,.04);
@@ -84,7 +84,7 @@ export class WorldPolish{
   }
   updateWindups(){
     const g=this.view.game,s=this.scratch;let n=0;
-    for(const e of g.enemies){if(e.hp<=0||e.wind<=0||n>=V11.enemyLimit)continue;const spec=V11.enemies[e.type],u=Math.max(0,Math.min(1,e.wind/spec.windup));
+    for(const e of g.enemies){if(e.hp<=0||e.wind<=0||n>=V11.enemyLimit)continue;const spec=V11.enemies[e.type],u=Math.max(0,Math.min(1,e.wind/(e.state==='steal'?3:spec.windup)));
       s.position.set(e.x,(e.y||0)+.035,e.z??.65);s.rotation.set(Math.PI/2,0,0);s.scale.set(1+u*.65,1+u*.65,1);s.updateMatrix();this.windups.setMatrixAt(n++,s.matrix);
     }
     this.windups.count=n;this.windups.instanceMatrix.needsUpdate=true;this.windupMat.opacity=this.view.reducedMotion?.30:.22+.13*Math.abs(Math.sin(g.elapsed*7));

@@ -1,6 +1,7 @@
 """Fail-closed release gate. Missing reports, skips, false checks or mutated source prohibit Pages."""
 import hashlib,json,os,re,subprocess
 from pathlib import Path
+from build_identity import expected_build
 
 ROOT=Path('.');ART=ROOT/'artifacts'
 SUITES={'':53,'v11':41,'audio':12,'combat':17,'depot':11,'dev':19,'enemies':11,'life':11,'prep':12,'release':21,'train':10,'ship':11,'qa':42,'muzzle':39,'lifecycle':44,'design':67,'mobile-art':58}
@@ -34,7 +35,11 @@ def main():
     dirty=subprocess.run(['git','diff','--exit-code','--','.'],capture_output=True,text=True)
     if dirty.returncode:result['failures'].append('tracked source changed during validation')
     build=json.loads(Path('dist/build.json').read_text());result['build']=build
-    if build.get('commit')!=sha or build.get('version')!='11.0.0' or build.get('build')!='V11-RELEASE-20260917':result['failures'].append('built site provenance mismatch')
+    try:
+        identity=expected_build();result['expectedBuild']=identity
+    except Exception as e:
+        identity=None;result['failures'].append('authored build identity unreadable: '+str(e))
+    if build.get('commit')!=sha or build.get('version')!='12.0.0' or build.get('build')!=identity:result['failures'].append('built site provenance mismatch')
     result['distSHA256']={str(p.relative_to('dist')):hashlib.sha256(p.read_bytes()).hexdigest() for p in sorted(Path('dist').rglob('*')) if p.is_file()}
     result['passed']=not result['failures'];(ART/'release-gate.json').write_text(json.dumps(result,indent=2)+'\n')
     print(json.dumps(result,indent=2));raise SystemExit(0 if result['passed'] else 1)

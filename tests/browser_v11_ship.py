@@ -3,6 +3,8 @@ import asyncio,json,mimetypes,os,subprocess,sys
 from pathlib import Path
 from urllib.parse import urlparse,unquote
 from playwright.async_api import async_playwright
+sys.path.insert(0,str(Path(__file__).resolve().parents[1]/'tools'))
+from build_identity import expected_build
 ART=Path('artifacts');ART.mkdir(exist_ok=True)
 FIELDS=['route','speedMode','routeProgress','playerLayer','playerLifeState','respawnRemaining','cargoUsed','cargoCapacity','cargoValue','scrap','meleeTier','rangedTier','batteryCharge','threatCurrent','threatCap','dev']
 
@@ -34,7 +36,7 @@ async def run(p,name):
         report['checks']['non_test_query_has_no_mutable_api']=await page.evaluate('!window.__RH_TEST&&!__RH_DEBUG.snapshot().test&&!__RH_DEBUG.snapshot().dev')
         meta=await page.evaluate('(async()=>({build:await(await fetch("./build.json")).json(),manifest:await(await fetch("./manifest.webmanifest")).json(),title:document.title}))()')
         report['metadata']=meta
-        report['checks']['version_and_entrypoint_are_v11']=meta['build']['build']=='V11-RELEASE-20260917' and meta['manifest']['start_url']=='./?build=v11' and 'V11' in meta['title']
+        report['checks']['version_and_entrypoint_are_v12']=meta['build']['build']==expected_build() and meta['build']['version']=='12.0.0' and meta['manifest']['start_url']=='./?build=v12r4c' and meta['manifest']['name']=='ROUNDHOUSE V12 R4c' and 'V12 R4c' in meta['title']
         report['checks']['provenance_has_commit']=len(meta['build'].get('commit',''))==40
         raw=await page.evaluate('JSON.stringify(__RH_DEBUG.snapshot()).length');report['localSnapshotBytes']=raw
         await page.wait_for_timeout(200);report['checks']['no_upload_before_explicit_consent']=len(posts)==0 and not await page.locator('#telemetry').is_checked()

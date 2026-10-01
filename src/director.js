@@ -1,19 +1,22 @@
-import {B,V11,capFor,reserveFor,intervalFor} from './balance.js?v=11';
+import {B,V11,capFor,reserveFor,intervalFor} from './balance.js?v=12';
 import {ROUTES,ENEMIES} from './content.js';
 // Admission, pacing and route weighting only. Gameplay state writes go through Game methods.
 export class Director {
-  constructor(){this.clock=0;this.rest=0;this.faultUsed=false;this.fault=null;this.maxLoad=0;this.spawns=0;this.distressOffered=false;}
+  constructor(){this.stopAges=new Map();this.clock=0;this.rest=0;this.faultUsed=false;this.fault=null;this.maxLoad=0;this.spawns=0;this.distressOffered=false;}
   enemyLoad(g){return g.enemies.filter(e=>e.hp>0).length;}
   load(g){return this.enemyLoad(g)+reserveFor(g.round);}
   weak(g){return g.engineState==='critical'||g.alive&&g.player.hp<=20;}
   recover(g,reason,seconds=B.recoveryTime){this.rest=Math.max(this.rest,seconds);this.clock=0;g.tell('recovery_started',{reason,seconds});}
-  effectiveCap(g){return Math.max(reserveFor(g.round)+1,capFor(g.round)+(g.repeatPressure||0)-(this.weak(g)?1:0));}
+  stopKey(g){const d=g.nearestDepot();return d&&d.connection<55?d.id:'region-'+Math.floor(g.t/.1);}
+  stopAge(g){return this.stopAges.get(this.stopKey(g))||0;}
+  effectiveCap(g){if(g.round===1&&['STOP','REVERSE'].includes(g.speedMode)&&this.stopAge(g)<35)return reserveFor(g.round)+1;return Math.max(reserveFor(g.round)+1,capFor(g.round)+(g.repeatPressure||0)-(this.weak(g)?1:0));}
   canSpawn(g){return this.load(g)+1<=this.effectiveCap(g)&&this.enemyLoad(g)<V11.enemyLimit;}
   pool(g){return g.round===1?[...ROUTES[g.route||'industrial'].firstEnemies]:Object.keys(ENEMIES).filter(type=>type!=='bruiser'||g.round>=3);}
   weights(g){
     const pool=this.pool(g),cargoCars=g.cars.filter(c=>c.type==='cargo').length;
     return Object.fromEntries(pool.map(type=>{
       let weight=g.round===1?(type==='boarder'?1-V11.firstSpecialWeight:V11.firstSpecialWeight):V11.routeWeights[g.route||'industrial'][type];
+      if(g.round===1&&['STOP','REVERSE'].includes(g.speedMode)&&this.stopAge(g)<35&&type!=='boarder')weight=0;
       if(type==='thief')weight*=1+V11.cargoThiefWeight*Math.max(0,cargoCars-1);
       return [type,weight];
     }));
@@ -21,6 +24,8 @@ export class Director {
   chooseType(g){const entries=Object.entries(this.weights(g));let roll=g.rand()*entries.reduce((sum,[,weight])=>sum+weight,0);for(const [type,weight] of entries){roll-=weight;if(roll<0)return type;}return entries.at(-1)[0];}
   cancelFault(g,reason){if(!this.fault)return;this.fault=null;g.tell('fault_resolved',{reason});this.recover(g,'engine_fault');}
   step(g,dt){
+    if(g.speedMode==='STOP'){const d=g.nearestDepot();if(d?.connection<55)g.beginDockingGuard(d);}
+    if(['STOP','REVERSE'].includes(g.speedMode)){const key=this.stopKey(g),old=this.stopAge(g),age=old+dt;this.stopAges.set(key,age);if(old<25&&age>=25)g.tell('stop_pressure_warning',{seconds:10});}
     this.rest=Math.max(0,this.rest-dt);
     if(this.fault){
       const f=this.fault;f.time+=dt;
@@ -35,7 +40,8 @@ export class Director {
       this.faultUsed=true;this.fault={time:0,tick:0,active:false};g.tell('engine_fault_warning',{lead:B.faultLead});g.event='01 冷却故障：3 秒后开始损伤，完成维修可提前止损。';
     }
     if(g.elapsed<V11.turntableSeconds&&g.t===0){this.clock=0;return;}
-    this.clock+=dt*V11.speeds[g.speedMode].pressure;
+    const waiting=['STOP','REVERSE'].includes(g.speedMode),age=this.stopAge(g);if(g.round===1&&waiting&&age<20){this.clock=0;return;}
+    this.clock+=dt*(waiting?(age<35?.32:.65):V11.speeds[g.speedMode].pressure);
     if(this.clock>=intervalFor(g.round)&&this.canSpawn(g)){
       this.clock=0;const e=g.spawn(this.chooseType(g));if(e){this.spawns++;this.maxLoad=Math.max(this.maxLoad,this.load(g));}
     }
@@ -44,6 +50,6 @@ export class Director {
     cap:capFor(g.round)+(g.repeatPressure||0),effectiveCap:this.effectiveCap(g),enemies:this.enemyLoad(g),reserved:reserveFor(g.round),load:this.load(g),
     actual:this.enemyLoad(g)+Math.max(actualHazard,this.fault?2:0),maxLoad:this.maxLoad,rest:this.rest,
     fault:this.fault?{time:this.fault.time,active:this.fault.active}:null,relief:this.rest>0||g.engineState==='stalled',
-    pool:this.pool(g),weights:this.weights(g),pressure:V11.speeds[g.speedMode].pressure
+    stopAge:this.stopAge(g),stopStage:this.stopAge(g)<20?'quiet':this.stopAge(g)<35?'warning':'pressure',pool:this.pool(g),weights:this.weights(g),pressure:g.speedMode==='STOP'?.65:V11.speeds[g.speedMode].pressure
   };}
 }

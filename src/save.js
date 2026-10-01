@@ -1,8 +1,9 @@
 import {runtimeMode} from './runtime.js';
 import {V11} from './balance.js';
+import {cleanCareer} from './career.js';
 const nonnegative=v=>Number.isFinite(Number(v))?Math.max(0,Math.floor(Number(v))):0;
 export function cleanSave(value={}){
-  return{version:11,bank:nonnegative(value.bank),prep:Object.fromEntries(Object.entries(V11.prep).map(([id,spec])=>[id,Math.min(spec.max,nonnegative(value.prep?.[id]))]))};
+  return{version:11,bank:nonnegative(value.bank),career:cleanCareer(value.career),prep:Object.fromEntries(Object.entries(V11.prep).map(([id,spec])=>[id,Math.min(spec.max,nonnegative(value.prep?.[id]))]))};
 }
 // All preferences, local logs and Bank use this same mode namespace. DEV never reads or writes release keys.
 export class SaveStore {
