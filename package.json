@@ -3,7 +3,7 @@
   "version": "12.0.0",
   "type": "module",
   "scripts": {
-    "test": "npm run build && node --test tests/simulation.test.mjs tests/difficulty.test.mjs tests/contracts.test.mjs tests/hub.test.mjs tests/speed.test.mjs tests/depot.test.mjs tests/life.test.mjs tests/enemies.test.mjs tests/combat.test.mjs tests/train_build.test.mjs tests/audio.test.mjs tests/dev.test.mjs tests/prep.test.mjs tests/release_contract.test.mjs tests/telemetry_transport.test.mjs tests/qa_followup.test.mjs tests/projectile_launch.test.mjs tests/lifecycle_followup.test.mjs tests/design_ui.test.mjs tests/mobile_art.test.mjs tests/art2.test.mjs tests/weapon_choices.test.mjs tests/playability.test.mjs tests/weapon_models.test.mjs tests/v12.test.mjs tests/train_wheels.test.mjs tests/experience.test.mjs",
+    "test": "npm run build && node --test tests/simulation.test.mjs tests/difficulty.test.mjs tests/contracts.test.mjs tests/hub.test.mjs tests/speed.test.mjs tests/depot.test.mjs tests/life.test.mjs tests/enemies.test.mjs tests/combat.test.mjs tests/train_build.test.mjs tests/audio.test.mjs tests/dev.test.mjs tests/prep.test.mjs tests/release_contract.test.mjs tests/telemetry_transport.test.mjs tests/qa_followup.test.mjs tests/projectile_launch.test.mjs tests/lifecycle_followup.test.mjs tests/design_ui.test.mjs tests/mobile_art.test.mjs tests/art2.test.mjs tests/weapon_choices.test.mjs tests/playability.test.mjs tests/weapon_models.test.mjs tests/v12.test.mjs tests/train_wheels.test.mjs tests/experience.test.mjs tests/growth_visibility.test.mjs",
     "build": "node tools/build.mjs",
     "test:experience": "node --test tests/experience.test.mjs"
   },

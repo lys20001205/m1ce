@@ -24,7 +24,7 @@ function seed(){const a=new Uint32Array(1);try{crypto.getRandomValues(a);return 
 function snapshot(){return{...game?.snapshot(),...(view?.loaded===3?view.snapshot():{modelsLoaded:0}),audio:audio.snapshot(),clock:clock.snapshot(),test:mode.test,session:telemetry?.session,standalone:!!navigator.standalone||matchMedia('(display-mode: standalone)').matches,errors:telemetry?.errors||0};}
 function emit(type,data){design.observe(game,type,data);if(['player_death','armory_open','armory_close'].includes(type))clearInput();if(type==='armory_open')audio.silence();if(type==='armory_close')audio.unlock('armory_close');telemetry?.log(type,data);audio.event(type,data);}
 const playability=new PlayabilityUI(document,()=>{bankWritable=save.write(game);if(['cashed','lost'].includes(game.status))showEnd();else showHub();});
-const initialSave=readSave();telemetry=new Telemetry(snapshot,{...mode,storage:save.storage});game=new Game({bank:initialSave.bank,prep:initialSave.prep,career:initialSave.career,seed:seed(),emit,dev:mode.dev});
+const initialSave=readSave();telemetry=new Telemetry(snapshot,{...mode,storage:save.storage});game=new Game({bank:initialSave.bank,prep:initialSave.prep,career:initialSave.career,starterWeapon:initialSave.starterWeapon,seed:seed(),emit,dev:mode.dev});
 function clearInput(){if(typeof pendingAction!=='undefined')pendingAction=null;input={move:0,attack:false,ranged:false,repair:false};pressed.clear();document.querySelectorAll('.active').forEach(e=>e.classList.remove('active'));}
 function fatal(error){clearInput();game.pause(true);audio.silence();frameError=true;$('modal').hidden=true;$('portrait').hidden=true;telemetry.log('runtime_error',{message:String(error?.message||error).slice(0,150)});$('fatal').hidden=false;$('fatal').textContent='3D 运行暂停：'+String(error?.message||error)+'\n日志已保留。请重新载入；此版本不会切回二维画面。';}
 const directActions={climb:()=>game.layer(),interact:()=>game.interact(),brake:()=>game.emergencyStop(),reverse:()=>game.changeDirection()};
@@ -69,7 +69,7 @@ $('pause').onclick=()=>{if(!active())return;clearInput();game.pause(!game.paused
 $('telemetry').checked=telemetry.enabled;$('telemetry').onchange=e=>telemetry.consent(e.target.checked);
 $('start').onclick=()=>{audio.unlock('start');if(game.start()){bankWritable=save.write(game);$('modal').hidden=true;last=0;lastStatus='running';audio.active=true;}};
 function replaceGame(practice=false){
-  clearInput();game=new Game({bank:game.bank,prep:game.prep,career:game.career,seed:seed(),practice,emit,dev:mode.dev});view.game=game;view.rebuildCars();view.cameraX=game.player.x;lastStatus='';last=0;$('modal').hidden=true;if(practice){game.chooseRoute('industrial');game.chooseCar('cargo');game.start();}else showHub();audio.active=true;audio.unlock();
+  clearInput();game=new Game({bank:game.bank,prep:game.prep,career:game.career,starterWeapon:game.starterWeapon,seed:seed(),practice,emit,dev:mode.dev});view.game=game;view.rebuildCars();view.cameraX=game.player.x;lastStatus='';last=0;$('modal').hidden=true;if(practice){game.chooseRoute('industrial');game.chooseCar('cargo');game.start();}else showHub();audio.active=true;audio.unlock();
   if(practice){game.phase='yard';game.t=.2;game.player.x=stationX(0);game.damageCar(0,game.cars[0].hp,'practice');game.event='抢修演练：你已站在控制柜旁，长按修理 3 秒。演练不结算、不写存款。';}
   view.render(0);ui();
 }
