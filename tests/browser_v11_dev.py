@@ -20,7 +20,12 @@ async def run(p,name):
         await page.locator('#devBadge').tap();await page.locator('select[data-dev=route]').select_option('freight');await page.locator('button[data-dev=start]').tap()
         await page.wait_for_function('__RH_DEBUG.snapshot().status==="running"&&__RH_DEBUG.snapshot().audio.context==="running"')
         report['checks']['dev_start_real_game_and_audio']=await page.evaluate('__RH_DEBUG.snapshot().route==="freight"&&__RH_DEBUG.snapshot().cargoCapacity===3&&__RH_DEBUG.snapshot().audio.resumeRequested>0')
-        await page.locator('button[data-dev=jump][data-value=depot]').tap();await page.wait_for_timeout(500)
+        await page.locator('button[data-dev=jump][data-value=depot]').tap()
+        # The engine AudioParam approaches its cruise target exponentially.
+        # Measure the settled 1x baseline, not an arbitrary point in that ramp.
+        # The existing <2Hz delta and 130..150Hz assertions below remain intact.
+        await page.wait_for_function('''()=>{const a=__RH_DEBUG.snapshot().audio;
+          return a.context==='running'&&a.engineLoop==='cruise'&&Math.abs(a.engineFrequency-140)<.25;}''')
         before=await page.evaluate('__RH_DEBUG.snapshot().audio.engineFrequency')
         await page.locator('button[data-dev=time][data-value="4"]').tap();await page.wait_for_timeout(350)
         after=await page.evaluate('__RH_DEBUG.snapshot().audio.engineFrequency')
