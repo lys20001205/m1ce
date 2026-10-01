@@ -12,6 +12,9 @@ test('selected persistent weapon survives save, next-run and admission rules wit
 test('different licensed departure weapons retain different actual attacks and ammo',()=>{
  for(const [id,pellets,max]of [['shotgun',5,2],['smg',1,24],['rifle',1,3]]){const g=new Game({career:{kit:3},starterWeapon:id});g.chooseRoute('industrial');g.chooseCar('cargo');g.start();assert.equal(g.ranged.id,id);assert.equal(g.rangedMagazine.max,max);assert(g.rangedAttack());assert.equal(g.projectiles.length,pellets);assert.equal(g.projectiles[0].pierce,id==='rifle'?3:1);}
 });
+test('cargo guidance preserves stock and unsecured value while showing the actual next action',()=>{
+ const g=new Game();g.chooseRoute('freight');g.chooseCar('cargo');g.start();g.t=.26;g.speedMode='STOP';g.player.x=12.45;let nav=cargoNavigation(g);assert.match(nav.text,/站内库存 2,250/);assert.match(nav.text,/F 入站/);assert(g.interact());assert(g.interact());nav=cargoNavigation(g);assert.match(nav.text,/携带 450 · 尚未装车/);assert.match(nav.text,/F 回车并装载 450/);assert.equal(g.money,1000);
+});
 // Actual authored GLB vertices, node transforms and primitive groups, not a
 // surrogate made to resemble the plane classifier.
 function glb(path){const bytes=fs.readFileSync(path),json=JSON.parse(bytes.subarray(20,20+bytes.readUInt32LE(12))),base=28+bytes.readUInt32LE(12);
