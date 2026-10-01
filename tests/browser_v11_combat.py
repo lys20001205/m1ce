@@ -30,8 +30,11 @@ async def run(p,name):
         await page.evaluate('(()=>{const a=__RH_TEST,g=a.game();a.forcePlayer(1.7);g.scrap=120;g.pause(false)})()')
         await page.click('#interact');await page.wait_for_selector('#armoryPanel:not([hidden])')
         report['checks']['ranged_initially_available']=not await page.locator('[data-weapon=handgun]').is_disabled() and not await page.locator('[data-weapon=shotgun]').is_disabled() and await page.evaluate('__RH_TEST.game().meleeTier===1&&__RH_TEST.game().ranged===null')
-        start=await page.evaluate('__RH_TEST.game().t');await page.wait_for_timeout(150)
-        report['checks']['armory_world_not_paused']=await page.evaluate(f'!__RH_TEST.game().paused&&__RH_TEST.game().t>{start}')
+        start=await page.evaluate('__RH_TEST.game().t')
+        # Await an actual production frame, rather than assuming software WebGL
+        # can render in 150ms. A paused world still times out and fails this gate.
+        await page.wait_for_function('start=>!__RH_TEST.game().paused&&__RH_TEST.game().t>start',arg=start)
+        report['checks']['armory_world_not_paused']=await page.evaluate(f'__RH_TEST.game().armoryOpen&&!__RH_TEST.game().paused&&__RH_TEST.game().t>{start}')
         # This case validates the live Armory, not Director combat. After proving world time advances,
         # suppress unrelated admissions so a random Boarder cannot close the shop mid-purchase.
         await page.evaluate('(()=>{const g=__RH_TEST.game();g.enemies=[];g.director.rest=999})()')
