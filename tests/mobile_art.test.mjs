@@ -31,4 +31,4 @@ test('UI updates expose separate engine and player meters without changing simul
 
 test('root cosmetic route does not collide with route-choice selectors',()=>{const nodes=new Map();const doc={getElementById:id=>{if(!nodes.has(id))nodes.set(id,{textContent:id,style:{setProperty(){}},dataset:{},setAttribute(){}});return nodes.get(id);}};new ControlUI(doc).update(game());assert.equal(nodes.get('app').dataset.worldRoute,'freight');assert.equal(nodes.get('app').dataset.route,undefined);});
 
-test('unowned ranged caption explains purchase access and an equipped gun displays rounds',()=>{const g=game();assert.match(rangedCaption(g),/12 Scrap/);g.meleeTier=3;assert.match(rangedCaption(g),/12 Scrap/);g.rangedTier=1;assert.match(rangedCaption(g),/^6\/6/);});
+test('unowned ranged caption explains purchase access and an equipped gun displays rounds',()=>{const g=game();assert.equal(rangedCaption(g),'军械台 12 Scrap →');g.meleeTier=3;assert.equal(rangedCaption(g),'军械台 12 Scrap →');g.rangedTier=1;assert.match(rangedCaption(g),/^6\/6/);});
