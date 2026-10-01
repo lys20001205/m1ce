@@ -14,7 +14,7 @@ export function depotActionLabel(g){
   const nearby=g.cargoCrates.some(c=>c.location==='depot'&&c.depotId===p.depotId&&Math.abs(c.x-p.depotX)<=V11.depot.crateRadius);
   return nearby?'PICKUP':'RETURN';
 }
-export function rangedCaption(g){return g.ranged?'远程 · 按住':g.combatTier<3?'先购 AXE':'武器台购枪';}
+export function rangedCaption(g){return g.ranged?'远程 · 按住':'军械台 12 Scrap 起';}
 export function controlStatus(g){
   const live=g.status==='running'&&!g.paused&&g.alive;
   const free=live&&!g.player.carry&&g.player.stun<=0;

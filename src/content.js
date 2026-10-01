@@ -2,7 +2,7 @@
 const freeze = value => { for (const child of Object.values(value)) if (child && typeof child === 'object') freeze(child); return Object.freeze(value); };
 export const LIFE = freeze({ALIVE:'ALIVE',DEAD:'DEAD_WAITING_RESPAWN',RESPAWNING:'RESPAWNING',PROTECTED:'ALIVE_PROTECTED',FAILED:'RUN_FAILED'});
 export const LAYER = freeze({INTERIOR:'INTERIOR',ROOF:'ROOF',DEPOT:'DEPOT'});
-export const SPEED_MODES = freeze(['STOP','SLOW','CRUISE','FAST']);
+export const SPEED_MODES = freeze(['REVERSE','STOP','SLOW','CRUISE','FAST']);
 export const ROUTES = freeze({
   industrial:{id:'industrial',travelLabel:'工业装卸区',name:'INDUSTRIAL LOOP',gate:'INDUSTRIAL GATE',theme:'Machinery / Saboteurs',cargo:'Medium',threat:'Medium',recommended:'workshop',firstEnemies:['boarder','saboteur'],intel:'CRANE SWEEP AT 40% · DEPOT AT 66%'},
   freight:{id:'freight',travelLabel:'货运堆场',name:'FREIGHT LOOP',gate:'FREIGHT GATE',theme:'Cargo / Thieves',cargo:'High',threat:'Medium',recommended:'cargo',firstEnemies:['boarder','thief'],intel:'TWO HIGH-VALUE DEPOTS · 26% AND 66%'},
@@ -11,8 +11,8 @@ export const ROUTES = freeze({
 export const CARS = freeze({engine:{label:'动力车',name:'ENGINE',utility:'console / armory / respawn'},cargo:{label:'货车',name:'CARGO',utility:'+3 slots · freight loot'},battery:{label:'电池车',name:'BATTERY',utility:'FAST storage · lighting · powered repair'},workshop:{label:'维修车',name:'WORKSHOP',utility:'faster repair · local fault recovery'}});
 export const ENEMIES = freeze({boarder:{name:'BOARDER',behavior:'pursue_player'},clinger:{name:'CLINGER',behavior:'attach_climb_roof'},thief:{name:'THIEF',behavior:'steal_then_escape'},saboteur:{name:'SABOTEUR',behavior:'windup_system_damage'},bruiser:{name:'BRUISER',behavior:'armored_heavy_windup'}});
 export const WEAPONS = freeze({
-  melee:[{id:'wrench',name:'WRENCH'},{id:'knife',name:'KNIFE'},{id:'axe',name:'AXE'}],
-  ranged:[{id:'handgun',name:'HANDGUN'},{id:'smg',name:'SMG'},{id:'rifle',name:'HIGH-DAMAGE RIFLE'}]
+  melee:[{id:'wrench',name:'WRENCH',role:'Balanced',description:'Reliable swing; armored heavies resist it.'},{id:'knife',name:'KNIFE',role:'Quick strikes',description:'Fast recovery for moving between enemies.'},{id:'axe',name:'AXE',role:'Crowd control',description:'Wide heavy swing interrupts armored attacks.'}],
+  ranged:[{id:'handgun',name:'HANDGUN',role:'Sidearm',description:'Steady single shots; affordable first gun.'},{id:'smg',name:'SMG',role:'Suppress',description:'Rapid fire holds light enemies at range.'},{id:'rifle',name:'PIERCING RIFLE',role:'Line breaker',description:'One shot pierces up to three enemies. Slow recovery.'},{id:'shotgun',name:'SHOTGUN',role:'Close defense',description:'Five pellets sweep a close group; damage falls off beyond 4m.'}]
 });
 export const PREP_ITEMS = freeze({reroll:{name:'REROLL TOKEN',description:'Reroll the next car offer once'},repairKit:{name:'EMERGENCY REPAIR KIT',description:'One faster emergency restart next run'},intel:{name:'ROUTE INTEL',description:'Reveal one actual route event at the next route choice'}});
 export const INPUT_BINDINGS_SSOT = freeze({
@@ -23,5 +23,6 @@ export const INPUT_BINDINGS_SSOT = freeze({
   melee:{label:'MELEE',keys:['KeyJ','Space'],display:'J / SPACE',button:'attack',hold:true},
   ranged:{label:'RANGED',keys:['KeyK'],display:'K',button:'ranged',hold:true},
   repair:{label:'REPAIR',keys:['KeyE'],display:'E',button:'fix',hold:true},
+  reverse:{label:'REVERSE / FORWARD · BRAKE FIRST',keys:['KeyV'],display:'V',button:'reverse'},
   brake:{label:'EMERGENCY BRAKE',keys:['KeyB'],display:'B',button:'brake'}
 });

@@ -1,0 +1,5 @@
+import {spawn} from 'node:child_process';import fs from 'node:fs';import path from 'node:path';
+const cwd=process.cwd(),snapshot=process.argv[2]||'candidate-r3',label=process.argv[3]||snapshot+'-normal',minutes=process.argv[4]||'12',port=Number(process.argv[5]||8828),root='artifacts/'+label;
+fs.mkdirSync(root,{recursive:true});fs.writeFileSync(root+'/runner.pid',String(process.pid));
+const server=spawn(process.execPath,['tools/local-server.mjs','artifacts/'+snapshot,String(port)],{cwd,stdio:['ignore','pipe','pipe']});server.stdout.pipe(process.stdout);server.stderr.pipe(process.stderr);fs.writeFileSync(root+'/server.pid',String(server.pid));
+server.stdout.once('data',()=>{const qa=spawn(process.execPath,['tools/play-v12-normal.mjs'],{cwd,stdio:'inherit',env:{...process.env,QA_PORT:String(port),QA_MINUTES:minutes,QA_LABEL:label,PLAYWRIGHT_BROWSERS_PATH:path.join(cwd,'.browsers')}});fs.writeFileSync(root+'/qa.pid',String(qa.pid));qa.on('exit',code=>{server.kill();fs.writeFileSync(root+'/runner-result.json',JSON.stringify({completedUTC:new Date().toISOString(),exitCode:code}));process.exitCode=code;});});

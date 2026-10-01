@@ -19,7 +19,7 @@ function controls(){
     document:{querySelectorAll:()=>[...nodes.values()]},addEventListener:(type,fn)=>listeners.set(type,fn),
     input:{move:0,attack:false,ranged:false,repair:false},pressed:new Map()});
   const clear=source.slice(source.indexOf('function clearInput(){'),source.indexOf('function fatal('));
-  const handlers=source.slice(source.indexOf('const actions='),source.indexOf('const mobileInput='));
+  const handlers=source.slice(source.indexOf('const directActions='),source.indexOf('const mobileInput='));
   vm.runInContext(clear+'\n'+handlers,ctx);
   return {game,calls,read:()=>ctx.input,clear:()=>vm.runInContext('clearInput()',ctx),
     key:(type,code)=>listeners.get(type)({code,preventDefault(){},target:{tagName:'BODY'}}),

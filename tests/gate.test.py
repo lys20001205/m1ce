@@ -1,8 +1,17 @@
 """The deployment guard itself must reject missing/false/skipped evidence."""
-import importlib.util,json,tempfile,unittest
+import importlib.util,json,tempfile,unittest,sys
 from pathlib import Path
+sys.path.insert(0,str(Path(__file__).resolve().parents[1]/'tools'))
 spec=importlib.util.spec_from_file_location('gate','tools/check_release.py');gate=importlib.util.module_from_spec(spec);spec.loader.exec_module(gate)
 class GateTests(unittest.TestCase):
+    def test_authored_build_identity_is_strict(self):
+        with tempfile.TemporaryDirectory() as directory:
+            p=Path(directory);(p/'src').mkdir();f=p/'src'/'balance.js'
+            f.write_text("export const BUILD = 'V11-PLAYABILITY-R5-20260930';\n")
+            self.assertEqual(gate.expected_build(p),'V11-PLAYABILITY-R5-20260930')
+            for text in ["export const BUILD = 'wrong';",'missing',"export const BUILD = 'V11-OTHER';\nexport const BUILD = 'V11-DUPLICATE';"]:
+                f.write_text(text)
+                with self.assertRaises(ValueError):gate.expected_build(p)
     def fixture(self,path):
         for browser in ['chromium','webkit']:
             for suffix,count in gate.SUITES.items():

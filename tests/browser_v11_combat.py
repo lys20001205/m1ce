@@ -1,4 +1,4 @@
-"""G: production input, independent slots, six models and live Armory. No renderer mocks."""
+"""G: production input, independent slots, seven models and live Armory. No renderer mocks."""
 import asyncio,json,subprocess,sys
 from pathlib import Path
 from playwright.async_api import async_playwright
@@ -19,31 +19,38 @@ async def run(p,name):
         await page.evaluate('__RH_TEST.game().pause(false)')
         await page.mouse.move(box['x']+box['width']/2,box['y']+box['height']/2);await page.mouse.down()
         await page.wait_for_function('__RH_TEST.input().attack===true')
-        await page.evaluate('__RH_TEST.step(1.5,__RH_TEST.input())');await page.mouse.up()
-        await page.evaluate('__RH_TEST.game().pause(true);__RH_TEST.view().render(0)')
+        # Freeze directly after the controlled attack window so slow browser transport
+        # cannot expire the transient Scrap pop before its presentation assertion.
+        await page.evaluate('__RH_TEST.step(1.5,__RH_TEST.input());__RH_TEST.game().pause(true);__RH_TEST.view().render(0)');await page.mouse.up()
         report['checks']['button_kill_grants_scrap']=await page.evaluate('__RH_TEST.game().scrap===2&&__RH_TEST.game().money===1000&&__RH_TEST.game().totalKills===1')
-        report['checks']['scrap_hud_and_visual_pop']=await page.evaluate('document.getElementById("scrapHud").textContent==="2"&&[...document.querySelectorAll(".combatPop")].some(e=>!e.hidden&&e.textContent==="+2 SCRAP")')
+        await page.wait_for_function('document.getElementById("scrapHud").textContent.includes("1击杀")')
+        report['checks']['scrap_hud_and_visual_pop']=await page.evaluate('document.getElementById("scrapHud").textContent.split(/\\s/)[0]==="2"&&document.getElementById("scrapHud").textContent.includes("1击杀")&&[...document.querySelectorAll(".combatPop")].some(e=>!e.hidden&&e.textContent==="+2 SCRAP")')
         await page.screenshot(path=str(ART/f'{name}-scrap-kill.png'))
         # Fixture funds purchases; location admission, costs, buttons and unlocks are production code.
-        await page.evaluate('(()=>{const a=__RH_TEST,g=a.game();a.forcePlayer(1.7);g.scrap=106;g.pause(false)})()')
+        await page.evaluate('(()=>{const a=__RH_TEST,g=a.game();a.forcePlayer(1.7);g.scrap=120;g.pause(false)})()')
         await page.click('#interact');await page.wait_for_selector('#armoryPanel:not([hidden])')
-        report['checks']['ranged_initially_locked']=await page.locator('[data-armory=ranged]').is_disabled()
+        report['checks']['ranged_initially_available']=not await page.locator('[data-weapon=handgun]').is_disabled() and not await page.locator('[data-weapon=shotgun]').is_disabled() and await page.evaluate('__RH_TEST.game().meleeTier===1&&__RH_TEST.game().ranged===null')
         start=await page.evaluate('__RH_TEST.game().t');await page.wait_for_timeout(150)
         report['checks']['armory_world_not_paused']=await page.evaluate(f'!__RH_TEST.game().paused&&__RH_TEST.game().t>{start}')
         # This case validates the live Armory, not Director combat. After proving world time advances,
         # suppress unrelated admissions so a random Boarder cannot close the shop mid-purchase.
         await page.evaluate('(()=>{const g=__RH_TEST.game();g.enemies=[];g.director.rest=999})()')
         report['models']=[]
-        for slot,weapon in [('melee','knife'),('melee','axe'),('ranged','handgun'),('ranged','smg'),('ranged','rifle')]:
-            await page.locator('[data-armory='+slot+']').tap()
+        remaining=120
+        for slot,weapon,cost in [('ranged','handgun',12),('melee','knife',10),('melee','axe',20),('ranged','smg',24),('ranged','rifle',40),('ranged','shotgun',14)]:
+            await page.locator('[data-weapon='+weapon+']').tap()
             await page.wait_for_function("__RH_TEST.game()["+json.dumps(slot)+"]?.id==="+json.dumps(weapon),timeout=3000)
             await page.evaluate('__RH_TEST.view().render(0)')
             state=await page.evaluate('(()=>{const g=__RH_TEST.game(),d=__RH_TEST.view().playerRig.userData;return {melee:g.melee.id,ranged:g.ranged?.id||null,scrap:g.scrap,meleeModels:Object.entries(d.meleeModels).filter(([k,m])=>m.visible).map(([k])=>k),rangedModels:Object.entries(d.rangedModels).filter(([k,m])=>m.visible).map(([k])=>k)}})()')
             report['models'].append(state)
-            report['checks']['purchase_'+weapon]=state[slot]==weapon and state[slot+'Models']==[weapon]
-            if weapon=='axe':report['checks']['tier3_unlock_is_not_free_gun']=state['ranged'] is None and not await page.locator('[data-armory=ranged]').is_disabled()
+            remaining-=cost
+            report['checks']['purchase_'+weapon]=state[slot]==weapon and state[slot+'Models']==[weapon] and state['scrap']==remaining
+            if weapon=='handgun':report['checks']['first_gun_requires_no_melee_purchase']=state['melee']=='wrench' and state['scrap']==108
             await page.screenshot(path=str(ART/f'{name}-armory-{weapon}.png'))
-        report['checks']['exact_cost_and_dual_final_slots']=state['scrap']==0 and state['melee']=='axe' and state['ranged']=='rifle' and state['meleeModels']==['axe'] and state['rangedModels']==['rifle']
+        report['checks']['exact_cost_and_dual_final_slots']=state['scrap']==0 and state['melee']=='axe' and state['ranged']=='shotgun' and state['meleeModels']==['axe'] and state['rangedModels']==['shotgun']
+        await page.locator('[data-weapon=rifle]').tap();await page.wait_for_function('__RH_TEST.game().ranged.id==="rifle"')
+        await page.locator('[data-weapon=shotgun]').tap();await page.wait_for_function('__RH_TEST.game().ranged.id==="shotgun"')
+        report['checks']['owned_weapons_reequip_without_charging']=await page.evaluate('__RH_TEST.game().scrap===0&&["handgun","smg","rifle","shotgun"].every(id=>__RH_TEST.game().weaponInventory.ranged.includes(id))')
         await page.click('#closeArmory')
         sockets=await page.evaluate('(()=>{const a=__RH_TEST,g=a.game(),v=a.view();g.pause(true);return [-1,1].map(face=>{g.player.face=face;v.render(0);return {face,actual:v.muzzle(),sim:g.muzzle()}})})()')
         report['sockets']=sockets;report['checks']['model_socket_matches_real_projectile_both_facings']=all(abs(s['actual'][k]-s['sim'][k])<.002 for s in sockets for k in ['x','y','z'])
@@ -55,8 +62,10 @@ async def run(p,name):
         await page.keyboard.up('j');await page.keyboard.up('k');await page.evaluate('__RH_TEST.game().pause(true)')
         await page.screenshot(path=str(ART/f'{name}-dual-weapon-fire.png'))
         report['checks']['mobile_keyboard_legend_hidden']=not await page.locator('#keyboardLegend').is_visible()
-        desktop=await browser.new_page(viewport={'width':1280,'height':720})
+        desktop=await browser.new_page(viewport={'width':1280,'height':720},is_mobile=False,has_touch=False)
         await desktop.goto('http://127.0.0.1:8770/?test=1',wait_until='networkidle');await desktop.wait_for_function('window.__RH_DEBUG?.snapshot().modelsLoaded===3')
+        report['desktopProfile']=await desktop.evaluate('({touch:navigator.maxTouchPoints,coarse:matchMedia("(pointer: coarse)").matches,legend:document.getElementById("keyboardLegend").textContent,hidden:document.getElementById("keyboardLegend").hidden})')
+        await desktop.wait_for_function('!document.getElementById("keyboardLegend").hidden&&document.getElementById("keyboardLegend").textContent.includes("RANGED K")')
         report['checks']['desktop_legend_matches_bindings']=await desktop.evaluate('(()=>{const text=document.getElementById("keyboardLegend").textContent;return !document.getElementById("keyboardLegend").hidden&&text.includes("MELEE J / SPACE")&&text.includes("RANGED K")&&text.includes("EMERGENCY BRAKE B")})()')
         await desktop.close();report['checks']['no_page_errors']=not errors
     except Exception as e:

@@ -1,0 +1,22 @@
+#cargoLedger{position:absolute;left:14px;bottom:14px;max-width:calc(100% - 28px);padding:10px 14px;background:linear-gradient(115deg,#102f39ed,#102029ed);border:1px solid #67b6ab;border-left:4px solid #8de3bc;border-radius:8px;pointer-events:none;color:#e3f6ef;font-size:12px;box-shadow:0 6px 24px #0007;z-index:5}#cargoLedger div{display:flex;gap:18px;flex-wrap:wrap;line-height:1.6}#cargoLedger .warning{color:#ffa984}#cargoLedger .bank{color:#a0e7bd}#cargoLedger small{display:block;margin-top:4px;color:#bfd8d9;font-size:11px}#cargoLedger[hidden],#careerShop[hidden]{display:none}#thiefLabels{position:absolute;inset:0;pointer-events:none;z-index:6}.thiefLabel{position:absolute;transform:translate(-50%,-100%);background:#681f1eed;border:1px solid #ff936e;border-radius:5px;padding:4px 7px;color:#fff4c4;font-size:11px;white-space:nowrap}#careerShop{margin:12px 0;border-top:1px solid #547e7b;padding-top:7px}#careerShop h3{margin:4px 0;font-size:13px;color:#a6eacb}#careerShop button{display:block;width:100%;text-align:left;white-space:pre-line;margin:5px 0;padding:8px;background:#193f43;font-size:12px}#careerShop small{font-size:10px;color:#a6c6c6}#weaponChoices{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-top:5px}#weaponChoices button{font-size:10px;text-align:left;white-space:pre-line;padding:7px;line-height:1.4}#weaponChoices .selected{border-color:#96ebc7;background:#284c47}#armoryPanel{max-height:70%;overflow:auto;width:360px}#hud .brand{letter-spacing:2px;color:#f2c17c}#controls button{border-radius:9px}#controls #interact{border-color:#86d4ba;background:linear-gradient(#315c54,#183c3a)}#controls #attack,#controls #ranged{border-color:#dba178}#playerTag{border:1px solid #a4edf0;color:#e8ffff;box-shadow:0 2px 10px #0009}@media(max-height:430px){#cargoLedger{font-size:9px;left:6px;bottom:6px;padding:5px 8px}#cargoLedger div{gap:10px}#cargoLedger small{font-size:8px}#armoryPanel{width:300px}#careerShop button{font-size:10px;padding:6px}}
+
+#armoryPanel>button[data-armory]{display:none}
+/* A reserved row keeps the ledger clear of every floating station control. */
+#app{grid-template-rows:48px 24px minmax(0,1fr) auto 72px 20px}
+#app.touchUI{grid-template-rows:42px 22px minmax(0,1fr) auto 84px 0}
+#cargoLedger{position:relative;left:auto;bottom:auto;max-width:none;margin:0 0 4px;padding:6px 12px;font-variant-numeric:tabular-nums;z-index:auto}
+#cargoLedger div{line-height:1.4;gap:14px}
+#cargoLedger small{margin-top:2px}
+#armoryPanel{max-height:calc(100% - 42px);width:min(360px,calc(100% - 24px));touch-action:pan-y}
+@media(max-height:430px){#app{grid-template-rows:39px 20px minmax(0,1fr) auto 61px 20px}#app.touchUI{grid-template-rows:36px 20px minmax(0,1fr) auto 80px 0}#cargoLedger{padding:4px 8px;font-size:9px;margin-bottom:2px}#cargoLedger small{font-size:8px}#cargoLedger div{gap:10px}#weaponChoices button{padding:5px;line-height:1.2}}
+
+/* Keep a readable world in short landscape without covering floating controls. */
+@media(max-height:350px) and (min-width:650px){#cargoLedger{display:grid;grid-template-columns:auto 1fr;column-gap:16px;padding:1px 8px;font-size:9px}#cargoLedger[hidden]{display:none}#cargoLedger div{line-height:1.2;gap:10px}#cargoLedger small{grid-column:1/-1;font-size:8px;line-height:1.1;margin-top:0}}
+
+/* Five utility actions stay on one row; reverse is available on touch as well. */
+#utilityControls,.touchUI #utilityControls{grid-template-columns:repeat(5,minmax(0,1fr))}
+#controls{gap:6px}#utilityControls button{padding:4px;min-width:42px}#speedChoices{grid-template-columns:repeat(5,minmax(0,1fr))}
+#versionTag{position:absolute;right:10px;bottom:5px;font-size:9px;color:#ddf5f2;background:#142b35cc;padding:2px 5px;z-index:9;pointer-events:none}
+@media(max-width:900px){#utilityControls{width:300px}#combatControls{width:130px}#movementPad{width:110px}#utilityControls button{font-size:10px}}
+
+#hazardTag{position:absolute;transform:translate(-50%,-100%);z-index:10;pointer-events:none;background:#3b1f18ee;color:#ffdfc5;border:1px solid #ff6547;border-radius:4px;font-size:11px;padding:3px 6px;white-space:nowrap}

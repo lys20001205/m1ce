@@ -3,10 +3,12 @@ import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import fs from 'node:fs';
 import {execFileSync} from 'node:child_process';
 import {BUILD} from '../src/balance.js';
-const out='dist';fs.rmSync(out,{recursive:true,force:true});fs.mkdirSync(`${out}/assets`,{recursive:true});fs.mkdirSync(`${out}/vendor`,{recursive:true});
+const out=process.argv[2]||'dist';if(!/^dist(?:-[a-z0-9]+)*$/.test(out))throw Error('Build output must be a local dist directory');fs.rmSync(out,{recursive:true,force:true});fs.mkdirSync(`${out}/assets`,{recursive:true});fs.mkdirSync(`${out}/vendor`,{recursive:true});
 for(const file of ['index.html','style.css','manifest.webmanifest'])fs.copyFileSync(file,`${out}/${file}`);
 fs.cpSync('src',`${out}/src`,{recursive:true});
 for(const f of ['three.module.min.js','three.core.min.js'])fs.copyFileSync(`node_modules/three/build/${f}`,`${out}/vendor/${f}`);
+fs.cpSync('assets/kenney',`${out}/assets/kenney`,{recursive:true});
+for(const [folder,file]of [['loaders','GLTFLoader.js'],['utils','BufferGeometryUtils.js']]){fs.mkdirSync(`${out}/vendor/${folder}`,{recursive:true});const code=fs.readFileSync(`node_modules/three/examples/jsm/${folder}/${file}`,'utf8').replaceAll("from 'three'","from '../three.module.min.js'");fs.writeFileSync(`${out}/vendor/${folder}/${file}`,code);}
 fs.copyFileSync('node_modules/three/LICENSE',`${out}/vendor/THREE-LICENSE.txt`);
 for(const f of ['ASSET_LICENSES.md','AUDIT_V9R1.md','V10_CHANGELOG.md','V11_CHANGELOG.md','V11_RELEASE.md'])if(fs.existsSync(`docs/${f}`))fs.copyFileSync(`docs/${f}`,`${out}/${f}`);
 const mats={};const mat=(color)=>mats[color]??=new T.MeshStandardMaterial({color,roughness:.8,metalness:.1,flatShading:true});
@@ -28,7 +30,8 @@ for(const x of [-2.65,2.65])for(const z of [-1.28,1.28]){const wheel=new T.Group
 const robot=new T.Group();robot.name='CrewRobot';const torso=new T.Group();box(torso,0,.90,0,.56,.68,.40,0x3c83c7);box(torso,0,1.13,.23,.48,.13,.08,0xc0e4ed);box(torso,0,1.48,0,.51,.44,.47,0xbacdd2);box(torso,0,1.49,.25,.42,.14,.03,0x102c41);box(torso,0,.60,-.25,.42,.55,.18,0x244863);robot.add(merge(torso,'Body'));
 for(const [n,x] of [['LegL',-.17],['LegR',.17]]){const leg=new T.Group();leg.name=n;leg.position.set(x,.5,0);box(leg,0,-.20,0,.20,.43,.22,0x243d50);box(leg,.06,-.43,.05,.34,.15,.34,0x758a95);robot.add(leg);}
 const arm=new T.Group();arm.name='WeaponArm';arm.position.set(.22,1.05,.22);box(arm,.19,0,0,.42,.15,.15,0x588bb5);box(arm,.40,0,0,.16,.20,.19,0xcbd5d8);const tool=new T.Group();tool.name='Wrench';box(tool,.61,0,0,.40,.09,.10,0xd5d6c8);box(tool,.84,0,0,.18,.23,.11,0xebe9d7);box(tool,.9,0,.06,.09,.1,.05,0x283843);arm.add(tool);const gun=new T.Group();gun.name='Sidearm';box(gun,.58,0,0,.43,.17,.16,0x343d41);box(gun,.52,-.14,0,.11,.23,.13,0x77848a);const muzzle=new T.Object3D();muzzle.name='Muzzle';muzzle.position.set(.795,0,0);gun.add(muzzle);arm.add(gun);robot.add(arm);save(robot,'crew-robot');
-const crate=new T.Group();const cr=new T.Group();box(cr,0,.38,0,.80,.76,.70,0xaa7839);for(const x of [-.29,.29])box(cr,x,.38,.37,.08,.76,.06,0xf0bb63);for(const y of [.10,.65])box(cr,0,y,.37,.8,.08,.06,0xf0bb63);crate.add(merge(cr,'Crate'));save(crate,'cargo-crate');
+const crate=new T.Group();const cr=new T.Group();box(cr,0,.38,0,.80,.76,.70,0x327f78);for(const x of [-.29,.29])box(cr,x,.38,.37,.08,.76,.06,0xf6cc7a);for(const y of [.10,.65])box(cr,0,y,.37,.8,.08,.06,0xf6cc7a);box(cr,0,.38,.414,.26,.30,.035,0xe8f3da);box(cr,0,.38,.439,.15,.07,.02,0x163e42);box(cr,0,.78,0,.15,.06,.74,0xf6cc7a);crate.add(merge(cr,'Crate'));save(crate,'cargo-crate');
 let commit=process.env.GITHUB_SHA||'';try{if(!commit)commit=execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim();}catch{}
-const info={build:BUILD,commit,version:'11.0.0',renderer:'Three.js WebGL2',three:'0.180.0',models:['train-cutaway.json','crew-robot.json','cargo-crate.json'],modelOrigin:'original authored geometry'};fs.writeFileSync(`${out}/build.json`,JSON.stringify(info,null,2));
+const assets=JSON.parse(fs.readFileSync('assets/kenney/manifest.json'));
+const info={build:BUILD,commit,version:'12.0.0',renderer:'Three.js WebGL2',three:'0.180.0',models:Object.entries(assets.packs).flatMap(([pack,p])=>p.models.map(m=>'kenney/'+pack+'/'+m.file)),fallbackModels:['train-cutaway.json','crew-robot.json','cargo-crate.json'],modelOrigin:'Kenney CC0 GLB with original interaction sockets and fallback',assetManifest:'assets/kenney/manifest.json'};fs.writeFileSync(`${out}/build.json`,JSON.stringify(info,null,2));
 console.log('Built '+BUILD+'; actual 3D models and local renderer: '+info.models.join(', '));

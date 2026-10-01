@@ -2,7 +2,7 @@
 // No downloaded samples, microphone, streaming, or remote resources.
 const CUES=Object.freeze({
   wrench:[360,.13,.10,'triangle',100],knife:[850,.065,.075,'triangle',190],axe:[190,.21,.12,'sawtooth',65],
-  handgun:[150,.12,.13,'square',40],smg:[230,.065,.095,'square',50],rifle:[90,.24,.15,'sawtooth',35],
+  handgun:[150,.12,.13,'square',40],smg:[230,.065,.095,'square',50],rifle:[90,.24,.15,'sawtooth',35],shotgun:[75,.20,.17,'sawtooth',24],
   enemy_hit:[300,.08,.07,'triangle',95],enemy_death:[180,.22,.075,'sawtooth',40],
   cargo_pickup:[420,.14,.10,'sine',680],cargo_drop:[280,.15,.10,'triangle',140],scrap_gain:[880,.17,.09,'sine',1320],
   repair:[540,.09,.06,'triangle',750],engine_warning:[430,.24,.09,'square',330],engine_restart:[140,.6,.12,'triangle',580],

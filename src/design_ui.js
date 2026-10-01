@@ -1,7 +1,7 @@
 // Read-only presentation for the existing rules. No save writes, rewards or game-state edits.
 import {B,V11} from './balance.js';
 import {ROUTES,INPUT_BINDINGS_SSOT} from './content.js';
-import {car,LENGTH} from './sim.js?v=11';
+import {car,LENGTH} from './sim.js?v=12';
 const money=n=>Math.round(n).toLocaleString('en-US');
 const arrow=(from,to)=>to<from?'←':'→';
 const cue=(action,label,touch)=>touch?label:`${INPUT_BINDINGS_SSOT[action].display} · ${label}`;
@@ -157,7 +157,7 @@ export class DesignUI {
       for(const d of g.depots){const n=this.doc.createElement('span');n.className='depotMarker';n.style.left=(d.marker*100)+'%';n.textContent='◆';n.title=`Depot ${Math.round(d.marker*100)}%`;root.append(n);}
     }
     this.text('speedHelp',`FAST 剩余约 ${(g.batteryCharge/V11.fastDrain).toFixed(1)} 秒 · STOP 增援持续；重新加速需在 Engine`);
-    this.text('armoryHelp',(g.combatTier<3?'远程解锁：先购买 AXE（COMBAT TIER 3）。':'近战 / 远程分别操作；升级后自动装备。')+' 商店不暂停。');
+    this.text('armoryHelp','按玩法选择武器；已购免费切换 · 商店不暂停。');
     this.text('kitStatus',g.runRepairKit?'维修包已携带 · 成功重启自动使用':'');
     this.node('kitStatus').hidden=!g.runRepairKit;
     const safe=g.status==='running'&&g.alive&&!g.rescue&&g.engineState!=='critical'&&!g.hazardInfo()&&!g.director.fault;

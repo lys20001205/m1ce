@@ -14,15 +14,15 @@ for(const tier of [1,2,3])for(const face of [-1,1])for(const distance of [.5,1.3
   const {g}=setup(tier,face);const e=enemy(g,5+face*distance),hp=e.hp,m=g.muzzle();
   assert(g.rangedAttack());const b=g.projectiles[0];assert.equal(b.x,m.x);assert.equal(b.origin,m.x);
   assert.equal(b.range,g.rangedStats.range);assert.equal(b.damage,g.rangedStats.damage);
-  g.projectileStep(.025);assert.equal(e.hp,hp-g.rangedStats.damage);assert.equal(g.projectiles.length,0);
+  g.projectileStep(.025);assert.equal(e.hp,hp-g.rangedStats.damage);assert.equal(g.projectiles.length,tier===3?1:0);
  });
 }
 for(const face of [-1,1])test(`launch rejects targets behind player face ${face}`,()=>{
  const {g}=setup(3,face),e=enemy(g,5-face*.1),hp=e.hp;g.rangedAttack();g.projectileStep(.025);assert.equal(e.hp,hp);
 });
-for(const face of [-1,1])test(`launch stops at nearest eligible target face ${face}`,()=>{
- const {g}=setup(3,face),far=enemy(g,5+face*1.2),close=enemy(g,5+face*.4);g.rangedAttack();g.projectileStep(.025);
- assert.equal(close.hp,140-80);assert.equal(far.hp,140);
+for(const face of [-1,1])test(`nonpiercing launch stops at nearest eligible target face ${face}`,()=>{
+ const {g}=setup(1,face),far=enemy(g,5+face*1.2),close=enemy(g,5+face*.4);g.rangedAttack();g.projectileStep(.025);
+ assert.equal(close.hp,140-23);assert.equal(far.hp,140);
 });
 for(const excluded of ['other-layer','boarding','layer-move'])test(`launch preserves ${excluded} immunity`,()=>{
  const {g}=setup(),e=enemy(g,5.5,excluded==='other-layer');if(excluded==='boarding')e.climb=.2;

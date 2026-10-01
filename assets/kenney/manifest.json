@@ -1,0 +1,140 @@
+{
+  "author": "Kenney",
+  "license": "CC0-1.0",
+  "licenseURL": "https://creativecommons.org/publicdomain/zero/1.0/",
+  "packs": {
+    "train": {
+      "source": "https://kenney.nl/assets/train-kit",
+      "download": "https://kenney.nl/media/pages/assets/train-kit/cf8521d625-1727040883/kenney_train-kit.zip",
+      "licenseFile": "train/License.txt",
+      "models": [
+        {
+          "file": "train-diesel-a.glb",
+          "bytes": 156432,
+          "sha256": "20c6c7c23c005e8cda1c1e922473c0fc9c93fc7c1d1bc5a637d640424f811cc3"
+        },
+        {
+          "file": "train-carriage-flatbed.glb",
+          "bytes": 100148,
+          "sha256": "2dc5ebc40ec9e550f0c06f59622a44b42024b593194a207a7f66ad30c44f4ff8"
+        },
+        {
+          "file": "train-carriage-container-red.glb",
+          "bytes": 116192,
+          "sha256": "c210aff0fc5d4ee92446b1fdc24ad502df4eabda639c29cc88dd6e64b5abe111"
+        },
+        {
+          "file": "train-connector.glb",
+          "bytes": 4940,
+          "sha256": "9d9d5154308e9298c0904be683d7471d23ab80bf00523f1d82326258ab7c2a4e"
+        },
+        {
+          "file": "railroad-straight.glb",
+          "bytes": 34736,
+          "sha256": "bcbd501f74b754b61f2ddb5cba2d45d5d694bfd25c497fa72af65202a53930d9"
+        }
+      ]
+    },
+    "factory": {
+      "source": "https://kenney.nl/assets/factory-kit",
+      "download": "https://kenney.nl/media/pages/assets/factory-kit/edaac9d4f6-1777639602/kenney_factory-kit_3.0.zip",
+      "licenseFile": "factory/License.txt",
+      "models": [
+        {
+          "file": "catwalk-straight.glb",
+          "bytes": 33492,
+          "sha256": "85797c6ce53e3f4373bc59ecd3ce951a3f6b707651def5e0bae46756051cd18d"
+        },
+        {
+          "file": "catwalk-corner.glb",
+          "bytes": 49600,
+          "sha256": "aa797b48556a723f96c415c8608a2ededd0d1a4bdce735231047cde8762b7de1"
+        },
+        {
+          "file": "catwalk-stairs.glb",
+          "bytes": 66256,
+          "sha256": "0356a040ebbf632cd20dfe384a13108270df26426ad1dd51a2c767c8f6a6960c"
+        },
+        {
+          "file": "structure-tall.glb",
+          "bytes": 25828,
+          "sha256": "b019fde05396ab9474a36b8923fd014a88122cda3d0c2f7aa3d89ddf41745167"
+        },
+        {
+          "file": "structure-wall.glb",
+          "bytes": 4236,
+          "sha256": "3bdcb31d693b4e97a9fa198e9de1a47bfd14e829520da08ceaacadbdb258582c"
+        },
+        {
+          "file": "structure-doorway-wide.glb",
+          "bytes": 5572,
+          "sha256": "588655c5594b55d6f715ca6251febb18f9636f6804e0e193e31d68643e7b2107"
+        },
+        {
+          "file": "door-wide-open.glb",
+          "bytes": 3000,
+          "sha256": "bc8cfb0d899c512d85241c41db4247be11cfe833cab56949f19e2903789133d9"
+        },
+        {
+          "file": "box-large.glb",
+          "bytes": 7496,
+          "sha256": "f5c7a7b4d7ec48c2695dc5241d62a38dbb54b487e6be0f089548582c91bacdfd"
+        },
+        {
+          "file": "box-small.glb",
+          "bytes": 7500,
+          "sha256": "fd2ea1ac4f24a9515dc9c53a4a589a8897c824fa5865771799f965a252f684f0"
+        },
+        {
+          "file": "crane.glb",
+          "bytes": 53396,
+          "sha256": "ceaf20fb976ce0415d2b3d40e723b6ad377845818fa4fa68b55434108b1a6880"
+        }
+      ]
+    },
+    "industrial": {
+      "source": "https://kenney.nl/assets/city-kit-industrial",
+      "download": "https://kenney.nl/media/pages/assets/city-kit-industrial/0ec35b139d-1788171848/kenney_city-kit-industrial_2.0.zip",
+      "licenseFile": "industrial/License.txt",
+      "models": [
+        {
+          "file": "building-h.glb",
+          "bytes": 63644,
+          "sha256": "5a6a6c6824467972ba00b5a3c3cbb19da6e96673bc4e42daf1f09cfd4d2ed0e1"
+        },
+        {
+          "file": "building-i.glb",
+          "bytes": 73848,
+          "sha256": "12d9be598becf2b6d3758d23aba6c573ca2701fca5e77870d2ee5645647765ca"
+        },
+        {
+          "file": "shipping-container-a.glb",
+          "bytes": 36624,
+          "sha256": "7b2d5ca874c8e659ee6cfd1614f0470b70410b2ddc7620ac83b8954dedeb861d"
+        },
+        {
+          "file": "water-tower.glb",
+          "bytes": 93836,
+          "sha256": "11ac7ae19f32ce889bfe7a9c8e78c8ce8c77b7a76b52fd4ffa439a022ea2ef40"
+        }
+      ]
+    },
+    "characters": {
+      "source": "https://kenney.nl/assets/blocky-characters",
+      "download": "https://kenney.nl/media/pages/assets/blocky-characters/8369c0cf30-1749547469/kenney_blocky-characters_20.zip",
+      "licenseFile": "characters/License.txt",
+      "models": [
+        {
+          "file": "character-g.glb",
+          "bytes": 113596,
+          "sha256": "e3249ffc0aaa55eba973696ba4b36a204b35a10574b373e9945b56d918e8c9fd"
+        },
+        {
+          "file": "character-h.glb",
+          "bytes": 113596,
+          "sha256": "f62fcf774dc6d61d64a3616803bc3a71176e1aee252020dd3ef680ef0a95d588"
+        }
+      ]
+    }
+  }
+}

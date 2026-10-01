@@ -12,9 +12,9 @@ function setup() {
   game.speedMode='STOP'; game.t=.26; game.elapsed=5;
   const scene=new T.Scene();scene.fog=new T.Fog(0x20384a,80,420);
   const train=new T.Group(),actorGroup=new T.Group(),cube=new T.BoxGeometry(1,1,1);
-  scene.add(train);train.add(actorGroup);
+  const railFrame=new T.Group();scene.add(railFrame);railFrame.add(train);train.add(actorGroup);
   const matCache=new Map();
-  const view={game,scene,train,actorGroup,cube,cars:[],reducedMotion:false,
+  const view={game,scene,railFrame,train,actorGroup,cube,cars:[],reducedMotion:false,
     hemi:new T.HemisphereLight(),sun:new T.DirectionalLight(),
     mat(color){if(!matCache.has(color))matCache.set(color,new T.MeshStandardMaterial({color}));return matCache.get(color);}};
   const art=new WorldPolish(view);art.update();

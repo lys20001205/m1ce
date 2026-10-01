@@ -9,7 +9,7 @@ from pathlib import Path
 from playwright.async_api import async_playwright
 ART = Path('artifacts')
 ART.mkdir(exist_ok=True)
-MINIMUM = 39
+MINIMUM = 75
 
 async def run(p, name):
     report = {'browser': name, 'checks': {}, 'scope': 'C04 test-fixture with real held K input', 'samples': []}
@@ -33,7 +33,7 @@ async def run(p, name):
         await page.click('[data-route=freight]')
         await page.click('[data-car=cargo]')
         await page.click('#start')
-        for tier in [1, 2, 3]:
+        for tier in [1, 2, 3, 4]:
             for face in [-1, 1]:
                 for distance in [.5, 1.3]:
                     tag = f't{tier}-f{face}-d{distance}'
@@ -41,7 +41,9 @@ async def run(p, name):
                         const a=__RH_TEST;a.reset();const g=a.game();g.pause(true);
                         g.director.rest=9999;g.round=8;g.meleeTier=3;g.rangedTier=tier;
                         a.forcePlayer(5);g.player.face=face;g.lastMuzzle=null;
-                        const front=g.spawn('bruiser',5+face*distance,false),back=g.spawn('bruiser',5-face*.5,false);
+                        // Standing fire now assists toward the nearest enemy. Keep the
+                        // intended close-contact target nearest in these muzzle cases.
+                        const front=g.spawn('bruiser',5+face*distance,false),back=g.spawn('bruiser',5-face*3,false);
                         if(!front||!back)throw Error('fixture admission failed');front.climb=0;back.climb=0;
                         window.qaTargets={front,back};a.view().render(0);a.step(0);
                     }''', {'tier': tier, 'face': face, 'distance': distance})
@@ -61,8 +63,34 @@ async def run(p, name):
                     # is covered by the deterministic companion unit suite.
                     check(tag+'_front_hit', v['frontHP'] <= 140-v['damage'])
                     check(tag+'_back_untouched', v['backHP'] == 140)
+                    check(tag+'_faces_nearest_target', v['face'] == face)
                     check(tag+'_real_muzzle_preserved', all(abs(v['projectileOrigin'][k]-v['modelMuzzle'][k]) < .002 for k in ['x', 'y', 'z']))
                     await page.screenshot(path=str(ART/f'{name}-muzzle-{tag}-after.png'))
+        # Preserve the old competing-target layout as an explicit assist test:
+        # initial facing is toward the far target, but standing K must turn to
+        # the nearer threat behind the player. Both left and right are covered.
+        for face in [-1, 1]:
+            tag = f'nearest-assist-f{face}'
+            await page.evaluate('''face => {
+                const a=__RH_TEST;a.reset();const g=a.game();g.pause(true);
+                g.director.rest=9999;g.round=8;g.rangedTier=1;a.forcePlayer(5);g.player.face=face;g.lastMuzzle=null;
+                const far=g.spawn('bruiser',5+face*1.3,false),near=g.spawn('bruiser',5-face*.5,false);
+                if(!far||!near)throw Error('assist fixture admission failed');far.climb=0;near.climb=0;
+                window.qaTargets={far,near};a.view().render(0);a.step(0);
+            }''', face)
+            await page.evaluate('__RH_TEST.game().pause(false)')
+            await page.keyboard.down('KeyK')
+            await page.wait_for_function('__RH_TEST.game().lastMuzzle!==null', timeout=4000)
+            await page.keyboard.up('KeyK')
+            await page.evaluate('__RH_TEST.game().pause(true);__RH_TEST.view().render(0)')
+            v = await page.evaluate('''() => {const a=__RH_TEST,g=a.game();return {
+                nearHP:qaTargets.near.hp,farHP:qaTargets.far.hp,face:g.player.face,
+                projectileOrigin:g.lastMuzzle,modelMuzzle:a.view().muzzle()};}''')
+            report['samples'].append({'case': tag, **v})
+            check(tag+'_nearest_hit', v['nearHP'] <= 117)
+            check(tag+'_far_untouched', v['farHP'] == 140)
+            check(tag+'_face_reversed', v['face'] == -face)
+            check(tag+'_real_muzzle_preserved', all(abs(v['projectileOrigin'][k]-v['modelMuzzle'][k]) < .002 for k in ['x', 'y', 'z']))
         # Reproduce the exact failed exploration layout, with a normal Boarder.
         await page.evaluate('''() => {const a=__RH_TEST;a.reset();const g=a.game();g.pause(true);
             g.director.rest=9999;g.meleeTier=3;g.rangedTier=3;a.forcePlayer(1.7);g.player.face=1;
