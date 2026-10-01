@@ -22,7 +22,7 @@ const active=()=>['running','arriving'].includes(game.status);
 function readSave(){return save.read();}
 function seed(){const a=new Uint32Array(1);try{crypto.getRandomValues(a);return a[0];}catch{return Date.now()>>>0;}}
 function snapshot(){return{...game?.snapshot(),...(view?.loaded===3?view.snapshot():{modelsLoaded:0}),audio:audio.snapshot(),clock:clock.snapshot(),test:mode.test,session:telemetry?.session,standalone:!!navigator.standalone||matchMedia('(display-mode: standalone)').matches,errors:telemetry?.errors||0};}
-function emit(type,data){design.observe(game,type,data);if(type==='player_death')clearInput();telemetry?.log(type,data);audio.event(type,data);}
+function emit(type,data){design.observe(game,type,data);if(['player_death','armory_open','armory_close'].includes(type))clearInput();if(type==='armory_open')audio.silence();if(type==='armory_close')audio.unlock('armory_close');telemetry?.log(type,data);audio.event(type,data);}
 const playability=new PlayabilityUI(document,()=>{bankWritable=save.write(game);if(['cashed','lost'].includes(game.status))showEnd();else showHub();});
 const initialSave=readSave();telemetry=new Telemetry(snapshot,{...mode,storage:save.storage});game=new Game({bank:initialSave.bank,prep:initialSave.prep,career:initialSave.career,seed:seed(),emit,dev:mode.dev});
 function clearInput(){if(typeof pendingAction!=='undefined')pendingAction=null;input={move:0,attack:false,ranged:false,repair:false};pressed.clear();document.querySelectorAll('.active').forEach(e=>e.classList.remove('active'));}
@@ -38,7 +38,7 @@ function refreshInputs(){
 for(const [action,binding] of Object.entries(INPUT_BINDINGS_SSOT)){
   const el=$(binding.button);el.title=binding.label+' · '+binding.display;
   if(!binding.hold){el.onclick=()=>actions[action]?.();continue;}
-  el.addEventListener('pointerdown',e=>{e.preventDefault();if(game.paused||game.status!=='running'||!game.alive)return;el.setPointerCapture(e.pointerId);pressed.set(e.pointerId,action);refreshInputs();telemetry.log('input_down',{key:binding.button,x:game.player.x});});
+  el.addEventListener('pointerdown',e=>{e.preventDefault();if(game.paused||game.armoryOpen||game.status!=='running'||!game.alive)return;el.setPointerCapture(e.pointerId);pressed.set(e.pointerId,action);refreshInputs();telemetry.log('input_down',{key:binding.button,x:game.player.x});});
   // Capture belongs to one pointer, not to every source holding the same action.
   const release=e=>{e.preventDefault();if(!pressed.has(e.pointerId))return;pressed.delete(e.pointerId);refreshInputs();telemetry.log('input_up',{key:binding.button,x:game.player.x});};
   if(action==='left'||action==='right')el.addEventListener('pointermove',e=>{
@@ -49,7 +49,7 @@ for(const [action,binding] of Object.entries(INPUT_BINDINGS_SSOT)){
   el.addEventListener('pointerup',release);el.addEventListener('pointercancel',release);el.addEventListener('lostpointercapture',release);
 }
 const keyActions=new Map(Object.entries(INPUT_BINDINGS_SSOT).flatMap(([action,binding])=>binding.keys.map(code=>[code,{action,binding}])));
-addEventListener('keydown',e=>{if(['INPUT','TEXTAREA','SELECT'].includes(e.target?.tagName)||game.paused||game.status!=='running'||!game.alive)return;const entry=keyActions.get(e.code);if(!entry)return;e.preventDefault();if(entry.binding.hold){pressed.set('key'+e.code,entry.action);refreshInputs();}else if(!e.repeat)actions[entry.action]?.();});
+addEventListener('keydown',e=>{if(game.armoryOpen){if(['Escape','KeyF'].includes(e.code)&&!e.repeat){e.preventDefault();game.closeArmory();}return;}if(['INPUT','TEXTAREA','SELECT'].includes(e.target?.tagName)||game.paused||game.status!=='running'||!game.alive)return;const entry=keyActions.get(e.code);if(!entry)return;e.preventDefault();if(entry.binding.hold){pressed.set('key'+e.code,entry.action);refreshInputs();}else if(!e.repeat)actions[entry.action]?.();});
 addEventListener('keyup',e=>{pressed.delete('key'+e.code);refreshInputs();});
 const mobileInput=navigator.maxTouchPoints>0||matchMedia('(pointer: coarse)').matches;
 design.touch=mobileInput;
@@ -159,7 +159,7 @@ function ui(){
   $('speedPanel').hidden=game.status!=='running'||!game.atConsole||!game.consoleOpen;document.querySelectorAll('[data-speed]').forEach(b=>{b.classList.toggle('selected',b.dataset.speed===game.speedMode);b.disabled=game.engineState==='stalled'||b.dataset.speed==='FAST'&&game.batteryCharge<=0;});
   buttonText('layer',game.playerLayer==='DEPOT'?'RETURN':game.player.roof?'下车内':'上车顶');buttonText('interact',game.playerLayer==='DEPOT'?(typeof depotActionLabel==='function'?depotActionLabel(game):(game.player.carry?'RETURN':'PICKUP')):game.player.roof?(game.player.carry?'LOAD':'DEPOT'):game.player.carry?'放货':game.cars[game.currentCar].type==='engine'?(game.atArmory?'ARMORY':'SPEED'):game.cars[game.currentCar].type==='cargo'?'搬货':'交互');
   $('armoryPanel').hidden=!game.armoryOpen||!game.atArmory||!game.alive||game.status!=='running';
-  $('armoryScrap').textContent=game.scrap+' SCRAP · WORLD RUNNING';
+  $('armoryScrap').textContent=game.scrap+' SCRAP · 比较中：时间暂停 · 关闭后继续';
   for(const slot of ['melee','ranged']){const b=document.querySelector('[data-armory='+slot+']'),offer=game.armoryOffer(slot);const text=slot.toUpperCase()+' · '+(offer?(offer.locked?'LOCKED UNTIL COMBAT TIER 3':offer.name+' · '+offer.cost+' SCRAP'):'MAX TIER');if(b.textContent!==text)b.textContent=text;b.disabled=!offer||offer.locked||game.scrap<offer.cost;}
   $('repairPanel').hidden=!job;$('repairFill').style.width=job?Math.min(100,job.progress/job.duration*100)+'%':'0%';$('repairText').textContent=job?(job.emergency?'紧急重启':job.localFault?'本地故障检修':'维修 '+String(job.car+1).padStart(2,'0'))+' · '+Math.min(100,Math.floor(job.progress/job.duration*100))+'%':'';
   const notice=game.notices.at(-1);$('success').hidden=!notice;$('centerStack').dataset.repair=job?'true':'false';$('successTitle').textContent=notice?.title||'';$('successDetail').textContent=notice?.detail||'';

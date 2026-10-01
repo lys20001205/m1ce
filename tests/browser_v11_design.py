@@ -73,7 +73,7 @@ async def run(p,name):
         await page.keyboard.up('KeyE')
         await page.keyboard.press('KeyF');await page.locator('#armoryPanel').wait_for(state='visible')
         help_text=await page.locator('#armoryHelp').inner_text()
-        check('armory_choices_explained',all(text in help_text for text in ['按玩法选择武器','已购免费切换','商店不暂停']))
+        check('armory_choices_explained',all(text in help_text for text in ['按玩法选择武器','已购免费切换','比较期间时间暂停']))
         for weapon in ['handgun','knife','axe']:
             await page.locator(f'[data-weapon={weapon}]').click()
             await page.wait_for_function('''id=>{const g=__RH_TEST.game();return g.melee.id===id||g.ranged?.id===id;}''',arg=weapon)

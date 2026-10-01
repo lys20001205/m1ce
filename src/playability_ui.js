@@ -1,4 +1,4 @@
-import {CAREER} from './career.js';
+import {CAREER,careerEffect,careerComparison} from './career.js';
 import {V11} from './balance.js';
 const amount=n=>Math.round(n).toLocaleString();
 export function roofHazardHint(phase){return phase==='crane'?'你在车顶 · 红边横栏危险区 · 到黄色梯子 W 下车内躲避':'你在车顶 · 隧道低净空 · 到黄色梯子 W 下车内躲避';}
@@ -12,6 +12,11 @@ export function cargoNotice(g,l=g.cargoLedger){
   if(change&&change.kind!=='theft'&&age>=0&&age<6)return change.text;
   return '回库 CASH OUT 才计入 Bank';
 }
+export function shipmentMessage(g){
+  const c=g.cargoLedger.change;if(!c||g.elapsed-c.at>=4.5||g.elapsed<c.at||!['loaded','lost','recovered'].includes(c.kind)||g.status!=='running')return null;
+  const title=c.kind==='lost'?'失货 −'+amount(c.value):c.kind==='recovered'?'追回 '+amount(c.value):c.credited?'装车 +'+amount(c.value):'货物装回';
+  return {kind:c.kind,title,detail:(c.kind==='recovered'?'保住货物 · ':c.kind==='lost'?'货物已扣回 · ':'货物仍需守住 · ')+'待结算 '+amount(g.money)+' · Bank '+amount(g.bank)+' 未变'};
+}
 export class PlayabilityUI{
   constructor(doc,onSave){this.doc=doc;this.onSave=onSave;this.signature='';this.armorySignature='';
     this.ledger=doc.createElement('div');this.ledger.id='cargoLedger';doc.getElementById('app').insertBefore(this.ledger,doc.getElementById('controls'));
@@ -19,8 +24,10 @@ export class PlayabilityUI{
     this.targets=doc.createElement('div');this.targets.id='thiefLabels';doc.getElementById('viewport').append(this.targets);
     this.career=doc.createElement('details');this.career.id='careerShop';doc.querySelector('#modal article').insertBefore(this.career,doc.getElementById('prepDisclosure'));
     this.weapons=doc.createElement('div');this.weapons.id='weaponChoices';doc.getElementById('armoryPanel').append(this.weapons);
+    this.shipment=doc.createElement('div');this.shipment.id='shipmentToast';this.shipment.hidden=true;this.shipment.setAttribute('role','status');this.shipment.setAttribute('aria-live','polite');doc.getElementById('viewport').append(this.shipment);
   }
   update(g,view){const l=g.cargoLedger,live=['running','arriving','complete'].includes(g.status);this.ledger.hidden=!live;
+    const receipt=shipmentMessage(g),receiptKey=JSON.stringify(receipt);this.shipment.hidden=!receipt;if(receiptKey!==this.shipmentKey){this.shipmentKey=receiptKey;this.shipment.replaceChildren();if(receipt){this.shipment.dataset.kind=receipt.kind;const title=this.doc.createElement('b'),detail=this.doc.createElement('small');title.textContent=receipt.title;detail.textContent=receipt.detail;this.shipment.append(title,detail);}}
     const guard=g.cargoCrates.reduce((n,c)=>Math.max(n,c.location==='stored'?(c.protectedUntil||0)-g.elapsed:0),0);
     const stationGuard=Math.max(0,(g.depotGuardUntil||0)-g.elapsed),personal=g.dockingPlayerRemaining;
     this.ledger.innerHTML=`<div><b>装车 ${g.storedCargo}/${g.cargoCapacity}</b><span>携带 ${amount(l.held)}</span><span class="warning">被抱走 ${amount(l.atRisk)}</span></div><div><span>货物 ${amount(l.loaded+l.held+l.floor+l.atRisk)} 待结算</span><span>累计丢失 −${amount(l.lost)}</span><span class="bank">Bank余额 ${amount(l.bank)}（已结算）</span></div><small>${personal>0?'接站护盾 '+personal.toFixed(1)+'s · 玩家挡住旧敌攻击（不刷新） · ':''}${stationGuard>0?'设备防线 '+stationGuard.toFixed(1)+'s · 设备减伤75%（不刷新） · ':''}${l.atRisk>0?cargoNotice(g,l):guard>0?'首箱封签保护 '+guard.toFixed(1)+'s · 可以再取一箱':cargoNotice(g,l)} · 本局新增 ${amount(g.money-1000)} · 待结算总额 ${amount(g.money)}</small>`;
@@ -31,7 +38,7 @@ export class PlayabilityUI{
     const mark=view.project(g.craneX,6.8,.65);this.hazardTag.hidden=g.phase!=='crane'||mark.x<0||mark.x>view.w;this.hazardTag.style.left=Math.min(view.w-85,Math.max(85,mark.x))+'px';this.hazardTag.style.top=Math.max(32,mark.y)+'px';this.hazardTag.textContent=g.player.roof?'↓ 红边横栏 · 下车内':'红边横栏 · 车内安全';
     const hp=this.doc.getElementById('playerTag');if(g.alive)hp.textContent=(g.player.face<0?'◀ ':'▶ ')+(g.playerLayer==='DEPOT'?'你 · 货站':(g.player.roof?'你 · 车顶':'你 · 车内')+(g.player.carry?' · 搬运':''));
     const direction=this.doc.getElementById('reverse');direction.textContent=g.lastDirection==='REVERSE'?'前进':'倒车';direction.title='B 刹停 0.5 秒 → V 换向（倒车 28%）';
-    this.doc.getElementById('versionTag').textContent='V12 R4d · '+(g.elapsed<3&&g.t===0?'转盘对轨 · 0%':(g.speed<0?'→ 倒车 ':g.speed>0?'← 前进 ':'■ 停车 ')+Math.round(Math.abs(g.speed)*100)+'%');
+    this.doc.getElementById('versionTag').textContent='V12 R5b · '+(g.elapsed<3&&g.t===0?'转盘对轨 · 0%':(g.speed<0?'→ 倒车 ':g.speed>0?'← 前进 ':'■ 停车 ')+Math.round(Math.abs(g.speed)*100)+'%');
     const age=g.director.stopAge(g);if(['STOP','REVERSE'].includes(g.speedMode)&&age>=25&&age<35)this.doc.getElementById('centerHint').textContent='停站警戒升级 · '+Math.ceil(35-age)+'秒后增援 · 可回车防守或前进';
     const progress=g.combatProgress;this.doc.getElementById('scrapHud').textContent=g.scrap+' · '+progress.kills+'击杀';
     this.doc.getElementById('engineVital').textContent=Math.ceil(g.cars[0].hp)+'/'+g.cars[0].max;
@@ -42,6 +49,6 @@ export class PlayabilityUI{
     else if(g.player.roof&&['crane','approach','tunnel'].includes(g.phase))this.doc.getElementById('centerHint').textContent=roofHazardHint(g.phase);
     if(g.armoryOpen){const sig=JSON.stringify([g.weaponInventory,g.scrap,g.melee.id,g.ranged?.id]);if(sig!==this.armorySignature){this.armorySignature=sig;this.weapons.replaceChildren();for(const slot of ['melee','ranged'])for(const w of g.weaponChoices(slot)){const b=this.doc.createElement('button');b.dataset.weapon=w.id;b.className=w.selected?'selected':'';b.textContent=`${w.name} · ${w.owned?(w.selected?'已装备':'切换'):w.cost+' Scrap'}\n${w.description||w.role}`;b.disabled=w.selected||!w.owned&&g.scrap<w.cost;b.onclick=()=>{g.buyWeapon(slot,w.id);this.armorySignature='';};this.weapons.append(b);}}}
     const visible=!g.practice&&(g.status==='ready'&&g.round===1||['cashed','lost'].includes(g.status));this.career.hidden=!visible;
-    const sig=JSON.stringify([g.career,g.bank,g.status]);if(visible&&sig!==this.signature){this.signature=sig;this.career.open=g.bank>0||Object.values(g.career).some(v=>v>0);this.career.replaceChildren();const title=this.doc.createElement('summary');title.textContent='车队成长 · 永久 '+Object.values(g.career).reduce((n,v)=>n+v,0)+'/7 · BANK '+amount(g.bank);this.career.append(title);for(const [id,s]of Object.entries(CAREER)){const b=this.doc.createElement('button');b.dataset.career=id;b.textContent=`${s.name} ${g.career[id]}/${s.max} · ${s.cost} Bank\n${s.description}`;b.disabled=g.career[id]>=s.max||g.bank<s.cost;b.onclick=()=>{if(g.buyCareer(id)){this.onSave();this.signature='';this.update(g,view);}};this.career.append(b);}const note=this.doc.createElement('small');note.textContent='升级在下一次出发应用。旧存档保留 Bank；射手执照改变开局武器。';this.career.append(note);}
+    const sig=JSON.stringify([g.career,g.bank,g.status,g.careerChange]);if(visible&&sig!==this.signature){this.signature=sig;this.career.open=g.bank>0||Object.values(g.career).some(v=>v>0);this.career.replaceChildren();const title=this.doc.createElement('summary');title.textContent='车队成长 · 永久 '+Object.values(g.career).reduce((n,v)=>n+v,0)+'/7 · BANK '+amount(g.bank);this.career.append(title);if(g.careerChange){const r=this.doc.createElement('p');r.className='careerReceipt';r.textContent='已升级 '+CAREER[g.careerChange.id].name+'：'+g.careerChange.before+' → '+g.careerChange.after+' · 下一次出发生效';this.career.append(r);}for(const [id,s]of Object.entries(CAREER)){const b=this.doc.createElement('button');b.dataset.career=id;b.textContent=`${s.name} ${g.career[id]}/${s.max} · ${s.cost} Bank\n${g.career[id]>=s.max?'已满级 · '+careerEffect(id,g.career[id]):careerComparison(id,g.career[id])+' · 下局生效'}`;b.disabled=g.career[id]>=s.max||g.bank<s.cost;b.onclick=()=>{if(g.buyCareer(id)){this.onSave();this.signature='';this.update(g,view);}};this.career.append(b);}const note=this.doc.createElement('small');note.className='careerLoadout';note.textContent='下次出发：搬运 '+careerEffect('boots',g.career.boots)+' · 机车 '+careerEffect('hull',g.career.hull)+' · '+careerEffect('kit',g.career.kit)+'。升级永久保存。';this.career.append(note);}
   }
 }

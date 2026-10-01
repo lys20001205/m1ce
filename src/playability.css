@@ -20,3 +20,5 @@
 @media(max-width:900px){#utilityControls{width:300px}#combatControls{width:130px}#movementPad{width:110px}#utilityControls button{font-size:10px}}
 
 #hazardTag{position:absolute;transform:translate(-50%,-100%);z-index:10;pointer-events:none;background:#3b1f18ee;color:#ffdfc5;border:1px solid #ff6547;border-radius:4px;font-size:11px;padding:3px 6px;white-space:nowrap}
+
+#shipmentToast{position:absolute;right:14px;top:42px;max-width:60%;padding:9px 12px;background:#13372fef;border:1px solid #9af4cb;border-radius:7px;color:#c2ffe2;z-index:11;pointer-events:none;box-shadow:0 3px 15px #0008}#shipmentToast[hidden]{display:none}#shipmentToast b{display:block;font-size:20px}#shipmentToast small{display:block;font-size:11px;margin-top:3px}#shipmentToast[data-kind=lost]{border-color:#ff997f;background:#4d251eef;color:#ffe0d5}.careerReceipt{padding:7px;background:#24574c;border-left:3px solid #a3f9cb;font-size:12px}.careerLoadout{display:block;line-height:1.6;color:#b9f7d5!important}@media(max-height:350px){#shipmentToast{top:6px;right:8px;max-width:45%;padding:4px 7px}#shipmentToast b{font-size:13px}#shipmentToast small{font-size:8px}}

@@ -91,7 +91,7 @@ export class AudioCues {
     for(const v of this.voices){try{v.o.stop();}catch{}}this.pending.length=0;
   }
   update(g){
-    const c=this.context;this.active=!this.hidden()&&!this.quiet&&!g.paused&&['running','arriving','complete','cashed','ready','practice_complete'].includes(g.status);
+    const c=this.context;this.active=!this.hidden()&&!this.quiet&&!g.paused&&!g.armoryOpen&&['running','arriving','complete','cashed','ready','practice_complete'].includes(g.status);
     const running=this.active&&g.status==='running',moving=running&&g.engineState!=='stalled'&&g.speedMode!=='STOP'&&g.elapsed>=3;
     this.engineLoop=!this.active?'off':!moving?'idle':g.speedMode==='FAST'?'fast':'cruise';
     if(!c||c.state!=='running')return;

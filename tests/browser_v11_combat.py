@@ -30,13 +30,14 @@ async def run(p,name):
         await page.evaluate('(()=>{const a=__RH_TEST,g=a.game();a.forcePlayer(1.7);g.scrap=120;g.pause(false)})()')
         await page.click('#interact');await page.wait_for_selector('#armoryPanel:not([hidden])')
         report['checks']['ranged_initially_available']=not await page.locator('[data-weapon=handgun]').is_disabled() and not await page.locator('[data-weapon=shotgun]').is_disabled() and await page.evaluate('__RH_TEST.game().meleeTier===1&&__RH_TEST.game().ranged===null')
-        start=await page.evaluate('__RH_TEST.game().t')
+        before=await page.evaluate('(()=>{const g=__RH_TEST.game();return {t:g.t,time:g.elapsed,hp:g.player.hp,engine:g.cars[0].hp,enemies:g.enemies.map(e=>[e.id,e.x,e.hp])}})()')
         # Await an actual production frame, rather than assuming software WebGL
         # can render in 150ms. A paused world still times out and fails this gate.
-        await page.wait_for_function('start=>!__RH_TEST.game().paused&&__RH_TEST.game().t>start',arg=start)
-        report['checks']['armory_world_not_paused']=await page.evaluate(f'__RH_TEST.game().armoryOpen&&!__RH_TEST.game().paused&&__RH_TEST.game().t>{start}')
-        # This case validates the live Armory, not Director combat. After proving world time advances,
-        # suppress unrelated admissions so a random Boarder cannot close the shop mid-purchase.
+        await page.wait_for_timeout(20000)
+        after=await page.evaluate('(()=>{const g=__RH_TEST.game();return {t:g.t,time:g.elapsed,hp:g.player.hp,engine:g.cars[0].hp,enemies:g.enemies.map(e=>[e.id,e.x,e.hp])}})()')
+        report['checks']['armory_world_paused_20_seconds']=before==after and await page.evaluate('__RH_TEST.game().armoryOpen&&!__RH_TEST.game().paused')
+        # After proving the world is frozen, validate purchases separately;
+        # fixture removals below cannot influence the preceding pause assertion.
         await page.evaluate('(()=>{const g=__RH_TEST.game();g.enemies=[];g.director.rest=999})()')
         report['models']=[]
         remaining=120
@@ -55,6 +56,9 @@ async def run(p,name):
         await page.locator('[data-weapon=shotgun]').tap();await page.wait_for_function('__RH_TEST.game().ranged.id==="shotgun"')
         report['checks']['owned_weapons_reequip_without_charging']=await page.evaluate('__RH_TEST.game().scrap===0&&["handgun","smg","rifle","shotgun"].every(id=>__RH_TEST.game().weaponInventory.ranged.includes(id))')
         await page.click('#closeArmory')
+        resume=await page.evaluate('__RH_TEST.game().elapsed')
+        await page.wait_for_function('(time)=>__RH_TEST.game().elapsed>time',arg=resume)
+        report['checks']['closing_armory_resumes_world']=not await page.evaluate('__RH_TEST.game().armoryOpen')
         sockets=await page.evaluate('(()=>{const a=__RH_TEST,g=a.game(),v=a.view();g.pause(true);return [-1,1].map(face=>{g.player.face=face;v.render(0);return {face,actual:v.muzzle(),sim:g.muzzle()}})})()')
         report['sockets']=sockets;report['checks']['model_socket_matches_real_projectile_both_facings']=all(abs(s['actual'][k]-s['sim'][k])<.002 for s in sockets for k in ['x','y','z'])
         await page.evaluate('(()=>{const a=__RH_TEST,g=a.game();a.forcePlayer(3);g.pause(false)})()')

@@ -16,7 +16,7 @@ export class Feedback3D {
     this.muzzleFlash=new T.Mesh(new T.OctahedronGeometry(.15,0),new T.MeshBasicMaterial({color:0xffe0a3,transparent:true,opacity:.9,depthWrite:false}));this.muzzleFlash.name='Muzzle-flash';this.muzzleFlash.visible=false;this.group.add(this.muzzleFlash);
   }
   updateLabels(){
-    const g=this.view.game,fx=g.effects.filter(e=>e.text&&['scrap','buy'].includes(e.type)).slice(-this.labels.length);
+    const g=this.view.game,fx=g.effects.filter(e=>e.text&&['scrap','buy','cargo'].includes(e.type)).slice(-this.labels.length);
     this.labels.forEach((el,i)=>{const f=fx[i];el.hidden=!f;if(!f)return;const p=this.view.project(f.x,f.y+(1-f.life/f.max)*1.8,.65);el.textContent=f.text;el.style.left=p.x+'px';el.style.top=p.y+'px';el.style.opacity=Math.min(1,f.life/.2);});
   }
   update(){

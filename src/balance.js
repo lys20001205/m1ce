@@ -1,5 +1,5 @@
 // Prototype tuning, not measured completion-rate claims. One source for all gameplay numbers.
-export const BUILD = 'V12-KENNEY-REVERSE-R4D-20261001';
+export const BUILD = 'V12-EXPERIENCE-R5B-20261001';
 export const B = Object.freeze({
   walk: 5.1, roofSpeed: 1.25, carrySpeed: 2.8,
   repairTime: 1.8, repairHP: 28, repairRadius: 1.9, repairCooldown: .3,
@@ -49,9 +49,9 @@ export const V11 = Object.freeze({
     wrench:{cost:0,damage:22,cooldown:.52,active:.16,duration:.36,range:1.85,knockback:.45},
     knife:{cost:10,damage:16,cooldown:.25,active:.07,duration:.20,range:1.6,knockback:.20},
     axe:{cost:20,damage:54,cooldown:.88,active:.32,duration:.66,range:2.25,knockback:1.10},
-    handgun:{cost:12,damage:23,cooldown:.42,range:12,velocity:35,knockback:.25,muzzle:.795},
-    smg:{cost:24,damage:12,cooldown:.12,range:13,velocity:42,knockback:.10,muzzle:1.05},
-    rifle:{cost:40,damage:80,cooldown:1.05,range:24,velocity:60,knockback:.65,muzzle:1.33,pierce:3,pierceFalloff:.8},
-    shotgun:{cost:14,damage:16,cooldown:.85,range:8,velocity:32,knockback:.45,muzzle:1.05,pellets:5,spread:.085,falloffStart:4,minDamageFraction:.3}
+    handgun:{magazine:6,reload:1.15,cost:12,damage:23,cooldown:.42,range:8.5,velocity:35,knockback:.25,muzzle:.795},
+    smg:{magazine:24,reload:1.55,cost:24,damage:12,cooldown:.12,range:13,velocity:42,knockback:.10,muzzle:1.05},
+    rifle:{magazine:3,reload:1.4,cost:40,damage:80,cooldown:1.05,range:24,velocity:60,knockback:.65,muzzle:1.33,pierce:3,pierceFalloff:.8},
+    shotgun:{magazine:2,reload:1.3,cost:14,damage:16,cooldown:.85,range:8,velocity:32,knockback:.45,muzzle:1.05,pellets:5,spread:.085,falloffStart:4,minDamageFraction:.3}
   }
 });

@@ -35,7 +35,7 @@ test('death and next round retain all owned choices; ending the run clears inven
 });
 
 for(const face of [-1,1])test(`rifle pierces exactly three targets nearest first and never re-hits, face ${face}`,()=>{
- const {g,events}=run();arm(g);assert(g.buyWeapon('ranged','rifle'));g.player.x=face===1?3:13;g.player.face=face;
+ const {g,events}=run();arm(g);assert(g.buyWeapon('ranged','rifle'));g.closeArmory();g.player.x=face===1?3:13;g.player.face=face;
  // Reverse spawn order verifies that ordering is spatial, not enemy array order.
  const targets=[4,3,2,1].map(distance=>enemy(g,g.player.x+distance*face));assert(g.rangedAttack());flight(g);
  const byDistance=[...targets].reverse();near(byDistance[0].hp,60);near(byDistance[1].hp,76);near(byDistance[2].hp,88.8);assert.equal(byDistance[3].hp,140);
@@ -43,21 +43,21 @@ for(const face of [-1,1])test(`rifle pierces exactly three targets nearest first
 });
 
 test('piercing rifle still excludes boarding, different-layer and behind-player enemies',()=>{
- const {g}=run();arm(g);g.buyWeapon('ranged','rifle');g.player.x=3;g.player.face=1;
+ const {g}=run();arm(g);g.buyWeapon('ranged','rifle');g.closeArmory();g.player.x=3;g.player.face=1;
  const behind=enemy(g,2.5),roof=enemy(g,4,'bruiser',true),boarding=enemy(g,4.5),valid=enemy(g,5);boarding.climb=1;
  g.rangedAttack();flight(g);assert.equal(behind.hp,140);assert.equal(roof.hp,140);assert.equal(boarding.hp,140);assert.equal(valid.hp,60);
 });
 
 test('shotgun emits five visible trajectories, kills a close light pair, and awards each kill once',()=>{
- const {g:visual}=run();arm(visual);visual.buyWeapon('ranged','shotgun');visual.rangedAttack();visual.projectileStep(.025);assert.equal(new Set(visual.projectiles.map(p=>p.y)).size,5);
- const {g,events}=run();arm(g);g.buyWeapon('ranged','shotgun');g.player.x=3;g.player.face=1;
+ const {g:visual}=run();arm(visual);visual.buyWeapon('ranged','shotgun');visual.closeArmory();visual.rangedAttack();visual.projectileStep(.025);assert.equal(new Set(visual.projectiles.map(p=>p.y)).size,5);
+ const {g,events}=run();arm(g);g.buyWeapon('ranged','shotgun');g.closeArmory();g.player.x=3;g.player.face=1;
  const a=enemy(g,4,'thief'),b=enemy(g,4.7,'thief');g.rangedAttack();assert.equal(g.projectiles.length,5);g.projectileStep(.025);
  flight(g);assert.equal(a.hp,0);assert.equal(b.hp,0);assert.equal(g.scrap,200-14+6);
  assert.equal(events.filter(e=>e.type==='scrap_gain').length,2);assert.equal(events.filter(e=>e.type==='projectile_spawn')[0].pellets,5);
 });
 
 test('shotgun has useful near burst, weaker distant burst and finite range',()=>{
- function damage(distance){const {g}=run();arm(g);g.buyWeapon('ranged','shotgun');g.player.x=2;const m=g.muzzle(),e=enemy(g,m.x+distance);g.rangedAttack();flight(g);return 140-e.hp;}
+ function damage(distance){const {g}=run();arm(g);g.buyWeapon('ranged','shotgun');g.closeArmory();g.player.x=2;const m=g.muzzle(),e=enemy(g,m.x+distance);g.rangedAttack();flight(g);return 140-e.hp;}
  const close=damage(2),far=damage(7);assert(close>=64);assert(far>0&&far<close*.65,`${close} / ${far}`);assert.equal(damage(8.5),0);
 });
 
