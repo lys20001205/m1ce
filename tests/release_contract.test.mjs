@@ -2,6 +2,39 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {Game} from '../src/sim.js';
 import {V11_FINAL_SNAPSHOT_FIELDS,V11_TELEMETRY_EVENTS} from '../src/telemetry.js';
+import fs from 'node:fs';
+import {BUILD} from '../src/balance.js';
+import {assetURL} from '../src/cache_identity.js';
+
+test('built game graph has one versioned URL per module, with no stale unversioned alias',()=>{
+  const seen=new Map();
+  for(const file of fs.readdirSync('dist/src').filter(f=>f.endsWith('.js'))){
+    const source=fs.readFileSync('dist/src/'+file,'utf8');
+    for(const m of source.matchAll(/(['"])(\.[^'"]*\.js(?:\?[^'"]*)?)\1/g)){
+      const url=new URL(m[2],'https://example.test/m1ce/src/'+file);
+      if(!url.pathname.startsWith('/m1ce/src/'))continue;
+      assert.equal(url.searchParams.get('build'),BUILD,url.href);
+      if(seen.has(url.pathname))assert.equal(url.href,seen.get(url.pathname),'duplicate module identity');
+      seen.set(url.pathname,url.href);
+    }
+  }
+  assert(seen.size>=20,'actual compiled graph must be inspected');
+});
+test('compiled HTML entry, styles and manifest use the authored revision cache key',()=>{
+  const html=fs.readFileSync('dist/index.html','utf8');let count=0;
+  for(const m of html.matchAll(/(?:src|href)=['"](\.\/(?:src\/[^'"]+|style\.css[^'"]*|manifest\.webmanifest[^'"]*))['"]/g)){
+    assert.equal(new URL(m[1],'https://example.test/m1ce/').searchParams.get('build'),BUILD);count++;
+  }
+  assert(count>=6,'entry and all stylesheet/manifest links must be checked');
+});
+test('asset versioning preserves independent palettes and embedded resources',()=>{
+  const base='https://example.test/m1ce/src/view.js?build=legacy';
+  const train=new URL(assetURL('../assets/kenney/train/Textures/colormap.png',base));
+  const factory=new URL(assetURL('../assets/kenney/factory/Textures/colormap.png',base));
+  assert.notEqual(train.pathname,factory.pathname);assert.equal(train.searchParams.get('build'),BUILD);
+  const object=new URL(assetURL('../assets/crew-robot.json?v=11',base));assert.equal(object.search,'?build='+BUILD);
+  for(const uri of ['data:image/png;base64,aA==','blob:https://example.test/123'])assert.equal(assetURL(uri,base),uri);
+});
 
 const stepFor=(g,seconds,input={})=>{for(let t=0;t<seconds-1e-8;t+=.025)g.step(Math.min(.025,seconds-t),input);};
 
