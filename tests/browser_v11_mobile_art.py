@@ -56,7 +56,7 @@ async def run(p,name):
             await page.keyboard.up('KeyD')
         check('move_response',after['x']>before['x']+.4)
         await page.evaluate(RESET)
-        await page.wait_for_function('document.getElementById("ranged").disabled&&document.getElementById("ranged").dataset.caption==="军械台 12 Scrap 起"')
+        await page.wait_for_function('document.getElementById("ranged").disabled&&document.getElementById("ranged").dataset.caption==="军械台 12 Scrap →"')
         check('locked_ranged_explained',True)
         for w,h in SIZES:
             await page.set_viewport_size({'width':w,'height':h});await stable_viewport(page,w,h)

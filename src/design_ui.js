@@ -157,7 +157,7 @@ export class DesignUI {
       for(const d of g.depots){const n=this.doc.createElement('span');n.className='depotMarker';n.style.left=(d.marker*100)+'%';n.textContent='◆';n.title=`Depot ${Math.round(d.marker*100)}%`;root.append(n);}
     }
     this.text('speedHelp',`FAST 剩余约 ${(g.batteryCharge/V11.fastDrain).toFixed(1)} 秒 · STOP 增援持续；重新加速需在 Engine`);
-    this.text('armoryHelp','按玩法选择武器；已购免费切换 · 商店不暂停。');
+    this.text('armoryHelp','按玩法选择武器；已购免费切换 · 比较期间时间暂停，关闭后继续。枪械打空自动装填，可移动或近战。');
     this.text('kitStatus',g.runRepairKit?'维修包已携带 · 成功重启自动使用':'');
     this.node('kitStatus').hidden=!g.runRepairKit;
     const safe=g.status==='running'&&g.alive&&!g.rescue&&g.engineState!=='critical'&&!g.hazardInfo()&&!g.director.fault;

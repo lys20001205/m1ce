@@ -1,11 +1,12 @@
 import * as T from '../vendor/three.module.min.js';
 import {GLTFLoader} from '../vendor/loaders/GLTFLoader.js';
+import {cutForeground,catwalkBaseY} from './train_cutaway.js';
 import {prepareTrainWheels} from './train_wheels.js';
 import {assetURL} from './cache_identity.js';
 // Selected CC0 models and palettes are vendored locally. Gameplay retains its validated
 // floor, roof and combat sockets; meshes never become collision or reward authority.
 export class AssetLibrary{
- constructor(view){this.view=view;this.models=new Map();this.failures=[];this.replacements=0;}
+ constructor(view){this.view=view;this.models=new Map();this.failures=[];this.replacements=0;this.cutawayTriangles=0;}
  async load(){const manifest=await fetch(assetURL('../assets/kenney/manifest.json',import.meta.url)).then(r=>{if(!r.ok)throw Error('Asset manifest unavailable');return r.json();}),manager=new T.LoadingManager();manager.setURLModifier(uri=>assetURL(uri,import.meta.url));const loader=new GLTFLoader(manager);
   await Promise.all(Object.entries(manifest.packs).flatMap(([pack,p])=>p.models.map(async ({file})=>{const key=pack+'/'+file.replace('.glb','');try{const gltf=await loader.loadAsync(new URL('../assets/kenney/'+pack+'/'+file,import.meta.url).href);if(pack==="train")prepareTrainWheels(gltf.scene);gltf.scene.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true;}});this.models.set(key,gltf);}catch(e){this.failures.push(key);this.view.log('asset_load_failed',{asset:key,message:String(e)});}})));
   if(this.failures.length){const n=document.createElement('div');n.id='assetWarning';n.textContent='V12 素材加载失败：'+this.failures.join(', ')+' · 此处使用简化备份，请重新加载';document.getElementById('viewport').append(n);}
@@ -16,7 +17,7 @@ export class AssetLibrary{
  add(parent,key,size,pos=[0,0,0],rotation=0){const m=this.fit(key,size,rotation);if(m){m.position.set(...pos);parent.add(m);}return m;}
  car(m,type){if(!this.models.has('train/train-carriage-flatbed'))return false;
   m.getObjectByName('Hull').visible=false;for(const o of m.children)if(o.name==='Wheel')o.visible=false;m.getObjectByName('RoofCutaway').visible=false;
-  this.add(m,'train/train-carriage-flatbed',[7.9,2.78,3.0],[0,0,0],-Math.PI/2);
+  const flatbed=this.add(m,'train/train-carriage-flatbed',[7.9,2.78,3.0],[0,0,0],-Math.PI/2);if(flatbed)this.cutawayTriangles+=cutForeground(flatbed,m,{floor:1.12}).removedTriangles;
   if(type==='engine')this.add(m,'train/train-diesel-a',[7.4,2.65,1.65],[0,.14,-.72],-Math.PI/2);
   else if(type==='cargo')this.add(m,'train/train-carriage-container-red',[7.5,3.35,1.15],[0,0,-1.05],-Math.PI/2);
   else this.add(m,'industrial/shipping-container-a',[5.8,type==='battery'?2.2:1.4,1.05],[0,1.1,-.94],Math.PI/2);
@@ -47,7 +48,7 @@ export class AssetLibrary{
  depot(group){if(!this.models.has('factory/catwalk-straight'))return;
   // Keep bridge identity/visibility authoritative; replace the station floor and rails.
   for(const child of [...group.children])if(child.isMesh&&child.name!=='Roof-Depot-Bridge')child.visible=false;
-  for(let k=0;k<12;k++)this.add(group,'factory/catwalk-straight',[2,1.2,4],[k*2-11,3.97,0]);
+  for(let k=0;k<12;k++){const platform=this.add(group,'factory/catwalk-straight',[2,1.2,4],[k*2-11,catwalkBaseY(4.12,1.2),0]);if(platform)this.cutawayTriangles+=cutForeground(platform,group,{floor:4.12}).removedTriangles;}
   for(const x of [-10,-5,0,5,10])this.add(group,'factory/structure-tall',[.7,4,2.9],[x,0,0]);
   this.add(group,'factory/structure-doorway-wide',[5,3.2,.8],[0,4.12,-1.8]);this.add(group,'factory/door-wide-open',[3,2.5,.5],[0,4.12,-1.65]);
   this.add(group,'factory/catwalk-stairs',[4,4,2],[-10,0,-3.4]);this.add(group,'factory/catwalk-corner',[2,1.2,2],[11,3.97,-1]);
@@ -56,5 +57,5 @@ export class AssetLibrary{
   for(let i=0;i<14;i++){const m=this.fit('train/railroad-straight',[8,.22,2.8],-Math.PI/2);world.rails.add(m);world.assetTracks.push(m);}
  }
  trackStep(world,focus,travel){for(let i=0;i<(world.assetTracks?.length||0);i++)world.assetTracks[i].position.set(Math.floor(focus/16)*16-48+i*8+travel%8,.02,0);}
- snapshot(){return {assetModelsLoaded:this.models.size,assetFailures:[...this.failures],assetReplacements:this.replacements,assetStyle:'Kenney CC0 / industrial railway',modelOrigin:'Kenney GLB'};}
+ snapshot(){return {assetModelsLoaded:this.models.size,foregroundCutawayTriangles:this.cutawayTriangles,assetFailures:[...this.failures],assetReplacements:this.replacements,assetStyle:'Kenney CC0 / industrial railway',modelOrigin:'Kenney GLB'};}
 }

@@ -14,9 +14,9 @@ export function depotActionLabel(g){
   const nearby=g.cargoCrates.some(c=>c.location==='depot'&&c.depotId===p.depotId&&Math.abs(c.x-p.depotX)<=V11.depot.crateRadius);
   return nearby?'PICKUP':'RETURN';
 }
-export function rangedCaption(g){return g.ranged?'远程 · 按住':'军械台 12 Scrap 起';}
+export function rangedCaption(g){if(!g.ranged)return '军械台 12 Scrap →';const m=g.rangedMagazine;return m?.reloadRemaining>0?'装填 '+m.reloadRemaining.toFixed(1)+'s · 可移动':m?m.rounds+'/'+m.max+' · 自动装填':'远程 · 按住';}
 export function controlStatus(g){
-  const live=g.status==='running'&&!g.paused&&g.alive;
+  const live=g.status==='running'&&!g.paused&&!g.armoryOpen&&g.alive;
   const free=live&&!g.player.carry&&g.player.stun<=0;
   return {live,attack:free,ranged:free&&!!g.ranged,fix:free&&g.playerLayer==='INTERIOR',
     layer:live&&g.player.stun<=0&&(g.playerLayer==='DEPOT'||(!g.player.carry&&g.phase!=='tunnel')),
@@ -40,6 +40,6 @@ export class ControlUI{
     }
     const ranged=d.getElementById('ranged');if(ranged)attr(ranged,'data-caption',rangedCaption(g));
     const tag=d.getElementById('playerTag');if(tag)tag.dataset.layer=g.playerLayer;
-    const app=d.getElementById('app');if(app){app.dataset.worldRoute=g.route||'hub';app.dataset.play=live.live?'active':g.paused?'paused':'idle';}
+    const app=d.getElementById('app');if(app){app.dataset.worldRoute=g.route||'hub';app.dataset.play=live.live?'active':g.paused||g.armoryOpen?'paused':'idle';}
   }
 }
