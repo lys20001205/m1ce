@@ -3,9 +3,12 @@ import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import fs from 'node:fs';
 import {execFileSync} from 'node:child_process';
 import {BUILD} from '../src/balance.js';
+import {releaseModule,releaseHTML} from './release_cache.mjs';
 const out=process.argv[2]||'dist';if(!/^dist(?:-[a-z0-9]+)*$/.test(out))throw Error('Build output must be a local dist directory');fs.rmSync(out,{recursive:true,force:true});fs.mkdirSync(`${out}/assets`,{recursive:true});fs.mkdirSync(`${out}/vendor`,{recursive:true});
 for(const file of ['index.html','style.css','manifest.webmanifest'])fs.copyFileSync(file,`${out}/${file}`);
 fs.cpSync('src',`${out}/src`,{recursive:true});
+fs.writeFileSync(`${out}/index.html`,releaseHTML(fs.readFileSync('index.html','utf8'),BUILD));
+for(const file of fs.readdirSync('src').filter(f=>f.endsWith('.js')))fs.writeFileSync(`${out}/src/${file}`,releaseModule(fs.readFileSync(`src/${file}`,'utf8'),file,BUILD));
 for(const f of ['three.module.min.js','three.core.min.js'])fs.copyFileSync(`node_modules/three/build/${f}`,`${out}/vendor/${f}`);
 fs.cpSync('assets/kenney',`${out}/assets/kenney`,{recursive:true});
 for(const [folder,file]of [['loaders','GLTFLoader.js'],['utils','BufferGeometryUtils.js']]){fs.mkdirSync(`${out}/vendor/${folder}`,{recursive:true});const code=fs.readFileSync(`node_modules/three/examples/jsm/${folder}/${file}`,'utf8').replaceAll("from 'three'","from '../three.module.min.js'");fs.writeFileSync(`${out}/vendor/${folder}/${file}`,code);}

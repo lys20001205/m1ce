@@ -4,7 +4,7 @@ from pathlib import Path
 from build_identity import expected_build
 
 ROOT=Path('.');ART=ROOT/'artifacts'
-SUITES={'':53,'v11':41,'audio':12,'combat':17,'depot':11,'dev':19,'enemies':11,'life':11,'prep':12,'release':21,'train':10,'ship':11,'qa':42,'muzzle':39,'lifecycle':44,'design':67,'mobile-art':58}
+SUITES={'':53,'v11':41,'audio':12,'combat':17,'depot':11,'dev':19,'enemies':11,'life':11,'prep':12,'release':21,'train':10,'ship':11,'qa':42,'muzzle':39,'lifecycle':44,'design':67,'mobile-art':58,'release-cache':11}
 
 def inspect(art=ART):
     failures=[];totals={};reports={}

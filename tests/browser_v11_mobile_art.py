@@ -16,6 +16,16 @@ CASE_KEYS=['normal_entry','locked_ranged_explained','move_response','hold_slide_
  'dead_marker_hidden','art_backdrop','train_shadow','player_visual_kit','enemy_role_kits','windup_telegraph','melee_arc','muzzle_flash','route_mood_changes','no_errors','completed']
 RESET="""()=>{const a=__RH_TEST;a.reset();const g=a.game();g.director.rest=9999;g.enemies=[];
  g.elapsed=5;g.t=.1;g.phase='yard';g.speedMode='STOP';a.forcePlayer(5.8);a.step(0);}"""
+async def stable_viewport(page,w,h):
+    # CDP viewport, visualViewport/CSS layout and the WebGL resize callback can
+    # settle on different frames. Verify agreement twice before reading targets;
+    # actual 44px targets, bounds and 160px canvas assertions remain below.
+    await page.wait_for_function('''({w,h})=>{
+      const r=document.getElementById('game').getBoundingClientRect(),a=document.getElementById('app').getBoundingClientRect(),c=document.getElementById('controls').getBoundingClientRect(),s=__RH_DEBUG.snapshot().canvasCss;
+      if(innerWidth!==w||innerHeight!==h||a.bottom>h+1||!s||Math.abs(s[0]-r.width)>1||Math.abs(s[1]-r.height)>1){window.__layoutSample=null;return false;}
+      const signature=JSON.stringify([w,h,r.width,r.height,a.bottom,c.top,c.bottom]);
+      const ready=window.__layoutSample===signature;window.__layoutSample=signature;return ready;
+    }''',arg={'w':w,'h':h})
 async def run(p,name):
     report={'browser':name,'checks':{},'samples':[],'scope':'Rendered fixtures and native input; no human or physical-device claim'}
     errors=[];browser=page=context=None
@@ -49,7 +59,7 @@ async def run(p,name):
         await page.wait_for_function('document.getElementById("ranged").disabled&&document.getElementById("ranged").dataset.caption==="军械台 12 Scrap 起"')
         check('locked_ranged_explained',True)
         for w,h in SIZES:
-            await page.set_viewport_size({'width':w,'height':h});await page.wait_for_timeout(400)
+            await page.set_viewport_size({'width':w,'height':h});await stable_viewport(page,w,h)
             rect=await page.evaluate("""()=>{const r=id=>{const b=document.getElementById(id).getBoundingClientRect();return {x:b.x,y:b.y,w:b.width,h:b.height,bottom:b.bottom,right:b.right}};
                 return {size:[innerWidth,innerHeight],buttons:['L','R','layer','interact','brake','fix','attack','ranged'].map(r),canvas:r('game'),controls:r('controls'),vitals:r('vitals')};}""")
             key=f'{w}x{h}_';report['samples'].append(rect)
@@ -60,7 +70,7 @@ async def run(p,name):
             check(key+'canvas_area',rect['canvas']['h']>=160 and rect['canvas']['w']>=w-40)
             check(key+'distinct_vitals',await page.locator('#engineVital').is_visible() and await page.locator('#playerVital').is_visible())
             await page.screenshot(path=str(ART/f'{name}-mobile-art-{w}x{h}.png'))
-        await page.set_viewport_size({'width':844,'height':390});await page.wait_for_timeout(400);await page.evaluate(RESET)
+        await page.set_viewport_size({'width':844,'height':390});await stable_viewport(page,844,390);await page.evaluate(RESET)
         left=await page.locator('#L').bounding_box();right=await page.locator('#R').bounding_box();pad=await page.locator('#movementPad').bounding_box()
         await page.mouse.move(left['x']+left['width']/2,left['y']+left['height']/2);await page.mouse.down()
         await page.wait_for_function('__RH_TEST.input().move===-1')
