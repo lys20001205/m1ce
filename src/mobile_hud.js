@@ -48,7 +48,7 @@ export class MobileHUD {
   else if(g.consoleOpen)cue='选择速度 · 倒车需先刹停';
   else if(g.player.roof&&['approach','crane','tunnel'].includes(g.phase))cue='低净空 · 下车内躲避';
   else if(g.cars[0].hp<g.cars[0].max*.3)cue='动力危急 · 返回机车维修';
-  if(nav?.goal){const distance=nav.text.match(/([0-9]+(?:\.[0-9]+)?)m/);if(distance)cue+=' · '+distance[1]+'m';}
+  if(nav?.goal&&!nav.cue){const distance=nav.text.match(/([0-9]+(?:\.[0-9]+)?)m/);if(distance)cue+=' · '+distance[1]+'m';}
   if(g.rescue)cue=g.alive?(g.playerLayer==='DEPOT'?'动力停机 · 回中央桥后 RETURN':g.player.carry?(g.player.roof?'动力停机 · 到货车 LOAD 放货':'动力停机 · 先放货再维修'):g.player.roof?'动力停机 · 下车内维修':'动力停机 · 返回机车按住维修'):'';
   if(g.repairJob)cue=d.getElementById('repairText').textContent;
   if(!g.rescue&&!g.repairJob&&g.notices.at(-1))cue=g.notices.at(-1).title;
