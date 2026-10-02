@@ -45,14 +45,17 @@ export class MobileHUD {
   else if(g.consoleOpen)cue='选择速度 · 倒车需先刹停';
   else if(g.player.roof&&['approach','crane','tunnel'].includes(g.phase))cue='低净空 · 下车内躲避';
   else if(g.cars[0].hp<g.cars[0].max*.3)cue='动力危急 · 返回机车维修';
-  if(g.repairJob)cue=d.getElementById('repairText').textContent;
   if(nav?.goal){const distance=nav.text.match(/([0-9]+(?:\.[0-9]+)?)m/);if(distance)cue+=' · '+distance[1]+'m';}
   if(g.rescue)cue=g.alive?(g.playerLayer==='DEPOT'?'动力停机 · 回中央桥后 RETURN':g.player.carry?(g.player.roof?'动力停机 · 到货车 LOAD 放货':'动力停机 · 先放货再维修'):g.player.roof?'动力停机 · 下车内维修':'动力停机 · 返回机车按住维修'):'';
+  if(g.repairJob)cue=d.getElementById('repairText').textContent;
+  if(!g.rescue&&!g.repairJob&&g.notices.at(-1))cue=g.notices.at(-1).title;
+  if(!cue&&g.elapsed<6)cue='左下移动 · 右下按住攻击 · ↗ 交互';
   if(!g.alive)cue='';
   const full=d.getElementById('centerHint').textContent;
   if(!cue&&full!==this.lastHint){this.hintUntil=g.elapsed+4;this.lastHint=full;}
   if(!cue&&g.elapsed<this.hintUntil&&/不可|无法|停机|离开|护盾结束/.test(full))cue=full.split(' · ')[0].slice(0,24);
   this.cue.textContent=cue;this.cue.hidden=!cue||!live||g.armoryOpen;
+  this.cue.dataset.repair=String(!!g.repairJob);this.cue.style.setProperty('--repair-progress',g.repairJob?Math.min(100,100*g.repairJob.progress/g.repairJob.duration)+'%':'0%');
   const event=d.getElementById('event');if(event.textContent!==this.lastEvent){this.lastEvent=event.textContent;this.eventUntil=g.elapsed+4;}
   event.dataset.quiet=String(!active||!!cue||g.alive&&!g.rescue&&g.elapsed>this.eventUntil);event.title=event.textContent;
   d.getElementById('scrapHud').textContent=amount(g.scrap);

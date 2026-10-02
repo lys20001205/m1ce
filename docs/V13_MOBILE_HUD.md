@@ -9,3 +9,5 @@ The detached Factory catwalk sections above each Kenney chassis have been remove
 Version metadata, start URL and authored build identity are V13. Former footer-position assertions now require a world-first canvas and center-point hit testing for real edge controls;44px targets, non-overlap,160px canvas minimum and all gameplay/accounting assertions remain. Tests read detailed text as disclosure content and separately verify rendered compact state-sensitive danger instructions. The release guard compares build version against the exact package version; identity parsing still rejects missing, ambiguous or malformed BUILD.
 
 Local evidence is retained under artifacts/ui-v13-before, ui-v13-after, normal-v13 and v13-gates. These are local diagnostics, not claims of human blind play. Independent QA and exact-commit CI must finish before publication.
+
+R2 adds rendered repair progress and a brief success confirmation outside the detailed disclosure, plus a short first-run control cue and safe-area-aware spacing. R1 snapshots are retained. Smoke/release tests now test actual hit targets and actor clearance, not removed footer rows.

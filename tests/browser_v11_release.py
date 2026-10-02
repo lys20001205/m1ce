@@ -31,7 +31,7 @@ async def run(p,name):
             await page.set_viewport_size({'width':width,'height':height});await page.wait_for_timeout(220)
             s=await page.evaluate('__RH_DEBUG.snapshot()')
             rects=await page.evaluate("""()=>{const r=id=>{const b=document.getElementById(id).getBoundingClientRect();return{top:b.top,bottom:b.bottom,left:b.left,right:b.right}};return{scene:r('viewport'),hud:r('hud'),controls:r('controls')}}""")
-            report['checks'][f'{width}x{height}_landscape_safe']=abs(s['canvasBacking'][0]/s['canvasBacking'][1]-s['canvasCss'][0]/s['canvasCss'][1])<.02 and 5<s['playerScreenY']<s['canvasCss'][1]-5 and rects['scene']['top']>=rects['hud']['bottom'] and rects['controls']['top']>=rects['scene']['bottom']
+            report['checks'][f'{width}x{height}_landscape_safe']=abs(s['canvasBacking'][0]/s['canvasBacking'][1]-s['canvasCss'][0]/s['canvasCss'][1])<.02 and 5<s['playerScreenY']<s['canvasCss'][1]-5 and rects['scene']['bottom']-rects['scene']['top']>=height*.95 and await page.evaluate('''()=>{const s=__RH_DEBUG.snapshot();return ['L','R','layer','reverse','brake','interact','fix','attack','ranged'].every(id=>{const r=document.getElementById(id).getBoundingClientRect();return r.width>=44&&r.height>=44&&r.x>=0&&r.right<=innerWidth&&r.y>=0&&r.bottom<=innerHeight&&!(s.playerScreenX>=r.x&&s.playerScreenX<=r.right&&s.playerScreenY>=r.y&&s.playerScreenY<=r.bottom);});}''')
             await page.screenshot(path=str(ART/f'{name}-release-{width}x{height}.png'))
 
         await page.set_viewport_size({'width':390,'height':844});await page.wait_for_timeout(220)

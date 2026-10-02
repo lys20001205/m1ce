@@ -26,7 +26,7 @@ async def run_browser(p,name):
         await page.goto(BASE,wait_until='networkidle')
         await page.wait_for_function('window.__RH_DEBUG?.snapshot().modelsLoaded === 3',timeout=30000)
         s=await page.evaluate('window.__RH_DEBUG.snapshot()');result['boot']=s
-        checks['build_is_v12']=s['build'].startswith('V12-')
+        checks['build_is_current']=s['build']==json.loads(Path('dist/build.json').read_text())['build'] and s['build'].startswith('V13-')
         checks['slow_model_loading_no_errors']=not errors
         checks['actual_webgl2']=s['renderer']=='WebGL2'
         checks['external_model_files_loaded']=s['modelsLoaded']==3
@@ -89,13 +89,15 @@ async def run_browser(p,name):
         await page.evaluate('window.__RH_TEST.step(1,window.__RH_TEST.input());window.__RH_TEST.game().pause(true)')
         partial=await page.evaluate('window.__RH_DEBUG.snapshot()')
         checks['repair_progress_no_early_heal']=partial['engineHp']==0 and partial['repair'] is not None and partial['repair']['progress']>0
-        checks['repair_bar_visible']=await page.locator('#repairPanel').is_visible()
+        await page.wait_for_function('document.getElementById("contextCue").dataset.repair==="true"')
+        checks['repair_bar_visible']=await page.locator('#contextCue').is_visible() and await page.locator('#contextCue').evaluate('(e)=>parseFloat(e.style.getPropertyValue("--repair-progress"))>0')
         await page.screenshot(path=str(ART/f'{name}-repair-progress.png'))
         await page.evaluate('const a=window.__RH_TEST,g=a.game(),remaining=g.repairJob.duration-g.repairJob.progress;g.pause(false);a.step(remaining+.05,a.input());g.pause(true)');await page.mouse.up()
         rescued=await page.evaluate('window.__RH_DEBUG.snapshot()');result['rescued']=rescued
         checks['repair_restarts_engine']=rescued['engineHp']>0 and rescued['rescue'] is None and rescued['stats']['clutchSaves']==1
         checks['rescue_has_recovery_window']=rescued['threat']['rest']>7
-        checks['success_confirmation_visible']=await page.locator('#success').is_visible()
+        await page.wait_for_function('document.getElementById("contextCue").textContent===document.getElementById("successTitle").textContent')
+        checks['success_confirmation_visible']=await page.locator('#contextCue').is_visible() and bool(await page.locator('#contextCue').inner_text())
         checks['rescue_does_not_mint_money']=rescued['money']==1000
         await page.screenshot(path=str(ART/f'{name}-engine-restarted.png'))
         # All channel/deadline timers freeze when paused.
@@ -124,7 +126,7 @@ async def run_browser(p,name):
             checks[f'{width}_canvas_not_squashed']=abs(s['canvasBacking'][0]/s['canvasBacking'][1]-s['canvasCss'][0]/s['canvasCss'][1])<.02
             checks[f'{width}_player_inside_scene']=5<s['playerScreenY']<s['canvasCss'][1]-5
             rects=await page.evaluate("""() => {const r=id=>{const b=document.getElementById(id).getBoundingClientRect();return {top:b.top,bottom:b.bottom,left:b.left,right:b.right}};return {scene:r('viewport'),hud:r('hud'),controls:r('controls'),repair:r('repairPanel')};}""")
-            checks[f'{width}_ui_does_not_cover_scene']=rects['scene']['top']>=rects['hud']['bottom'] and rects['controls']['top']>=rects['scene']['bottom']
+            checks[f'{width}_ui_does_not_cover_scene']=rects['scene']['bottom']-rects['scene']['top']>=height*.95 and await page.evaluate('''()=>{const s=__RH_DEBUG.snapshot();return ['L','R','layer','reverse','brake','interact','fix','attack','ranged'].every(id=>{const n=document.getElementById(id),r=n.getBoundingClientRect();return n.contains(document.elementFromPoint(r.x+r.width/2,r.y+r.height/2))&&!(s.playerScreenX>=r.x&&s.playerScreenX<=r.right&&s.playerScreenY>=r.y&&s.playerScreenY<=r.bottom);});}''')
             await page.screenshot(path=str(ART/f'{name}-{width}x{height}.png'))
         await page.set_viewport_size({'width':390,'height':844})
         try:await page.wait_for_function('window.__RH_TEST.game().paused && !document.getElementById("portrait").hidden',timeout=2500);checks['portrait_pauses_game']=True

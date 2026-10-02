@@ -9,7 +9,7 @@ export class AssetLibrary{
  constructor(view){this.view=view;this.models=new Map();this.failures=[];this.replacements=0;this.cutawayTriangles=0;}
  async load(){const manifest=await fetch(assetURL('../assets/kenney/manifest.json',import.meta.url)).then(r=>{if(!r.ok)throw Error('Asset manifest unavailable');return r.json();}),manager=new T.LoadingManager();manager.setURLModifier(uri=>assetURL(uri,import.meta.url));const loader=new GLTFLoader(manager);
   await Promise.all(Object.entries(manifest.packs).flatMap(([pack,p])=>p.models.map(async ({file})=>{const key=pack+'/'+file.replace('.glb','');try{const gltf=await loader.loadAsync(new URL('../assets/kenney/'+pack+'/'+file,import.meta.url).href);if(pack==="train")prepareTrainWheels(gltf.scene);gltf.scene.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true;}});this.models.set(key,gltf);}catch(e){this.failures.push(key);this.view.log('asset_load_failed',{asset:key,message:String(e)});}})));
-  if(this.failures.length){const n=document.createElement('div');n.id='assetWarning';n.textContent='V12 素材加载失败：'+this.failures.join(', ')+' · 此处使用简化备份，请重新加载';document.getElementById('viewport').append(n);}
+  if(this.failures.length){const n=document.createElement('div');n.id='assetWarning';n.textContent='V13 素材加载失败：'+this.failures.join(', ')+' · 此处使用简化备份，请重新加载';document.getElementById('viewport').append(n);}
  }
  clone(key){const data=this.models.get(key);if(!data)return null;const group=new T.Group();group.name='Kenney-'+key;const model=data.scene.clone(true);group.add(model);group.userData.model=model;group.userData.clips=data.animations;this.replacements++;return group;}
  // Size in game metres, pivot at bottom centre. Transform the model, preserving nodes.
