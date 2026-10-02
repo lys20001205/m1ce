@@ -38,9 +38,13 @@ async def run(p,name):
             report['checks'][f'{width}x{height}_landscape_safe']=abs(s['canvasBacking'][0]/s['canvasBacking'][1]-s['canvasCss'][0]/s['canvasCss'][1])<.02 and 5<s['playerScreenY']<s['canvasCss'][1]-5 and rects['scene']['bottom']-rects['scene']['top']>=height*.95 and await page.evaluate('''()=>{const s=__RH_DEBUG.snapshot();return ['L','R','layer','reverse','brake','interact','fix','attack','ranged'].every(id=>{const r=document.getElementById(id).getBoundingClientRect();return r.width>=44&&r.height>=44&&r.x>=0&&r.right<=innerWidth&&r.y>=0&&r.bottom<=innerHeight&&!(s.playerScreenX>=r.x&&s.playerScreenX<=r.right&&s.playerScreenY>=r.y&&s.playerScreenY<=r.bottom);});}''')
             await page.screenshot(path=str(ART/f'{name}-release-{width}x{height}.png'))
 
-        await page.set_viewport_size({'width':390,'height':844});await page.wait_for_timeout(220)
+        # Observe the real resize handler instead of racing it with a fixed sleep.
+        # Keep the smoke gate's 2500ms rotation deadline and explicit-pause assertions.
+        await page.set_viewport_size({'width':390,'height':844})
+        await page.wait_for_function('innerHeight>innerWidth&&!document.getElementById("portrait").hidden',polling=50,timeout=2500)
         report['checks']['orientation_portrait_pauses']=await page.evaluate('__RH_TEST.game().paused') and await page.locator('#portrait').is_visible()
-        await page.set_viewport_size({'width':844,'height':390});await page.wait_for_timeout(220)
+        await page.set_viewport_size({'width':844,'height':390})
+        await page.wait_for_function('innerWidth>innerHeight&&document.getElementById("portrait").hidden',polling=50,timeout=2500)
         report['checks']['orientation_return_requires_resume']=await page.evaluate('__RH_TEST.game().paused') and not await page.locator('#portrait').is_visible()
         await tap(page,'#pause','!__RH_TEST.game().paused')
 
