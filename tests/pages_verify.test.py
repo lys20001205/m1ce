@@ -10,6 +10,12 @@ class PagesTests(unittest.TestCase):
     def test_stale_or_corrupt_site_fails(self):
         self.data['index.html']=b'stale v10';
         with self.assertRaises(ValueError):pages.verify(self.base,self.gate,self.fetch)
+    def test_additional_release_files_are_also_verified(self):
+        name='src/mobile_hud.css';self.data[name]=b'approved mobile HUD'
+        self.gate['distSHA256'][name]=hashlib.sha256(self.data[name]).hexdigest()
+        self.assertIn(name,pages.verify(self.base,self.gate,self.fetch)['verifiedSHA256'])
+        self.data[name]=b'stale mobile HUD'
+        with self.assertRaises(ValueError):pages.verify(self.base,self.gate,self.fetch)
     def test_new_presentation_files_are_mandatory_and_verified(self):
         for name in ['src/design_ui.js','src/design.css','src/control_ui.js','src/mobile_art.css','src/polish3d.js','src/view.js','src/actors3d.js','src/feedback3d.js','src/routeworld.js']:
             self.assertIn(name,pages.FILES)

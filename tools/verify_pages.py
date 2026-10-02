@@ -10,7 +10,8 @@ def verify(base,gate,fetch):
     if base.rstrip('/')!='https://lys20001205.github.io/m1ce':raise ValueError('unexpected Pages origin')
     if gate.get('passed') is not True:raise ValueError('no successful release gate')
     hashes={};build=None
-    for name in FILES:
+    if not set(FILES).issubset(gate['distSHA256']):raise ValueError('release gate lacks mandatory public files')
+    for name in sorted(gate['distSHA256']):
         data=fetch(base.rstrip('/')+'/'+name+'?verify='+gate['commit'])
         digest=hashlib.sha256(data).hexdigest()
         if digest!=gate['distSHA256'][name]:raise ValueError('public artifact mismatch: '+name)
