@@ -11,3 +11,5 @@ Version metadata, start URL and authored build identity are V13. Former footer-p
 Local evidence is retained under artifacts/ui-v13-before, ui-v13-after, normal-v13 and v13-gates. These are local diagnostics, not claims of human blind play. Independent QA and exact-commit CI must finish before publication.
 
 R2 adds rendered repair progress and a brief success confirmation outside the detailed disclosure, plus a short first-run control cue and safe-area-aware spacing. R1 snapshots are retained. Smoke/release tests now test actual hit targets and actor clearance, not removed footer rows.
+
+R3 gives secondary disclosures, practice, career/prep purchases and log actions a44px minimum. Kill details are reachable through the status disclosure; the compact Scrap number is separate. Combat regression uses native disclosure taps while preserving its fixture pause, and still asserts exact Scrap rewards and visual pops. Net unobstructed area measurements are separate from full canvas size; translucent targets are conservatively counted as fully covered.

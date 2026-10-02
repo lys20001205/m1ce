@@ -10,6 +10,7 @@ export class MobileHUD {
   const panel=node('section','statusBody',this.drawer);
   node('h2','statusTitle',panel,'行车状态');
   node('p','statusExplainer',panel,'货物未兑现前仍有风险；回库结算后才计入 Bank。');
+  this.combat=node('p','combatSummary',panel);
   panel.append(doc.getElementById('cargoLedger'));
   node('h3','controlTitle',panel,'操作');panel.append(doc.getElementById('centerStack'));panel.append(doc.getElementById('keyboardLegend'));
   node('p','touchHelp',panel,'左下按住移动，可滑向另一方向；右下按住近战或射击。⇅ 上下车层，↗ 交互，⚒ 按住维修。错过货站可先刹停，再点倒车；换速需返回机车 SPEED。');
@@ -33,6 +34,7 @@ export class MobileHUD {
    const n=d.getElementById(id);n.textContent=amount(value);n.hidden=id==='cargoRisk'||id==='cargoLoss'?value===0:false;n.setAttribute('aria-label',n.title+' '+amount(value));
   }
   this.bank.textContent='BANK '+amount(l.bank);
+  this.combat.textContent='击杀 '+g.totalKills+' · Scrap '+amount(g.scrap);
   const remaining=g.dockingPlayerRemaining;this.guard.hidden=remaining<=0;this.guard.textContent='◈ '+Math.ceil(remaining)+'s';this.guard.title='一次性靠站护盾；结束后旧敌恢复攻击';
   const names={layer:g.playerLayer==='DEPOT'?'回车':g.player.roof?'下车内':'上车顶',reverse:g.lastDirection==='REVERSE'?'前进':'倒车',brake:'刹停',interact:'交互',fix:'维修',attack:g.melee.name||g.melee.id,ranged:g.ranged?(g.rangedMagazine?.reloadRemaining>0?'装填':g.rangedMagazine?.rounds+'/'+g.rangedMagazine?.max):'未解锁'};
   const nav=cargoNavigation(g);if(nav?.action)names.interact=nav.action.replace(/F\s*[·/]?\s*/,'').slice(0,8);else names.interact=d.getElementById('interact').textContent.slice(0,8);

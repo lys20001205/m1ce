@@ -1,5 +1,5 @@
 // Prototype tuning, not measured completion-rate claims. One source for all gameplay numbers.
-export const BUILD = 'V13-MOBILE-HUD-TRAIN-R2-20261002';
+export const BUILD = 'V13-MOBILE-HUD-TRAIN-R3-20261002';
 export const B = Object.freeze({
   walk: 5.1, roofSpeed: 1.25, carrySpeed: 2.8,
   repairTime: 1.8, repairHP: 28, repairRadius: 1.9, repairCooldown: .3,

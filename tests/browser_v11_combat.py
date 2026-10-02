@@ -23,8 +23,11 @@ async def run(p,name):
         # cannot expire the transient Scrap pop before its presentation assertion.
         await page.evaluate('__RH_TEST.step(1.5,__RH_TEST.input());__RH_TEST.game().pause(true);__RH_TEST.view().render(0)');await page.mouse.up()
         report['checks']['button_kill_grants_scrap']=await page.evaluate('__RH_TEST.game().scrap===2&&__RH_TEST.game().money===1000&&__RH_TEST.game().totalKills===1')
-        await page.wait_for_function('document.getElementById("scrapHud").textContent.includes("1击杀")')
-        report['checks']['scrap_hud_and_visual_pop']=await page.evaluate('document.getElementById("scrapHud").textContent.split(/\\s/)[0]==="2"&&document.getElementById("scrapHud").textContent.includes("1击杀")&&[...document.querySelectorAll(".combatPop")].some(e=>!e.hidden&&e.textContent==="+2 SCRAP")')
+        await page.locator('#statusToggle').tap()
+        await page.wait_for_function('document.getElementById("scrapHud").textContent==="2"&&document.getElementById("combatSummary").textContent.includes("击杀 1")')
+        report['checks']['scrap_hud_and_visual_pop']=await page.locator('#combatSummary').is_visible() and await page.evaluate('document.getElementById("scrapHud").textContent==="2"&&document.getElementById("combatSummary").textContent.includes("击杀 1")&&[...document.querySelectorAll(".combatPop")].some(e=>!e.hidden&&e.textContent==="+2 SCRAP")')
+        await page.locator('#closeStatus').tap()
+        report['checks']['fixture_pause_survives_status_reading']=await page.evaluate('__RH_TEST.game().paused')
         await page.screenshot(path=str(ART/f'{name}-scrap-kill.png'))
         # Fixture funds purchases; location admission, costs, buttons and unlocks are production code.
         await page.evaluate('(()=>{const a=__RH_TEST,g=a.game();a.forcePlayer(1.7);g.scrap=120;g.pause(false)})()')
