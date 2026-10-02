@@ -57,6 +57,9 @@ async def run(p,name):
             await page.locator('#start').click()
             await page.wait_for_function('__RH_TEST.game().status==="running"')
             await page.evaluate('__RH_TEST.game().pause(true);__RH_TEST.step(0)')
+            # The fixture step updates the legacy presenter; await the actual RAF
+            # presenters before inspecting the newly disclosed accounting layout.
+            await page.wait_for_function('!document.getElementById("cargoLedger").hidden&&document.getElementById("app").dataset.hudMode==="run"')
             check(key+'depot_markers',await page.evaluate('[...document.querySelectorAll(".depotMarker")].map(n=>n.style.left)')==['26%','66%'])
             check(key+'world_first_hud',await page.evaluate('''() => {const r=id=>document.getElementById(id).getBoundingClientRect();
                 return r('viewport').height>=innerHeight*.95 && !document.getElementById('statusDrawer').open && r('statusToggle').width>=44 && r('statusToggle').height>=44 && getComputedStyle(document.getElementById('cargoLedger')).display!=='none' && !document.getElementById('statusBody').checkVisibility();}'''))
