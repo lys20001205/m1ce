@@ -60,6 +60,10 @@ async def run(p,name):
             state=await page.evaluate('(()=>{const g=__RH_TEST.game(),d=__RH_TEST.view().playerRig.userData;return {melee:g.melee.id,ranged:g.ranged?.id||null,scrap:g.scrap,meleeModels:Object.entries(d.meleeModels).filter(([k,m])=>m.visible).map(([k])=>k),rangedModels:Object.entries(d.rangedModels).filter(([k,m])=>m.visible).map(([k])=>k)}})()')
             report['models'].append(state)
             remaining-=cost
+            if slot=='ranged':
+                label={'handgun':'手枪','smg':'冲锋','rifle':'步枪','shotgun':'霰弹'}[weapon]
+                await page.wait_for_function('(name)=>document.getElementById("ranged").dataset.short.startsWith(name)',arg=label,timeout=3000)
+                report['checks']['visible_weapon_identity_'+weapon]=await page.evaluate('(name)=>document.getElementById("ranged").dataset.short.startsWith(name)',label)
             report['checks']['purchase_'+weapon]=state[slot]==weapon and state[slot+'Models']==[weapon] and state['scrap']==remaining
             if weapon=='handgun':report['checks']['first_gun_requires_no_melee_purchase']=state['melee']=='wrench' and state['scrap']==108
             await page.screenshot(path=str(ART/f'{name}-armory-{weapon}.png'))

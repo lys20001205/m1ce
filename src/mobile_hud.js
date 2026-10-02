@@ -36,7 +36,7 @@ export class MobileHUD {
   this.bank.textContent='BANK '+amount(l.bank);
   this.combat.textContent='击杀 '+g.totalKills+' · Scrap '+amount(g.scrap);
   const remaining=g.dockingPlayerRemaining;this.guard.hidden=remaining<=0;this.guard.textContent='◈ '+Math.ceil(remaining)+'s';this.guard.title='一次性靠站护盾；结束后旧敌恢复攻击';
-  const names={layer:g.playerLayer==='DEPOT'?'回车':g.player.roof?'下车内':'上车顶',reverse:g.lastDirection==='REVERSE'?'前进':'倒车',brake:'刹停',interact:'交互',fix:'维修',attack:g.melee.name||g.melee.id,ranged:g.ranged?(g.rangedMagazine?.reloadRemaining>0?'装填':g.rangedMagazine?.rounds+'/'+g.rangedMagazine?.max):'未解锁'};
+  const names={layer:g.playerLayer==='DEPOT'?'回车':g.player.roof?'下车内':'上车顶',reverse:g.lastDirection==='REVERSE'?'前进':'倒车',brake:'刹停',interact:'交互',fix:'维修',attack:g.melee.name||g.melee.id,ranged:g.ranged?(({handgun:'手枪',smg:'冲锋',rifle:'步枪',shotgun:'霰弹'}[g.ranged.id]||g.ranged.name)+' '+(g.rangedMagazine?.reloadRemaining>0?'装弹':g.rangedMagazine?.rounds+'/'+g.rangedMagazine?.max)):'未解锁'};
   const nav=cargoNavigation(g);if(nav?.action)names.interact=nav.action.replace(/F\s*[·/]?\s*/,'').slice(0,8);else names.interact=d.getElementById('interact').textContent.slice(0,8);
   for(const[id,label]of Object.entries(names))d.getElementById(id).dataset.short=label;
   let cue='';
