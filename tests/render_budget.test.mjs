@@ -1,0 +1,11 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {renderBudget} from '../src/render_budget.js';
+test('fast frames retain full GPU quality',()=>assert.equal(renderBudget(Array(30).fill(16)),0));
+test('one long loading or rotation stall cannot lower quality',()=>assert.equal(renderBudget([...Array(11).fill(16),1900]),0));
+test('requires a full measured window before degrading',()=>assert.equal(renderBudget(Array(11).fill(250)),0));
+test('sustained slow frames lower pixels first',()=>assert.equal(renderBudget(Array(12).fill(130)),1));
+test('sustained extreme frames additionally lower shadow workload',()=>assert.equal(renderBudget(Array(12).fill(220)),2));
+test('quality remains stable after recovery instead of reallocating repeatedly',()=>assert.equal(renderBudget(Array(12).fill(16),1),1));
+test('invalid or background-gap samples do not qualify as sustained GPU work',()=>assert.equal(renderBudget([NaN,0,2500,...Array(11).fill(220)]),0));
+test('recent frames replace stale startup history',()=>assert.equal(renderBudget([...Array(30).fill(220),...Array(12).fill(16)]),0));
