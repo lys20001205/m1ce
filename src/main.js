@@ -11,6 +11,7 @@ import {PlayabilityUI,hazardETA} from './playability_ui.js';
 import {ControlUI,steeringDirection,depotActionLabel} from './control_ui.js';
 import {WorldPolish} from './polish3d.js?v=12-art2';
 import {DesignUI,carPreview,routeReason} from './design_ui.js';
+import {MobileHUD} from './mobile_hud.js';
 const design=new DesignUI(document),controlUI=new ControlUI(document);let polish=null;
 const $=id=>document.getElementById(id);
 const mode=runtimeMode(location.search),save=new SaveStore({mode}),clock=new SimulationClock();let devtools=null;
@@ -24,6 +25,9 @@ function seed(){const a=new Uint32Array(1);try{crypto.getRandomValues(a);return 
 function snapshot(){return{...game?.snapshot(),...(view?.loaded===3?view.snapshot():{modelsLoaded:0}),audio:audio.snapshot(),clock:clock.snapshot(),test:mode.test,session:telemetry?.session,standalone:!!navigator.standalone||matchMedia('(display-mode: standalone)').matches,errors:telemetry?.errors||0};}
 function emit(type,data){design.observe(game,type,data);if(['player_death','armory_open','armory_close'].includes(type))clearInput();if(type==='armory_open')audio.silence();if(type==='armory_close')audio.unlock('armory_close');telemetry?.log(type,data);audio.event(type,data);}
 const playability=new PlayabilityUI(document,()=>{bankWritable=save.write(game);if(['cashed','lost'].includes(game.status))showEnd();else showHub();});
+const mobileHUD=new MobileHUD(document);
+let statusDrawerPaused=false;
+mobileHUD.onToggle=open=>{if(!game||game.status!=='running')return;if(open){clearInput();statusDrawerPaused=!game.paused&&!game.armoryOpen;if(statusDrawerPaused)game.pause(true);audio.silence();}else if(statusDrawerPaused){statusDrawerPaused=false;if(!game.armoryOpen&&innerWidth>=innerHeight){game.pause(false);audio.unlock('status_close');}}};
 const initialSave=readSave();telemetry=new Telemetry(snapshot,{...mode,storage:save.storage});game=new Game({bank:initialSave.bank,prep:initialSave.prep,career:initialSave.career,starterWeapon:initialSave.starterWeapon,seed:seed(),emit,dev:mode.dev});
 function clearInput(){if(typeof pendingAction!=='undefined')pendingAction=null;input={move:0,attack:false,ranged:false,repair:false};pressed.clear();document.querySelectorAll('.active').forEach(e=>e.classList.remove('active'));}
 function fatal(error){clearInput();game.pause(true);audio.silence();frameError=true;$('modal').hidden=true;$('portrait').hidden=true;telemetry.log('runtime_error',{message:String(error?.message||error).slice(0,150)});$('fatal').hidden=false;$('fatal').textContent='3D 运行暂停：'+String(error?.message||error)+'\n日志已保留。请重新载入；此版本不会切回二维画面。';}
@@ -67,7 +71,7 @@ $('reduced').checked=matchMedia('(prefers-reduced-motion: reduce)').matches;try{
 $('reduced').onchange=e=>{if(view)view.reducedMotion=e.target.checked;try{save.storage.setItem('roundhouse_reduced_motion',e.target.checked?'yes':'no');}catch{}};
 $('pause').onclick=()=>{if(!active())return;clearInput();game.pause(!game.paused);if(game.paused)audio.silence();else audio.unlock();};
 $('telemetry').checked=telemetry.enabled;$('telemetry').onchange=e=>telemetry.consent(e.target.checked);
-$('start').onclick=()=>{audio.unlock('start');if(game.start()){bankWritable=save.write(game);$('modal').hidden=true;last=0;lastStatus='running';audio.active=true;}};
+$('start').onclick=()=>{audio.unlock('start');if(game.start()){bankWritable=save.write(game);$('modal').hidden=true;last=0;lastStatus='running';audio.active=true;resize();}};
 function replaceGame(practice=false){
   clearInput();game=new Game({bank:game.bank,prep:game.prep,career:game.career,starterWeapon:game.starterWeapon,seed:seed(),practice,emit,dev:mode.dev});view.game=game;view.rebuildCars();view.cameraX=game.player.x;lastStatus='';last=0;$('modal').hidden=true;if(practice){game.chooseRoute('industrial');game.chooseCar('cargo');game.start();}else showHub();audio.active=true;audio.unlock();
   if(practice){game.phase='yard';game.t=.2;game.player.x=stationX(0);game.damageCar(0,game.cars[0].hp,'practice');game.event='抢修演练：你已站在控制柜旁，长按修理 3 秒。演练不结算、不写存款。';}
@@ -123,7 +127,9 @@ function showEnd(){
 function debugOpen(){clearInput();if(active())game.pause(true);audio.silence();$('debug').hidden=false;debugRefresh();}
 function debugRefresh(){$('remote').textContent=telemetry.status+' · SESSION '+telemetry.session;$('debugText').textContent=JSON.stringify(telemetry.report(),null,2);}
 $('log').onclick=debugOpen;$('closeLog').onclick=()=>{$('debug').hidden=true;};$('upload').onclick=async()=>{await telemetry.flush(true);debugRefresh();};$('copy').onclick=async()=>{try{await navigator.clipboard.writeText(JSON.stringify(telemetry.report()));$('remote').textContent='日志已复制';}catch{$('remote').textContent='复制不可用，可长按下方日志选取。';}};
-let resizeTimer;function resize(){clearTimeout(resizeTimer);resizeTimer=setTimeout(()=>{const height=Math.min(innerHeight,window.visualViewport?.height||innerHeight);if(height>=100)$('app').style.height=height+'px';view?.resize();const portrait=innerHeight>innerWidth;$('portrait').hidden=!portrait;if(portrait&&active()){clearInput();game.pause(true);audio.silence();}},80);}
+// Stop input and simulation before resizing GPU surfaces; software/mobile GPUs
+// can block in renderer.resize, so safety must not wait for that work.
+let resizeTimer;function resize(){const portrait=innerHeight>innerWidth;$('portrait').hidden=!portrait||!active();if(portrait&&active()){clearInput();game.pause(true);audio.silence();}clearTimeout(resizeTimer);resizeTimer=setTimeout(()=>{const height=Math.min(innerHeight,window.visualViewport?.height||innerHeight);if(height>=100)$('app').style.height=height+'px';if(!portrait||!active())view?.resize();},80);}
 addEventListener('resize',resize);addEventListener('orientationchange',resize);window.visualViewport?.addEventListener('resize',resize);addEventListener('pageshow',resize);
 addEventListener('blur',()=>{clearInput();if(active())game.pause(true);audio.silence();});
 document.addEventListener('visibilitychange',()=>{clearInput();if(document.hidden){if(active())game.pause(true);audio.silence();telemetry.log('hidden');telemetry.flush(true);}else{last=0;resize();telemetry.log('visible');}});
@@ -166,7 +172,7 @@ function ui(){
   $('centerHint').hidden=!!job||!!notice||!game.alive;$('centerHint').textContent=game.status==='arriving'?'安全回站 · '+Math.max(0,B.arrivalTime-game.arrivalElapsed).toFixed(1)+'s':input.repair?game.repairHint:game.player.roof?'车顶移动 +25% · 提前留意净空':'近设备长按修理 · 黄梯切层';
   if(game.status!==lastStatus){lastStatus=game.status;if(['complete','lost','cashed','practice_complete'].includes(game.status))showEnd();if(game.status==='arriving')clearInput();}
 }
-function frame(ts){if(frameError)return;try{const raw=last?ts-last:0,dt=Math.min(.05,raw/1000);last=ts;view.recordFrame(raw);clock.advance(game,raw/1000,input);if(pendingAction){if(!game.alive||game.elapsed>pendingAction.until)pendingAction=null;else if(game.player.stun<=0&&!game.paused){const action=pendingAction.action;pendingAction=null;directActions[action]?.();}}audio.update(game);polish?.update();view.render(dt);ui();controlUI.update(game);design.frame(game,input);playability.update(game,view);devtools?.update(ts);requestAnimationFrame(frame);}catch(e){fatal(e);}}
+function frame(ts){if(frameError)return;try{if(innerHeight>innerWidth&&active()){if($('portrait').hidden)resize();clearInput();last=ts;requestAnimationFrame(frame);return;}const raw=last?ts-last:0,dt=Math.min(.05,raw/1000);last=ts;view.recordFrame(raw);clock.advance(game,raw/1000,input);if(pendingAction){if(!game.alive||game.elapsed>pendingAction.until)pendingAction=null;else if(game.player.stun<=0&&!game.paused){const action=pendingAction.action;pendingAction=null;directActions[action]?.();}}audio.update(game);polish?.update();view.render(dt);ui();controlUI.update(game);design.frame(game,input);playability.update(game,view);mobileHUD.update(game);devtools?.update(ts);requestAnimationFrame(frame);}catch(e){fatal(e);}}
 try{view=new View($('game'),game,(t,d)=>telemetry.log(t,d));view.reducedMotion=$('reduced').checked;await view.init();polish=new WorldPolish(view);polish.update();$('start').disabled=false;$('practice').disabled=false;$('start').textContent='从机库发车';showHub();$('event').textContent=game.event;resize();requestAnimationFrame(frame);}catch(e){fatal(e);}
 addEventListener('pageshow',()=>audio.restore('pageshow'));
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)audio.restore('visible');});

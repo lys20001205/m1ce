@@ -23,13 +23,25 @@ async def run(p,name):
         # cannot expire the transient Scrap pop before its presentation assertion.
         await page.evaluate('__RH_TEST.step(1.5,__RH_TEST.input());__RH_TEST.game().pause(true);__RH_TEST.view().render(0)');await page.mouse.up()
         report['checks']['button_kill_grants_scrap']=await page.evaluate('__RH_TEST.game().scrap===2&&__RH_TEST.game().money===1000&&__RH_TEST.game().totalKills===1')
-        await page.wait_for_function('document.getElementById("scrapHud").textContent.includes("1击杀")')
-        report['checks']['scrap_hud_and_visual_pop']=await page.evaluate('document.getElementById("scrapHud").textContent.split(/\\s/)[0]==="2"&&document.getElementById("scrapHud").textContent.includes("1击杀")&&[...document.querySelectorAll(".combatPop")].some(e=>!e.hidden&&e.textContent==="+2 SCRAP")')
+        await page.locator('#statusToggle').tap()
+        await page.wait_for_function('document.getElementById("scrapHud").textContent==="2"&&document.getElementById("combatSummary").textContent.includes("击杀 1")')
+        report['checks']['scrap_hud_and_visual_pop']=await page.locator('#combatSummary').is_visible() and await page.evaluate('document.getElementById("scrapHud").textContent==="2"&&document.getElementById("combatSummary").textContent.includes("击杀 1")&&[...document.querySelectorAll(".combatPop")].some(e=>!e.hidden&&e.textContent==="+2 SCRAP")')
+        await page.locator('#closeStatus').tap()
+        report['checks']['fixture_pause_survives_status_reading']=await page.evaluate('__RH_TEST.game().paused')
         await page.screenshot(path=str(ART/f'{name}-scrap-kill.png'))
         # Fixture funds purchases; location admission, costs, buttons and unlocks are production code.
         await page.evaluate('(()=>{const a=__RH_TEST,g=a.game();a.forcePlayer(1.7);g.scrap=120;g.pause(false)})()')
         await page.click('#interact');await page.wait_for_selector('#armoryPanel:not([hidden])')
         report['checks']['ranged_initially_available']=not await page.locator('[data-weapon=handgun]').is_disabled() and not await page.locator('[data-weapon=shotgun]').is_disabled() and await page.evaluate('__RH_TEST.game().meleeTier===1&&__RH_TEST.game().ranged===null')
+        # Scrolling to the last weapon must retain a real, reachable close target.
+        await page.evaluate('(()=>{const p=document.getElementById("armoryPanel");p.scrollTop=p.scrollHeight})()')
+        report['checks']['scrolled_armory_close_target']=await page.evaluate('(()=>{const n=document.getElementById("closeArmory"),r=n.getBoundingClientRect();return r.width>=44&&r.height>=44&&n.contains(document.elementFromPoint(r.x+r.width/2,r.y+r.height/2))})()')
+        await page.locator('#closeArmory').tap()
+        # Visibility is presented on the next actual animation frame.
+        await page.wait_for_selector('#armoryPanel',state='hidden')
+        report['checks']['scrolled_armory_close_works']=await page.locator('#armoryPanel').is_hidden()
+        await page.locator('#interact').tap()
+        await page.wait_for_selector('#armoryPanel:not([hidden])')
         before=await page.evaluate('(()=>{const g=__RH_TEST.game();return {t:g.t,time:g.elapsed,hp:g.player.hp,engine:g.cars[0].hp,enemies:g.enemies.map(e=>[e.id,e.x,e.hp])}})()')
         # Await an actual production frame, rather than assuming software WebGL
         # can render in 150ms. A paused world still times out and fails this gate.
@@ -48,6 +60,10 @@ async def run(p,name):
             state=await page.evaluate('(()=>{const g=__RH_TEST.game(),d=__RH_TEST.view().playerRig.userData;return {melee:g.melee.id,ranged:g.ranged?.id||null,scrap:g.scrap,meleeModels:Object.entries(d.meleeModels).filter(([k,m])=>m.visible).map(([k])=>k),rangedModels:Object.entries(d.rangedModels).filter(([k,m])=>m.visible).map(([k])=>k)}})()')
             report['models'].append(state)
             remaining-=cost
+            if slot=='ranged':
+                label={'handgun':'手枪','smg':'冲锋','rifle':'步枪','shotgun':'霰弹'}[weapon]
+                await page.wait_for_function('(name)=>document.getElementById("ranged").dataset.short.startsWith(name)',arg=label,timeout=3000)
+                report['checks']['visible_weapon_identity_'+weapon]=await page.evaluate('(name)=>document.getElementById("ranged").dataset.short.startsWith(name)',label)
             report['checks']['purchase_'+weapon]=state[slot]==weapon and state[slot+'Models']==[weapon] and state['scrap']==remaining
             if weapon=='handgun':report['checks']['first_gun_requires_no_melee_purchase']=state['melee']=='wrench' and state['scrap']==108
             await page.screenshot(path=str(ART/f'{name}-armory-{weapon}.png'))

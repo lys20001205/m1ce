@@ -11,7 +11,7 @@ concurrency:
 jobs:
   validate:
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 35
     env:
       LIBGL_ALWAYS_SOFTWARE: '1'
       WEBKIT_DISABLE_DMABUF_RENDERER: '1'
@@ -50,7 +50,10 @@ jobs:
       - name: Every actual browser gate
         run: |
           set -euo pipefail
-          for suite in tests/browser_*.py; do xvfb-run -a python "$suite"; done
+          for suite in tests/browser_*.py; do
+            echo "Running required browser gate: $suite"
+            timeout --kill-after=10s 300s xvfb-run -a python -u "$suite"
+          done
       - name: Validation Success - exact commit and all evidence
         run: python tools/check_release.py
       - name: Capture validation provenance
@@ -86,15 +89,27 @@ jobs:
       contents: read
       pages: write
       id-token: write
-    timeout-minutes: 10
+    timeout-minutes: 20
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.13'
+      - name: Prepare public-entry browsers
+        run: |
+          pip install playwright==1.56.0
+          python -m playwright install --with-deps chromium webkit
+      - name: Retain previous public release native caches
+        env:
+          LIBGL_ALWAYS_SOFTWARE: '1'
+          WEBKIT_DISABLE_DMABUF_RENDERER: '1'
+        run: timeout --kill-after=10s 300s xvfb-run -a python -u tools/verify_pages_browser.py seed
       - uses: actions/configure-pages@v5
       - id: deployment
         uses: actions/deploy-pages@v4
-      - uses: actions/checkout@v6
       - uses: actions/download-artifact@v4
         with:
           name: v11-validation
@@ -103,9 +118,17 @@ jobs:
         env:
           PAGES_URL: ${{ steps.deployment.outputs.page_url }}
         run: python tools/verify_pages.py
+      - name: Verify ordinary public entry and retained native caches
+        env:
+          LIBGL_ALWAYS_SOFTWARE: '1'
+          WEBKIT_DISABLE_DMABUF_RENDERER: '1'
+        run: timeout --kill-after=10s 300s xvfb-run -a python -u tools/verify_pages_browser.py verify
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: v11-pages-verification
-          path: pages-verification.json
+          path: |
+            pages-verification.json
+            pages-browser-proof/*.json
+            pages-browser-proof/*.png
           retention-days: 14

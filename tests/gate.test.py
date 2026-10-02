@@ -9,6 +9,8 @@ class GateTests(unittest.TestCase):
             p=Path(directory);(p/'src').mkdir();f=p/'src'/'balance.js'
             f.write_text("export const BUILD = 'V11-PLAYABILITY-R5-20260930';\n")
             self.assertEqual(gate.expected_build(p),'V11-PLAYABILITY-R5-20260930')
+            f.write_text("export const BUILD = 'V13-MOBILE-HUD-TRAIN-R1-20261002';\n")
+            self.assertEqual(gate.expected_build(p),'V13-MOBILE-HUD-TRAIN-R1-20261002')
             for text in ["export const BUILD = 'wrong';",'missing',"export const BUILD = 'V11-OTHER';\nexport const BUILD = 'V11-DUPLICATE';"]:
                 f.write_text(text)
                 with self.assertRaises(ValueError):gate.expected_build(p)

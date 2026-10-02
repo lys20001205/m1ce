@@ -1,6 +1,22 @@
 import test from 'node:test';import assert from 'node:assert/strict';import fs from 'node:fs';import * as T from 'three';
 import {Game} from '../src/sim.js';import {SaveStore,cleanSave} from '../src/save.js';import {CAREER_MAX,careerCost,cleanStarter} from '../src/career.js';
 import {cargoNavigation} from '../src/cargo_navigation.js';
+import {showCarHealthLabel} from '../src/world_label_layout.js';
+
+test('healthy world labels are quiet and damaged labels cannot cover touch controls',()=>{
+ const pos={x:140,y:250},controls=[{left:120,right:164,top:230,bottom:274}];
+ assert.equal(showCarHealthLabel({hp:100,max:100},false,pos,[]),false);
+ assert.equal(showCarHealthLabel({hp:50,max:100},false,pos,controls),false);
+ assert.equal(showCarHealthLabel({hp:50,max:100},false,{x:140,y:190},controls),true);
+ assert.equal(showCarHealthLabel({hp:100,max:100},true,{x:140,y:190},controls),true);
+});
+test('early engine-side docking gives an executable ladder then bridge direction',()=>{
+ const g=new Game();g.chooseRoute('freight');g.chooseCar('cargo');g.start();g.t=.255;g.speedMode='STOP';g.player.x=1.7;
+ let nav=cargoNavigation(g);assert(nav);assert.match(nav.cue,/→ 黄色梯/);assert.doesNotMatch(nav.cue,/F 入站/);
+ g.player.x=4.316;nav=cargoNavigation(g);assert.match(nav.cue,/W 上车顶/);
+ g.player.roof=true;g.player.layer='ROOF';nav=cargoNavigation(g);assert.match(nav.cue,/接驳桥|已对准桥/);
+ g.player.x=g.nearestDepot().x;nav=cargoNavigation(g);assert.match(nav.cue,/已对准桥 · F 入站/);
+});
 const source=fs.readFileSync(new URL('../src/train_cutaway.js',import.meta.url),'utf8').replace('../vendor/three.module.min.js',new URL('../node_modules/three/build/three.module.js',import.meta.url).href);
 const {cutForeground,catwalkBaseY}=await import('data:text/javascript;base64,'+Buffer.from(source).toString('base64'));
 test('an old completed 7-level career retains its currency and gains real starter choices',()=>{

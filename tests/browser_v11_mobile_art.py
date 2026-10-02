@@ -8,8 +8,8 @@ from playwright.async_api import async_playwright
 ART=Path('artifacts');ART.mkdir(exist_ok=True)
 BASE='http://127.0.0.1:8792/?test=1'
 SIZES=[(812,332),(844,390),(932,430),(1280,720)]
-VIEW_KEYS=['actual_size','targets_44','controls_no_overlap','footer_outside_world','canvas_area','distinct_vitals']
-CASE_KEYS=['normal_entry','locked_ranged_explained','move_response','hold_slide_reverse','neutral_stops','capture_release_stops','second_key_survives',
+VIEW_KEYS=['actual_size','targets_44','controls_no_overlap','edge_controls_world_visible','canvas_area','distinct_vitals']
+CASE_KEYS=['normal_entry','world_first_compact_hud','status_drawer_pause','status_drawer_economy_visible','status_drawer_resume','manual_pause_survives_drawer','locked_ranged_explained','move_response','hold_slide_reverse','neutral_stops','capture_release_stops','second_key_survives',
  'empty_context_says_return','empty_context_returns','crate_context_says_pickup','crate_pickup','carry_return','load_credits',
  'portrait_pauses','portrait_clears','landscape_stays_paused','resume_works','player_marker_present',
  'polish_instance_budget','polish_rebuild_bounded','polish_geometry_bounded','tunnel_visible','all_route_livery',
@@ -43,6 +43,18 @@ async def run(p,name):
         # Ordinary UI ingress before the independent fixture scenarios.
         await page.locator('[data-route=freight]').click();await page.locator('[data-car=cargo]').click();await page.locator('#start').click()
         await page.wait_for_function('__RH_TEST.game().status==="running"');check('normal_entry',True)
+        check('world_first_compact_hud',await page.evaluate('''()=>{const r=id=>document.getElementById(id).getBoundingClientRect();return r('game').height>=innerHeight*.95&&r('statusToggle').width>=44&&!document.getElementById('statusDrawer').open&&document.getElementById('quickCargo').checkVisibility();}'''))
+        await page.keyboard.down('KeyD');await page.locator('#statusToggle').tap()
+        await page.wait_for_function('__RH_TEST.game().paused&&!__RH_TEST.input().move')
+        drawer_before=await page.evaluate('({time:__RH_TEST.game().elapsed,hp:__RH_TEST.game().player.hp,engine:__RH_TEST.game().cars[0].hp,money:__RH_TEST.game().money})')
+        await page.wait_for_timeout(1200)
+        check('status_drawer_pause',drawer_before==await page.evaluate('({time:__RH_TEST.game().elapsed,hp:__RH_TEST.game().player.hp,engine:__RH_TEST.game().cars[0].hp,money:__RH_TEST.game().money})'))
+        check('status_drawer_economy_visible',await page.locator('#cargoLedger').is_visible() and 'Bank' in await page.locator('#cargoLedger').inner_text() and await page.locator('#touchHelp').is_visible())
+        await page.keyboard.up('KeyD');await page.locator('#closeStatus').tap()
+        await page.wait_for_function('!__RH_TEST.game().paused');check('status_drawer_resume',True)
+        await page.locator('#pause').tap();await page.locator('#statusToggle').tap();await page.locator('#closeStatus').tap()
+        check('manual_pause_survives_drawer',await page.evaluate('__RH_TEST.game().paused'))
+        await page.locator('#pause').tap()
         # The first post-START shader frame may outlast a wall-clock key tap in software CI.
         # Hold the real key until measured simulation/render progress, retaining the same distance.
         await page.keyboard.down('KeyD')
@@ -61,12 +73,12 @@ async def run(p,name):
         for w,h in SIZES:
             await page.set_viewport_size({'width':w,'height':h});await stable_viewport(page,w,h)
             rect=await page.evaluate("""()=>{const r=id=>{const b=document.getElementById(id).getBoundingClientRect();return {x:b.x,y:b.y,w:b.width,h:b.height,bottom:b.bottom,right:b.right}};
-                return {size:[innerWidth,innerHeight],buttons:['L','R','layer','interact','brake','fix','attack','ranged'].map(r),canvas:r('game'),controls:r('controls'),vitals:r('vitals')};}""")
+                return {size:[innerWidth,innerHeight],buttons:['L','R','layer','reverse','interact','brake','fix','attack','ranged','pause','statusToggle'].map(r),canvas:r('game'),controls:r('controls'),vitals:r('vitals')};}""")
             key=f'{w}x{h}_';report['samples'].append(rect)
             check(key+'actual_size',rect['size']==[w,h]);b=rect['buttons']
             check(key+'targets_44',all(x['w']>=44 and x['h']>=44 and x['x']>=0 and x['right']<=w+.5 and x['bottom']<=h+.5 for x in b))
             check(key+'controls_no_overlap',all(min(a['right'],c['right'])-max(a['x'],c['x'])<=.5 or min(a['bottom'],c['bottom'])-max(a['y'],c['y'])<=.5 for i,a in enumerate(b) for c in b[i+1:]))
-            check(key+'footer_outside_world',rect['controls']['y']>=rect['canvas']['bottom'])
+            check(key+'edge_controls_world_visible',rect['canvas']['h']>=h*.95 and await page.evaluate('''()=>['L','R','layer','reverse','interact','brake','fix','attack','ranged','pause','statusToggle'].every(id=>{const n=document.getElementById(id),r=n.getBoundingClientRect();return n.contains(document.elementFromPoint(r.x+r.width/2,r.y+r.height/2));})'''))
             check(key+'canvas_area',rect['canvas']['h']>=160 and rect['canvas']['w']>=w-40)
             check(key+'distinct_vitals',await page.locator('#engineVital').is_visible() and await page.locator('#playerVital').is_visible())
             await page.screenshot(path=str(ART/f'{name}-mobile-art-{w}x{h}.png'))

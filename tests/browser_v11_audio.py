@@ -21,15 +21,18 @@ async def run(p,name):
         report['checks']['context_running_master_positive']=report['start']['audio']['context']=='running' and report['start']['audio']['master']>0
         await page.wait_for_function('__RH_DEBUG.snapshot().audio.outputRMS>0.00005',timeout=10000)
         report['checks']['actual_post_master_waveform_nonzero']=True
-        await page.locator('#sound').tap();await page.wait_for_function('__RH_DEBUG.snapshot().audio.master===0');await page.wait_for_timeout(750)
+        await page.locator('#statusToggle').tap();await page.locator('#sound').tap();await page.locator('#closeStatus').tap();await page.wait_for_function('__RH_DEBUG.snapshot().audio.master===0');await page.wait_for_timeout(750)
         muted=await page.evaluate('__RH_DEBUG.snapshot().audio');report['muted']=muted
         report['checks']['mute_zeroes_actual_signal']=muted['muted'] and muted['master']==0 and muted['outputRMS']<.00001
-        await page.locator('#sound').tap();await page.wait_for_function('__RH_DEBUG.snapshot().audio.outputRMS>0.00005')
+        await page.locator('#statusToggle').tap();await page.locator('#sound').tap();await page.locator('#closeStatus').tap();await page.wait_for_function('__RH_DEBUG.snapshot().audio.outputRMS>0.00005')
         report['checks']['unmute_restores_master_signal']=await page.evaluate('__RH_DEBUG.snapshot().audio.master===1&&!__RH_DEBUG.snapshot().audio.muted')
         await page.evaluate('(()=>{const a=__RH_TEST;a.forceRoute(.1);a.forcePlayer(5.8)})()')
         report['modes']={}
         for mode in ['STOP','CRUISE','FAST']:
-            await page.evaluate('__RH_TEST.game().setSpeed('+json.dumps(mode)+')');await page.wait_for_timeout(250)
+            await page.evaluate('__RH_TEST.game().setSpeed('+json.dumps(mode)+')')
+            # Audio is updated by the real production frame, which may exceed250ms on software WebGL.
+            expected_loop={'STOP':'idle','CRUISE':'cruise','FAST':'fast'}[mode]
+            await page.wait_for_function('(p)=>{const s=__RH_DEBUG.snapshot();return s.speedMode===p.mode&&s.audio.engineLoop===p.loop}',arg={'mode':mode,'loop':expected_loop},polling=50,timeout=5000)
             report['modes'][mode]=await page.evaluate('__RH_DEBUG.snapshot().audio')
         report['checks']['real_speed_changes_engine_loop']= [report['modes'][m]['engineLoop'] for m in ['STOP','CRUISE','FAST']]==['idle','cruise','fast']
         await page.keyboard.down('j');await page.wait_for_function('__RH_DEBUG.snapshot().audio.lastSfx==="wrench"');await page.keyboard.up('j')

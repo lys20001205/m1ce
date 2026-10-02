@@ -26,7 +26,7 @@ async def run_browser(p,name):
         await page.goto(BASE,wait_until='networkidle')
         await page.wait_for_function('window.__RH_DEBUG?.snapshot().modelsLoaded === 3',timeout=30000)
         s=await page.evaluate('window.__RH_DEBUG.snapshot()');result['boot']=s
-        checks['build_is_v12']=s['build'].startswith('V12-')
+        checks['build_is_current']=s['build']==json.loads(Path('dist/build.json').read_text())['build'] and s['build'].startswith('V13-')
         checks['slow_model_loading_no_errors']=not errors
         checks['actual_webgl2']=s['renderer']=='WebGL2'
         checks['external_model_files_loaded']=s['modelsLoaded']==3
@@ -59,11 +59,11 @@ async def run_browser(p,name):
         normal=await page.screenshot(path=str(ART/f'{name}-yard.png'))
         checks['interior_not_occluded']=not await page.evaluate('window.__RH_DEBUG.occlusion()')
         checks['wheels_have_position']=await page.evaluate('window.__RH_TEST.view().carTemplate.children.filter(n=>n.name==="Wheel").every(n=>Math.abs(n.position.x)>2)')
-        await page.click('#angle');await page.wait_for_timeout(150)
+        await page.click('#statusToggle');await page.click('#angle');await page.click('#closeStatus');await page.wait_for_timeout(150)
         angled=await page.screenshot(path=str(ART/f'{name}-angled.png'))
         diff=ImageChops.difference(Image.open(io.BytesIO(normal)).convert('RGB'),Image.open(io.BytesIO(angled)).convert('RGB'))
         checks['3d_view_angle_changes_pixels']=sum(1 for px in diff.getdata() if sum(px)>55)>1500
-        await page.click('#angle')
+        await page.click('#statusToggle');await page.click('#angle');await page.click('#closeStatus')
         poses=await page.evaluate("""() => {
           const a=window.__RH_TEST,g=a.game(),v=a.view();g.pause(false);a.forcePlayer(4.2);g.player.cooldown=0;
           g.attack();v.render(0);const first=v.playerRig.userData.arm.rotation.z;a.step(.12);g.pause(true);v.render(0);
@@ -89,13 +89,15 @@ async def run_browser(p,name):
         await page.evaluate('window.__RH_TEST.step(1,window.__RH_TEST.input());window.__RH_TEST.game().pause(true)')
         partial=await page.evaluate('window.__RH_DEBUG.snapshot()')
         checks['repair_progress_no_early_heal']=partial['engineHp']==0 and partial['repair'] is not None and partial['repair']['progress']>0
-        checks['repair_bar_visible']=await page.locator('#repairPanel').is_visible()
+        await page.wait_for_function('document.getElementById("contextCue").dataset.repair==="true"')
+        checks['repair_bar_visible']=await page.locator('#contextCue').is_visible() and await page.locator('#contextCue').evaluate('(e)=>parseFloat(e.style.getPropertyValue("--repair-progress"))>0')
         await page.screenshot(path=str(ART/f'{name}-repair-progress.png'))
         await page.evaluate('const a=window.__RH_TEST,g=a.game(),remaining=g.repairJob.duration-g.repairJob.progress;g.pause(false);a.step(remaining+.05,a.input());g.pause(true)');await page.mouse.up()
         rescued=await page.evaluate('window.__RH_DEBUG.snapshot()');result['rescued']=rescued
         checks['repair_restarts_engine']=rescued['engineHp']>0 and rescued['rescue'] is None and rescued['stats']['clutchSaves']==1
         checks['rescue_has_recovery_window']=rescued['threat']['rest']>7
-        checks['success_confirmation_visible']=await page.locator('#success').is_visible()
+        await page.wait_for_function('document.getElementById("contextCue").textContent===document.getElementById("successTitle").textContent')
+        checks['success_confirmation_visible']=await page.locator('#contextCue').is_visible() and bool(await page.locator('#contextCue').inner_text())
         checks['rescue_does_not_mint_money']=rescued['money']==1000
         await page.screenshot(path=str(ART/f'{name}-engine-restarted.png'))
         # All channel/deadline timers freeze when paused.
@@ -118,17 +120,45 @@ async def run_browser(p,name):
         await page.screenshot(path=str(ART/f'{name}-long-train.png'))
         long_grace=await page.evaluate('window.__RH_TEST.game().damageCar(0,180,"test");window.__RH_DEBUG.snapshot().rescue.window')
         checks['long_train_gets_reachable_grace']=long_grace>20
+        # Viewport screenshots must not consume the preceding live rescue/route
+        # fixture on slow software GPUs. The rotation case resumes this same
+        # twelve-car world and must independently prove pause and input clearing.
+        await page.evaluate('window.__RH_TEST.game().pause(true)')
         for width,height in [(812,332),(932,430)]:
-            await page.set_viewport_size({'width':width,'height':height});await page.wait_for_timeout(250)
+            resize_mark=await page.evaluate('__RH_TEST.view().frames')
+            await page.set_viewport_size({'width':width,'height':height})
+            await page.wait_for_function('(p)=>{const v=__RH_TEST.view();return v.frames>=p.mark+2&&v.w===p.width&&v.h===p.height}',arg={'mark':resize_mark,'width':width,'height':height},polling=50,timeout=15000)
             s=await page.evaluate('window.__RH_DEBUG.snapshot()')
             checks[f'{width}_canvas_not_squashed']=abs(s['canvasBacking'][0]/s['canvasBacking'][1]-s['canvasCss'][0]/s['canvasCss'][1])<.02
             checks[f'{width}_player_inside_scene']=5<s['playerScreenY']<s['canvasCss'][1]-5
             rects=await page.evaluate("""() => {const r=id=>{const b=document.getElementById(id).getBoundingClientRect();return {top:b.top,bottom:b.bottom,left:b.left,right:b.right}};return {scene:r('viewport'),hud:r('hud'),controls:r('controls'),repair:r('repairPanel')};}""")
-            checks[f'{width}_ui_does_not_cover_scene']=rects['scene']['top']>=rects['hud']['bottom'] and rects['controls']['top']>=rects['scene']['bottom']
+            checks[f'{width}_ui_does_not_cover_scene']=rects['scene']['bottom']-rects['scene']['top']>=height*.95 and await page.evaluate('''()=>{const s=__RH_DEBUG.snapshot();return ['L','R','layer','reverse','brake','interact','fix','attack','ranged'].every(id=>{const n=document.getElementById(id),r=n.getBoundingClientRect();return n.contains(document.elementFromPoint(r.x+r.width/2,r.y+r.height/2))&&!(s.playerScreenX>=r.x&&s.playerScreenX<=r.right&&s.playerScreenY>=r.y&&s.playerScreenY<=r.bottom);});}''')
+            result.setdefault('layout_samples',[]).append(await page.evaluate('''()=>{const s=__RH_DEBUG.snapshot();return {width:innerWidth,height:innerHeight,player:[s.playerScreenX,s.playerScreenY],frames:__RH_TEST.view().frames,buttons:['L','R','layer','reverse','brake','interact','fix','attack','ranged'].map(id=>{const n=document.getElementById(id),r=n.getBoundingClientRect(),hit=document.elementFromPoint(r.x+r.width/2,r.y+r.height/2);return {id,hit:hit?.id,reachable:n.contains(hit),left:r.left,right:r.right,top:r.top,bottom:r.bottom};})};}'''))
             await page.screenshot(path=str(ART/f'{name}-{width}x{height}.png'))
+        await page.evaluate('window.__RH_TEST.game().pause(false)')
+        result['portrait_before']=await page.evaluate('({status:__RH_TEST.game().status,paused:__RH_TEST.game().paused,route:__RH_TEST.game().t,rescue:__RH_TEST.game().rescue})')
+        checks['portrait_starts_from_running']=result['portrait_before']['status']=='running' and not result['portrait_before']['paused']
+        await page.evaluate('''()=>{window.__qaPortraitTrace=null;window.__qaPauseCalls=[];const game=__RH_TEST.game(),realPause=game.pause;game.pause=function(...args){const at=performance.now(),result=realPause.apply(this,args);if(args[0]===true)window.__qaPauseCalls.push({at,requestedDelta:at-window.__qaRotationRequestedAt,width:innerWidth,height:innerHeight,paused:this.paused,move:__RH_TEST.input().move,portraitHidden:document.getElementById('portrait').hidden});return result;};let beforeX=null;const targets=[[window,'resize'],[window,'orientationchange'],[window.visualViewport,'resize']].filter(([target])=>target);function beforeResize(){if(innerHeight>innerWidth)beforeX=__RH_TEST.game().player.x;}function afterResize(event){if(innerHeight<=innerWidth)return;const g=__RH_TEST.game();window.__qaPortraitTrace={requestedAt:window.__qaRotationRequestedAt,observedAt:performance.now(),nativeEventTimestamp:event.timeStamp,nativeDispatchLatencyMs:performance.now()-event.timeStamp,pauseCalls:window.__qaPauseCalls,latencyMs:performance.now()-window.__qaRotationRequestedAt,event:event.type,target:event.target===window.visualViewport?'visualViewport':'window',paused:g.paused,move:__RH_TEST.input().move,beforeX,afterX:g.player.x,portraitHidden:document.getElementById("portrait").hidden};for(const[target,type]of targets){target.removeEventListener(type,beforeResize,true);target.removeEventListener(type,afterResize,false);}}for(const[target,type]of targets){target.addEventListener(type,beforeResize,true);target.addEventListener(type,afterResize,false);}}''')
+        await page.keyboard.down('d')
+        await page.evaluate('window.__qaRotationRequestedAt=performance.now()')
+        rotation_host_begin=asyncio.get_running_loop().time()
         await page.set_viewport_size({'width':390,'height':844})
-        try:await page.wait_for_function('window.__RH_TEST.game().paused && !document.getElementById("portrait").hidden',timeout=2500);checks['portrait_pauses_game']=True
-        except:checks['portrait_pauses_game']=False
+        result['rotation_command_wall_ms']=(asyncio.get_running_loop().time()-rotation_host_begin)*1000
+        result['rotation_command_ack']=await page.evaluate('({at:performance.now(),width:innerWidth,height:innerHeight,paused:__RH_TEST.game().paused,trace:window.__qaPortraitTrace})')
+        # These are event/DOM safety states, not GPU-frame completion states.
+        # Keep the same deadline; timer polling avoids starving behind a software
+        # WebGL RAF while ordered capture/bubble observers prove immediate pause.
+        # Observation transport may be blocked behind a software-GPU frame. The
+        # production event records browser-clock latency; the actual safety
+        # deadline remains2500ms, not the longer evidence-receipt timeout.
+        try:await page.wait_for_function('window.__qaPortraitTrace!==null',polling=50,timeout=15000)
+        except:pass
+        result['portrait_event']=await page.evaluate('window.__qaPortraitTrace')
+        trace=result['portrait_event'] or {}
+        checks['portrait_pauses_game']=trace.get('paused') is True and trace.get('move')==0 and trace.get('portraitHidden') is False and 0<=trace.get('latencyMs',float('inf'))<=2500
+        checks['portrait_pause_precedes_gpu_resize']=trace.get('paused') is True and trace.get('move')==0 and trace.get('beforeX')==trace.get('afterX') and trace.get('portraitHidden') is False
+        result['portrait_after']=await page.evaluate('({status:__RH_TEST.game().status,paused:__RH_TEST.game().paused,move:__RH_TEST.input().move,portraitHidden:document.getElementById("portrait").hidden,width:innerWidth,height:innerHeight})')
+        await page.keyboard.up('d')
         await page.set_viewport_size({'width':844,'height':390})
         try:await page.wait_for_function('window.__RH_TEST.game().paused',timeout=2500);checks['landscape_requires_explicit_resume']=True
         except:checks['landscape_requires_explicit_resume']=False

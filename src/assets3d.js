@@ -1,6 +1,6 @@
 import * as T from '../vendor/three.module.min.js';
 import {GLTFLoader} from '../vendor/loaders/GLTFLoader.js';
-import {cutForeground,catwalkBaseY} from './train_cutaway.js';
+import {cutForeground,catwalkBaseY,buildServiceCarBody,fitCarUpperBody} from './train_cutaway.js';
 import {prepareTrainWheels} from './train_wheels.js';
 import {assetURL} from './cache_identity.js';
 // Selected CC0 models and palettes are vendored locally. Gameplay retains its validated
@@ -9,7 +9,7 @@ export class AssetLibrary{
  constructor(view){this.view=view;this.models=new Map();this.failures=[];this.replacements=0;this.cutawayTriangles=0;}
  async load(){const manifest=await fetch(assetURL('../assets/kenney/manifest.json',import.meta.url)).then(r=>{if(!r.ok)throw Error('Asset manifest unavailable');return r.json();}),manager=new T.LoadingManager();manager.setURLModifier(uri=>assetURL(uri,import.meta.url));const loader=new GLTFLoader(manager);
   await Promise.all(Object.entries(manifest.packs).flatMap(([pack,p])=>p.models.map(async ({file})=>{const key=pack+'/'+file.replace('.glb','');try{const gltf=await loader.loadAsync(new URL('../assets/kenney/'+pack+'/'+file,import.meta.url).href);if(pack==="train")prepareTrainWheels(gltf.scene);gltf.scene.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true;}});this.models.set(key,gltf);}catch(e){this.failures.push(key);this.view.log('asset_load_failed',{asset:key,message:String(e)});}})));
-  if(this.failures.length){const n=document.createElement('div');n.id='assetWarning';n.textContent='V12 素材加载失败：'+this.failures.join(', ')+' · 此处使用简化备份，请重新加载';document.getElementById('viewport').append(n);}
+  if(this.failures.length){const n=document.createElement('div');n.id='assetWarning';n.textContent='V13 素材加载失败：'+this.failures.join(', ')+' · 此处使用简化备份，请重新加载';document.getElementById('viewport').append(n);}
  }
  clone(key){const data=this.models.get(key);if(!data)return null;const group=new T.Group();group.name='Kenney-'+key;const model=data.scene.clone(true);group.add(model);group.userData.model=model;group.userData.clips=data.animations;this.replacements++;return group;}
  // Size in game metres, pivot at bottom centre. Transform the model, preserving nodes.
@@ -18,17 +18,10 @@ export class AssetLibrary{
  car(m,type){if(!this.models.has('train/train-carriage-flatbed'))return false;
   m.getObjectByName('Hull').visible=false;for(const o of m.children)if(o.name==='Wheel')o.visible=false;m.getObjectByName('RoofCutaway').visible=false;
   const flatbed=this.add(m,'train/train-carriage-flatbed',[7.9,2.78,3.0],[0,0,0],-Math.PI/2);if(flatbed)this.cutawayTriangles+=cutForeground(flatbed,m,{floor:1.12}).removedTriangles;
-  if(type==='engine')this.add(m,'train/train-diesel-a',[7.4,2.65,1.65],[0,.14,-.72],-Math.PI/2);
-  else if(type==='cargo')this.add(m,'train/train-carriage-container-red',[7.5,3.35,1.15],[0,0,-1.05],-Math.PI/2);
-  else this.add(m,'industrial/shipping-container-a',[5.8,type==='battery'?2.2:1.4,1.05],[0,1.1,-.94],Math.PI/2);
-  // Kenney's walking deck is local Y=.1; its -0.147247 lower brace is not
-  // the walking surface. Fit that deck to the actual ROOF=4.12 and put both
-  // authored rails behind the player's Z=.65 lane, not across their waist.
-  const roof=4.12,catwalkHeight=.8,deckFraction=(.1+.147247374)/(.454119623+.147247374);
-  for(const x of [-3,-1,1,3])this.add(m,'factory/catwalk-straight',[2,catwalkHeight,.7],[x,roof-deckFraction*catwalkHeight,-.70]);
-  const deck=this.view.box(m,0,roof-.06,.48,8,.12,1.72,0x3e5968);deck.name='RoofWalkSurface';
-  for(const z of [-.35,1.30]){const edge=this.view.box(m,0,roof+.008,z,8,.016,.035,0xe8b85e);edge.name='RoofWalkEdge';}
-  for(const x of [-3,-2,-1,0,1,2,3])this.view.box(m,x,roof+.008,.48,.025,.016,1.58,0x78929a).name='RoofWalkGrip';
+  if(type==='engine'){const body=this.add(m,'train/train-diesel-a',[7.4,2.65,1.65],[0,.14,-.72],-Math.PI/2);if(body)fitCarUpperBody(body,m,{names:['train-diesel-a']});}
+  else if(type==='cargo'){const body=this.add(m,'train/train-carriage-container-red',[7.5,3.35,1.15],[0,0,-1.05],-Math.PI/2);if(body)fitCarUpperBody(body,m,{names:['cargo']});}
+  else {const body=this.add(m,'industrial/shipping-container-a',[5.8,type==='battery'?2.2:1.4,1.05],[0,1.1,-.94],Math.PI/2);if(body)fitCarUpperBody(body,m,{names:['shipping-container-a']});}
+  buildServiceCarBody(this.view,m,type);
   this.add(m,'train/train-connector',[.45,.45,.65],[4.07,.45,0],Math.PI/2);
   return true;
  }

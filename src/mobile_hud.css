@@ -1,0 +1,75 @@
+/* V13: the world is the layout; touch targets float at its edges. No canvas filters. */
+#app,#app.touchUI{display:block;padding:0;background:#07141d}
+#viewport{position:absolute;inset:0;margin:0;border-radius:0;box-shadow:none}
+#viewport::before{border-radius:0;box-shadow:none}
+#hud{position:absolute;z-index:12;top:max(8px,env(safe-area-inset-top));left:max(12px,env(safe-area-inset-left));right:68px;height:42px;gap:14px;background:none;border:0;box-shadow:none;padding:0;pointer-events:none}
+#hud>div:not(.brand){background:#071822a6;border:1px solid #b0d9da25;border-radius:8px;padding:4px 8px;min-width:44px;height:40px}
+#hud small,#hud .brand,#hud .equipmentBlock,#hud>div:has(#cargoHud){display:none}
+#hud b,#hud .vital>b{font-size:13px!important;text-shadow:0 1px 3px #000}
+#hud>div:has(#round)::before{content:'◎';color:#e1c789;margin-right:5px}
+#hud>div:has(#money)::before{content:'¤';color:#ecc786;margin-right:5px}
+#hud>div:has(#scrapHud)::before{content:'◆';color:#a8ecc6;margin-right:5px}
+#vitals{min-width:136px;gap:8px}#vitals .vital{display:grid;grid-template-columns:16px auto;min-width:58px;gap:1px 3px}
+#vitals .vital::before{content:'♥';color:#b6edc9;font-size:13px}#vitals .vital:first-child::before{content:'⚙';color:#e5c789}
+#hud #healthBlock{height:40px;padding:4px 8px}#hud nav{pointer-events:auto;margin-left:auto;gap:0}
+#hud nav #pause,.touchUI #hud nav #pause{width:44px;height:44px;min-width:44px;min-height:44px;flex:0 0 44px;border-radius:50%;background:#0a202998;border:1px solid #b7e7e366;font-size:11px}
+#route{position:absolute;z-index:10;top:54px;left:14px;width:calc(100% - 92px);height:4px;padding:0;border:0;border-radius:2px;background:#1426328c;box-shadow:none;overflow:visible;pointer-events:none}
+#fill{height:4px;border-radius:2px;background:#b3d5c29c}#phase,#progress{position:absolute!important;left:0;top:7px;color:#c7dddd;font-size:10px;max-width:75%;overflow:hidden;text-overflow:ellipsis}#phase{display:none}#route #progress{margin:0;white-space:nowrap}#route .depotMarker{font-size:8px;bottom:-4px}
+#controls,.touchUI #controls{position:absolute;inset:0;z-index:12;display:block;padding:0;pointer-events:none;max-width:none}
+#controls::before{display:none}
+#controls .group{position:absolute;bottom:max(14px,env(safe-area-inset-bottom));display:flex;gap:7px;pointer-events:auto;margin:0;width:auto}
+#movementPad,.touchUI #movementPad{left:max(14px,env(safe-area-inset-left));padding:0;border:0;background:none;box-shadow:none;gap:8px}
+#movementPad button,.touchUI #movementPad button{width:54px;height:54px;min-width:54px;border:1px solid #c6e7e666;border-radius:50%;background:#102a3566;font-size:0;padding:0}
+#utilityControls,.touchUI #utilityControls{left:146px;display:flex;width:auto;gap:6px;bottom:max(16px,env(safe-area-inset-bottom))}
+#combatControls,.touchUI #combatControls{right:max(14px,env(safe-area-inset-right));display:flex;gap:10px}
+#controls #utilityControls button,.touchUI #controls #utilityControls button{width:48px;min-width:48px;height:48px;padding:0;border-radius:12px}
+#controls #combatControls button,.touchUI #controls #combatControls button{width:62px;min-width:62px;height:62px;padding:0;border-radius:50%}
+#controls button,#controls #utilityControls button,#controls #combatControls button,#controls #interact,#controls #attack,#controls #ranged,#controls #brake,#controls #fix{font-size:0;background:#102a355c;border:1px solid #c7e5e46e;box-shadow:0 1px 5px #0003;text-shadow:0 1px 3px #000;white-space:normal}
+#controls button::before,.touchUI #controls button::before{content:attr(data-icon);display:block;font:23px/1 system-ui;color:#e6f4f3;opacity:1;margin:0 0 2px}
+#controls button::after{content:attr(data-short);display:block;font:600 11px/1.1 system-ui;color:#f1fffc}
+#movementPad button::before{font-size:22px;margin:0}#movementPad button::after{display:none}
+#controls #interact{border-color:#9ee9c888}#controls #attack{border-color:#f0c5929c}#controls #ranged{border-color:#97d7f1aa}
+#controls button.active{background:#79bfbb9c!important;border-color:#e5fff7!important;box-shadow:0 0 0 2px #dffff366}
+#controls button[data-ready=false]{background:#102a353d;border-color:#c7e5e440}#controls button:disabled{opacity:.65}#controls button:focus-visible{outline:2px solid #fff4b0}
+#quickCargo{position:absolute;z-index:11;left:14px;top:78px;display:flex;gap:10px;background:#0a202b88;border-radius:7px;padding:5px 8px;pointer-events:none;font:600 11px system-ui;color:#d7f2e8}
+#quickCargo span::before{content:attr(data-icon);margin-right:4px;color:#a2dcca}#quickCargo #cargoRisk{color:#ffb391}#quickCargo #cargoRisk::before{color:#ffb391}
+#guardStatus{position:absolute;z-index:11;top:110px;left:14px;color:#acdbe9;font:600 11px system-ui;pointer-events:none;background:#09212c80;border-radius:6px;padding:3px 6px}
+#quickBank{position:absolute;z-index:11;left:14px;top:110px;font:10px system-ui;color:#a7d9c1;pointer-events:none;background:#09212c80;border-radius:6px;padding:3px 6px}#guardStatus:not([hidden])~#quickBank{top:137px}
+#versionTag{bottom:4px;right:14px;font-size:8px;background:none;opacity:.7}
+#contextCue{position:absolute;z-index:11;top:76px;left:50%;transform:translateX(-50%);max-width:46%;padding:6px 10px;border-radius:16px;background:#081b27b3;color:#e9e8bd;font:600 12px system-ui;text-align:center;pointer-events:none}
+#contextCue[data-repair=true]::after{content:'';position:absolute;bottom:0;left:0;width:var(--repair-progress);height:3px;border-radius:2px;background:#b8f0cf}
+#event{top:76px;left:50%;transform:translateX(-50%);max-width:46%;padding:5px 10px;border:0;border-radius:15px;font-size:11px;background:#081b27ae}#event[data-quiet=true]{visibility:hidden}
+#shipmentToast{top:110px;right:14px;max-width:32%;padding:6px 9px;background:#12372eb8;box-shadow:none}#shipmentToast b{font-size:15px}#shipmentToast small{font-size:10px}#shipmentToast small{max-height:28px;overflow:hidden}
+#playerTag{font-size:11px;padding:1px 4px;background:#0d2834bd;box-shadow:none}#carTags .tag{font-size:11px;padding:2px 4px;background:#0d2834bd;box-shadow:none;color:#e8ffff}
+#statusDrawer{position:absolute;right:max(12px,env(safe-area-inset-right));top:max(8px,env(safe-area-inset-top));z-index:18;color:#dceeea}
+#statusToggle{display:flex;align-items:center;justify-content:center;width:44px;height:44px;padding:0;border:1px solid #c1dfdf66;border-radius:50%;background:#09212ba6;color:#deeee9;font-size:22px;list-style:none}
+#statusToggle::-webkit-details-marker{display:none}
+#statusBody{position:absolute;right:0;top:50px;width:min(380px,calc(100vw - 28px));max-height:calc(100dvh - 78px);overflow:auto;touch-action:pan-y;background:#10232cf5;border:1px solid #73979980;border-radius:14px;padding:14px;box-shadow:0 12px 35px #0007}
+#statusBody h2{font-size:16px;margin:0}#statusBody h3{font-size:12px;margin:10px 0 6px}#statusExplainer{font-size:11px;color:#b7d3cc}
+#touchHelp{font-size:11px;line-height:1.65;color:#bfd4d0}
+#cargoLedger{position:static;margin:0;padding:8px;background:#152f3670;border-color:#76a89955;border-left-width:2px;font-size:11px;pointer-events:auto;box-shadow:none}
+#cargoLedger div{display:grid;gap:5px;line-height:1.4}#cargoLedger small{font-size:10px;line-height:1.6;white-space:normal}
+#centerStack,.touchUI #centerStack{display:block;max-width:none;min-width:0;text-align:left;font-size:11px}#centerHint,.touchUI #centerHint{display:block;white-space:normal;max-width:none;text-align:left;font-size:11px;line-height:1.6}
+#keyboardLegend{display:grid;grid-template-columns:1fr 1fr;font-size:10px;gap:7px;white-space:normal;padding:8px 0}
+#statusMenu{display:flex;gap:8px;margin:10px 0}#statusMenu button,#closeStatus{min-height:44px}#closeStatus{width:100%;background:#284c46}
+#armoryPanel,#speedPanel{left:50%;top:50%;bottom:auto;transform:translate(-50%,-50%);width:min(500px,calc(100% - 100px));max-height:calc(100% - 124px);padding:13px;border-radius:15px;background:#10252bf5;z-index:17;overflow:auto;touch-action:pan-y}
+#armoryPanel .armoryHead{position:sticky;top:-13px;z-index:2;background:#10252b;padding:8px 0;margin-top:-8px;border-bottom:1px solid #73979980}
+#speedChoices{display:grid;grid-template-columns:repeat(5,minmax(44px,1fr));gap:6px}#speedChoices button{min-height:44px}
+#weaponChoices{grid-template-columns:1fr 1fr;gap:8px}#weaponChoices button{min-height:60px;font-size:11px;padding:9px}#closeArmory{min-width:44px;min-height:44px}#armoryHelp{font-size:10px!important}
+#modal{background:#06121cbf;padding:14px}#modal article{width:min(760px,96%);padding:20px;border-radius:20px;background:#10232ef2;border-color:#78979866}
+#modal .eyebrow{font-size:9px;color:#96bfb5}#modal h1{font-size:24px;margin:4px 0 10px}#modal #intro{font-size:12px;color:#bdd5cf}#hubObjective{font-size:11px}
+#routeChoices,#choices{gap:10px}#routeChoices button,#choices button{min-height:58px;padding:11px;background:#203c4499;border-color:#6a929066}#routeChoices .firstRoute{box-shadow:none}
+#runActions{background:#10232ef2!important;padding:9px 0!important}#runActions button{min-height:48px}#start,#more{background:#547d69!important;border-color:#99ccb09c!important}
+#careerShop,#prepDisclosure{border-color:#577a7466}#outcomeStats>div{background:#18393b6e;border-color:#608b7955}
+#modal details>summary{min-height:44px;display:flex;align-items:center;padding:8px 0}
+#practice,#careerShop button,#prepItems button,#debug .actions button{min-height:44px}
+#modal .privacy{min-height:44px;cursor:pointer}
+#portrait{background:#06131a99;backdrop-filter:none}#portrait article{width:min(330px,90%);border-radius:18px;padding:22px;background:#122630eb}#portrait h2{font-size:18px}#portrait p{font-size:12px}
+@media(max-width:900px){#hud,.touchUI #hud{gap:8px}#hud>div:not(.brand){padding:4px 6px}#hud b{font-size:11px!important}#vitals,.touchUI #vitals{min-width:125px;gap:6px}#utilityControls,.touchUI #utilityControls{left:140px;gap:6px}}
+@media(max-height:350px){#hud{top:5px;height:36px}#hud>div:not(.brand){height:34px}#hud #healthBlock{height:34px}#route{top:45px}#quickCargo{top:66px;font-size:10px;padding:4px 6px}#quickBank{top:95px}#guardStatus{top:95px}#guardStatus:not([hidden])~#quickBank{top:117px}#contextCue,#event{top:66px;font-size:10px}#shipmentToast{top:96px;max-width:29%}#shipmentToast b{font-size:12px}#shipmentToast small{font-size:9px}#controls .group{bottom:10px}#controls #utilityControls button,.touchUI #controls #utilityControls button{width:44px;min-width:44px;height:44px}#utilityControls,.touchUI #utilityControls{bottom:14px;gap:6px}#controls #combatControls button,.touchUI #controls #combatControls button{width:54px;min-width:54px;height:54px}#movementPad button,.touchUI #movementPad button{width:50px;min-width:50px;height:50px}#armoryPanel,#speedPanel{max-height:calc(100% - 90px)}#weaponChoices button{min-height:54px}#modal article{padding:12px 16px}#modal h1{font-size:20px;margin:2px 0 5px}#routeChoices button,#choices button{padding:8px}#statusDrawer{top:5px}}
+@media(max-width:600px){#hud{gap:5px;right:64px}#hud>div:has(#round){display:none}#vitals,.touchUI #vitals{min-width:110px;gap:4px}#hud #healthBlock{padding:4px}#hud>div:not(.brand){min-width:35px;padding:4px}#hud b,#hud .vital>b{font-size:10px!important}#quickCargo{font-size:10px;gap:7px}#utilityControls,.touchUI #utilityControls{left:132px;display:grid;grid-template-columns:repeat(3,44px);bottom:14px;gap:6px}#combatControls,.touchUI #combatControls{right:10px;flex-direction:column}#controls #combatControls button,.touchUI #controls #combatControls button{width:54px;min-width:54px;height:54px}#contextCue,#event{top:155px;max-width:65%;font-size:11px}#shipmentToast{top:190px;max-width:60%}#routeChoices,#choices{flex-direction:column}#modal article{max-height:calc(100dvh - 24px)}#weaponChoices{grid-template-columns:1fr}#armoryPanel,#speedPanel{width:calc(100% - 32px)}}
+/* Preserve spacing when a landscape device contributes notch safe-area insets. */
+#hud{right:calc(max(12px,env(safe-area-inset-right)) + 56px)}
+#utilityControls,.touchUI #utilityControls{left:calc(max(14px,env(safe-area-inset-left)) + 132px)}
+@media(max-width:900px){#utilityControls,.touchUI #utilityControls{left:calc(max(14px,env(safe-area-inset-left)) + 126px)}}
+@media(max-width:600px){#utilityControls,.touchUI #utilityControls{left:calc(max(14px,env(safe-area-inset-left)) + 118px)}}
