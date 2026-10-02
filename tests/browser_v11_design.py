@@ -6,7 +6,7 @@ ART=Path('artifacts');ART.mkdir(exist_ok=True)
 BASE='http://127.0.0.1:8789/?test=1'
 VIEWPORTS=[(812,332),(844,390),(932,430),(1280,720)]
 VIEW_CHECKS=['css_size','routes_in_first_screen','zero_bank_folded','practice_secondary','shop_native_toggle',
-             'cargo_preview','battery_preview','departure_objective','start_visible','depot_markers','reserved_footer']
+             'cargo_preview','battery_preview','departure_objective','start_visible','depot_markers','world_first_hud']
 OTHER_CHECKS=['armory_choices_explained','first_gun_without_melee_gate','three_native_purchases','one_scrap_goal','net_excludes_starting_funds',
  'kills_upgrades_visible','zero_incidents_secondary','ledger_reconciles','cashout_keeps_history','cashout_shop',
  'restart_clears_history','depot_stock','depot_pickup_unsecured','loaded_delta','reload_no_duplicate_credit',
@@ -58,8 +58,8 @@ async def run(p,name):
             await page.wait_for_function('__RH_TEST.game().status==="running"')
             await page.evaluate('__RH_TEST.game().pause(true);__RH_TEST.step(0)')
             check(key+'depot_markers',await page.evaluate('[...document.querySelectorAll(".depotMarker")].map(n=>n.style.left)')==['26%','66%'])
-            check(key+'reserved_footer',await page.evaluate('''() => {const r=id=>document.getElementById(id).getBoundingClientRect();
-                return r('controls').top>=r('viewport').bottom && r('hud').bottom<=r('viewport').top && r('centerHint').bottom<=r('controls').bottom;}'''))
+            check(key+'world_first_hud',await page.evaluate('''() => {const r=id=>document.getElementById(id).getBoundingClientRect();
+                return r('viewport').height>=innerHeight*.95 && !document.getElementById('statusDrawer').open && r('statusToggle').width>=44 && r('statusToggle').height>=44 && getComputedStyle(document.getElementById('cargoLedger')).display!=='none' && !document.getElementById('statusBody').checkVisibility();}'''))
             await context.close()
         context=await browser.new_context(viewport={'width':844,'height':390},is_mobile=True,has_touch=True)
         page=await context.new_page();page.on('pageerror',lambda e:errors.append(str(e)))
@@ -101,7 +101,7 @@ async def run(p,name):
         await page.locator('[data-route=freight]').click();await page.locator('[data-car=cargo]').click();await page.locator('#start').click()
         await page.evaluate('''()=>{const a=__RH_TEST,g=a.game();g.director.rest=9999;g.t=.26;g.elapsed=5;g.phase='yard';g.speedMode='STOP';a.forcePlayer(12.45,true);a.step(0);}''')
         await page.wait_for_function('document.getElementById("centerHint").textContent.includes("站内库存 2,250")')
-        stock_hint=await page.locator('#centerHint').inner_text()
+        stock_hint=await page.locator('#centerHint').text_content()
         check('depot_stock','站内库存 2,250' in stock_hint and 'F 入站' in stock_hint)
         await page.keyboard.press('KeyF');await page.wait_for_function('__RH_TEST.game().playerLayer==="DEPOT"')
         await page.keyboard.press('KeyF');await page.wait_for_function('!!__RH_TEST.game().heldCargo')
@@ -121,11 +121,11 @@ async def run(p,name):
         check('reload_no_duplicate_credit',await page.evaluate('__RH_TEST.game().money===1450'))
         await page.evaluate('''()=>{const a=__RH_TEST,g=a.game();g.createCargo(450,'stored',{carIndex:1,secured:true});g.createCargo(450,'stored',{carIndex:1,secured:true});
           g.elapsed+=3;g.t=.26;a.forcePlayer(12.45,true);g.enterDepot();a.step(0);}''')
-        check('full_return_guidance','CARGO FULL' in await page.locator('#centerHint').inner_text() and 'RETURN' in await page.locator('#centerHint').inner_text())
+        check('full_return_guidance','CARGO FULL' in await page.locator('#centerHint').text_content() and 'RETURN' in await page.locator('#centerHint').text_content())
         await page.evaluate('''()=>{const a=__RH_TEST,g=a.game();g.engineShield=0;g.damageCar(0,g.cars[0].hp);a.step(0);}''')
-        check('stall_wins','动力停机' in await page.locator('#event').inner_text() and 'RETURN' in await page.locator('#event').inner_text())
+        check('stall_wins','动力停机' in await page.locator('#event').text_content() and 'RETURN' in await page.locator('#event').text_content())
         await page.evaluate('__RH_TEST.game().killPlayer();__RH_TEST.step(0)')
-        check('death_hides_ordinary_guide',await page.locator('#centerHint').is_hidden() and '等待复活' in await page.locator('#event').inner_text())
+        check('death_hides_ordinary_guide',await page.locator('#centerHint').is_hidden() and '等待复活' in await page.locator('#event').text_content())
         await page.screenshot(path=str(ART/f'{name}-design-danger-priority.png'))
         await page.evaluate('__RH_TEST.game().fail("engine_timeout");__RH_TEST.step(0)')
         check('defeat_shows_loss_not_gain',await page.locator('#gainLabel').inner_text()=='本局损失'

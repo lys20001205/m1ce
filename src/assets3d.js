@@ -1,6 +1,6 @@
 import * as T from '../vendor/three.module.min.js';
 import {GLTFLoader} from '../vendor/loaders/GLTFLoader.js';
-import {cutForeground,catwalkBaseY} from './train_cutaway.js';
+import {cutForeground,catwalkBaseY,buildServiceCarBody} from './train_cutaway.js';
 import {prepareTrainWheels} from './train_wheels.js';
 import {assetURL} from './cache_identity.js';
 // Selected CC0 models and palettes are vendored locally. Gameplay retains its validated
@@ -21,14 +21,7 @@ export class AssetLibrary{
   if(type==='engine')this.add(m,'train/train-diesel-a',[7.4,2.65,1.65],[0,.14,-.72],-Math.PI/2);
   else if(type==='cargo')this.add(m,'train/train-carriage-container-red',[7.5,3.35,1.15],[0,0,-1.05],-Math.PI/2);
   else this.add(m,'industrial/shipping-container-a',[5.8,type==='battery'?2.2:1.4,1.05],[0,1.1,-.94],Math.PI/2);
-  // Kenney's walking deck is local Y=.1; its -0.147247 lower brace is not
-  // the walking surface. Fit that deck to the actual ROOF=4.12 and put both
-  // authored rails behind the player's Z=.65 lane, not across their waist.
-  const roof=4.12,catwalkHeight=.8,deckFraction=(.1+.147247374)/(.454119623+.147247374);
-  for(const x of [-3,-1,1,3])this.add(m,'factory/catwalk-straight',[2,catwalkHeight,.7],[x,roof-deckFraction*catwalkHeight,-.70]);
-  const deck=this.view.box(m,0,roof-.06,.48,8,.12,1.72,0x3e5968);deck.name='RoofWalkSurface';
-  for(const z of [-.35,1.30]){const edge=this.view.box(m,0,roof+.008,z,8,.016,.035,0xe8b85e);edge.name='RoofWalkEdge';}
-  for(const x of [-3,-2,-1,0,1,2,3])this.view.box(m,x,roof+.008,.48,.025,.016,1.58,0x78929a).name='RoofWalkGrip';
+  buildServiceCarBody(this.view,m,type);
   this.add(m,'train/train-connector',[.45,.45,.65],[4.07,.45,0],Math.PI/2);
   return true;
  }

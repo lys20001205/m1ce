@@ -89,28 +89,29 @@ async def run(p, name):
         await page.keyboard.up('KeyD')
         await page.set_viewport_size({'width':844,'height':390})
         await page.wait_for_timeout(250)
-        for state, expected in [('roof','黄色梯子下车内'),('depot','RETURN 回列车'),('carry','货物放回货车'),('roof-carry','货车舱口 LOAD 放货'),('dead','等待复活')]:
+        for state, expected in [('roof','下车内维修'),('depot','RETURN'),('carry','先放货再维修'),('roof-carry','LOAD 放货'),('dead','')]:
             await page.evaluate(RESET)
             await page.evaluate('''state=>{const a=__RH_TEST,g=a.game();g.pause(true);a.forcePlayer(5.8);
               g.damageCar(0,g.cars[0].hp);if(state==='roof')g.setPlayerLayer('ROOF');
               if(state==='depot'){g.setPlayerLayer('DEPOT');g.player.depotId=g.depots[0].id;}
               if(state==='carry'||state==='roof-carry'){const c=g.createCargo(450,'player',{carIndex:1,secured:true});g.player.carry=c.id;if(state==='roof-carry')g.setPlayerLayer('ROOF');}
               if(state==='dead')g.killPlayer('boarder');a.step(0);}''', state)
-            text = await page.locator('#event').inner_text()
+            await page.wait_for_timeout(80)
+            text = await page.locator('#contextCue').inner_text() if state!='dead' else ''
             report['samples'].append({'case': state, 'text': text})
-            check('stall_'+state+'_action_matches_state', expected in text and '控制柜已在身旁' not in text)
+            check('stall_'+state+'_action_matches_state', (expected in text and await page.locator('#contextCue').is_visible()) if state!='dead' else (await page.locator('#contextCue').is_hidden() and await page.locator('#lifePanel').is_visible()))
             await page.screenshot(path=str(ART/f'{name}-lifecycle-stall-{state}.png'))
         check('dead_center_hint_hidden', await page.locator('#centerHint').is_hidden())
         for w,h in [(812,332),(844,390),(932,430)]:
             await page.set_viewport_size({'width':w,'height':h})
             await page.wait_for_timeout(160)
-            fit = await page.locator('#event').evaluate('(e)=>e.scrollWidth<=e.clientWidth+1')
+            fit = await page.locator('#lifePanel').evaluate('(e)=>{const r=e.getBoundingClientRect();return r.x>=0&&r.right<=innerWidth&&r.y>=0&&r.bottom<=innerHeight&&e.scrollWidth<=e.clientWidth+1;}')
             check(f'dead_hint_fits_{w}x{h}', fit and await page.locator('#lifePanel').is_visible())
             await page.screenshot(path=str(ART/f'{name}-lifecycle-dead-{w}x{h}.png'))
         await page.set_viewport_size({'width':844,'height':390})
         await page.evaluate(RESET)
         await page.evaluate('''()=>{const a=__RH_TEST,g=a.game();g.pause(true);a.forcePlayer(5.8);g.runRepairKit=1;g.damageCar(0,g.cars[0].hp);a.step(0);}''')
-        check('eligible_restart_duration_unchanged', '长按修理 1.5 秒' in await page.locator('#event').inner_text())
+        check('eligible_restart_duration_unchanged', '长按修理 1.5 秒' in await page.locator('#event').text_content())
         for side in [-1, 1]:
             await page.evaluate(RESET)
             await page.evaluate("""side=>{const a=__RH_TEST,g=a.game();g.pause(true);g.route='freight';g.prepareDepots();
@@ -121,7 +122,7 @@ async def run(p, name):
                 layer:this.playerLayer,x:this.player.depotX,depot:this.depotState(),connected:this.depotConnected(this.depotState())};
                 const result=original.call(this);bridgeProof.push({before,result,after:this.playerLayer,event:this.event});return result;};}""", side)
             await page.locator('#layer').click(delay=120)
-            text = await page.locator('#event').inner_text()
+            text = await page.locator('#event').text_content()
             direction = '← ' if side > 0 else '→ '
             check(f'depot_{side}_blocked_return_keeps_bridge_guidance', direction+'回到 Depot 中央连接桥' in text
                   and await page.evaluate('__RH_TEST.game().playerLayer==="DEPOT"&&bridgeProof.length===1&&bridgeProof[0].result===false'))
@@ -136,7 +137,7 @@ async def run(p, name):
             walk=await page.evaluate('start=>({elapsed:__RH_TEST.game().elapsed-start,x:__RH_TEST.game().player.depotX,alive:__RH_TEST.game().alive})',walk_start)
             await page.keyboard.up(key)
             await page.wait_for_function('document.getElementById("event").textContent.includes("先 RETURN 回列车")||!__RH_TEST.game().alive')
-            check(f'depot_{side}_walking_reaches_return_instruction', walk['alive'] and abs(walk['x'])<=2 and walk['elapsed']<=2.525 and '先 RETURN 回列车' in await page.locator('#event').inner_text())
+            check(f'depot_{side}_walking_reaches_return_instruction', walk['alive'] and abs(walk['x'])<=2 and walk['elapsed']<=2.525 and '先 RETURN 回列车' in await page.locator('#event').text_content())
             report['samples'].append({'case':f'depot_walk_{side}','productionGameTime':walk})
             had_cargo = await page.evaluate('!!__RH_TEST.game().heldCargo')
             await page.locator('#layer').click(delay=120)

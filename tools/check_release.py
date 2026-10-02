@@ -39,7 +39,7 @@ def main():
         identity=expected_build();result['expectedBuild']=identity
     except Exception as e:
         identity=None;result['failures'].append('authored build identity unreadable: '+str(e))
-    if build.get('commit')!=sha or build.get('version')!='12.0.0' or build.get('build')!=identity:result['failures'].append('built site provenance mismatch')
+    if build.get('commit')!=sha or build.get('version')!=json.loads(Path('package.json').read_text())['version'] or build.get('build')!=identity:result['failures'].append('built site provenance mismatch')
     result['distSHA256']={str(p.relative_to('dist')):hashlib.sha256(p.read_bytes()).hexdigest() for p in sorted(Path('dist').rglob('*')) if p.is_file()}
     result['passed']=not result['failures'];(ART/'release-gate.json').write_text(json.dumps(result,indent=2)+'\n')
     print(json.dumps(result,indent=2));raise SystemExit(0 if result['passed'] else 1)

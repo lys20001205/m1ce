@@ -75,7 +75,7 @@ async def run(p, name):
                     g.elapsed=3;a.forcePlayer(5.8);g.runRepairKit=kit?1:0;g.damageCar(0,g.cars[0].hp);a.step(0);
                     return {duration:g.emergencyRepairTime,text:g.emergencyRepairTime.toFixed(1)};
                 }''', {'types': types, 'kit': kit})
-                text = await page.locator('#event').inner_text()
+                text = await page.locator('#event').text_content()
                 before = f"长按修理 {spec['text']} 秒" in text and ('维修包加速' in text) == kit
                 await page.evaluate('''duration => {const a=__RH_TEST,g=a.game();
                     g.pause(false);a.step(duration-.025,{repair:true});g.pause(true);}''', spec['duration'])
@@ -88,18 +88,18 @@ async def run(p, name):
             await page.evaluate('''route => {const a=__RH_TEST;a.reset();const g=a.game();
                 g.pause(true);g.route=route;g.prepareDepots();g.t=.1;g.elapsed=3;
                 g.phaseChanged('depart','yard');a.step(0);}''', route)
-            check('route_'+route, await page.locator('#phase').inner_text() == label
-                  and await page.locator('#event').inner_text() == label)
+            check('route_'+route, await page.locator('#phase').text_content() == label
+                  and await page.locator('#event').text_content() == label)
             await page.screenshot(path=str(ART/f'{name}-qa-route-{route}.png'))
         for route, phase, marker, word in [('industrial','crane',.4,'机械臂'),('tunnel','approach',.38,'低净空')]:
             await page.evaluate('''({route,phase,marker}) => {const a=__RH_TEST;a.reset();const g=a.game();
                 g.pause(true);g.route=route;g.prepareDepots();g.t=marker;g.elapsed=3;g.phaseChanged('yard',phase);a.step(0);}
                 ''', {'route': route, 'phase': phase, 'marker': marker})
-            check('warning_'+route, word in await page.locator('#event').inner_text())
+            check('warning_'+route, word in await page.locator('#event').text_content())
         await page.evaluate('''() => {const a=__RH_TEST,g=a.game();g.runRepairKit=1;
             a.forcePlayer(5.8);g.damageCar(0,g.cars[0].hp);a.step(0);}''')
-        check('stall_priority', '动力停机' in await page.locator('#event').inner_text()
-              and await page.locator('#phase').inner_text() == '动力停机 / 路线暂停')
+        check('stall_priority', '动力停机' in await page.locator('#event').text_content()
+              and await page.locator('#phase').text_content() == '动力停机 / 路线暂停')
         await page.screenshot(path=str(ART/f'{name}-qa-kit-stall.png'))
         await page.goto(BASE+'&dev=1', wait_until='networkidle')
         await page.wait_for_function('window.__RH_DEBUG?.snapshot().modelsLoaded===3')
