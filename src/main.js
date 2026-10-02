@@ -64,7 +64,7 @@ for(const [action,binding] of Object.entries(INPUT_BINDINGS_SSOT)){
 for(const slot of ['melee','ranged'])document.querySelector('[data-armory='+slot+']').onclick=()=>{game.buyWeapon(slot);ui();};
 $('closeArmory').onclick=()=>game.closeArmory();
 for(const type of ['contextmenu','selectstart','dragstart'])$('app').addEventListener(type,e=>{if(!e.target.closest('pre'))e.preventDefault();});
-for(const mode of SPEED_MODES){const b=document.createElement('button');b.dataset.speed=mode;b.textContent=mode;b.onclick=()=>game.setSpeed(mode);$('speedChoices').append(b);}
+for(const mode of SPEED_MODES){const b=document.createElement('button');b.dataset.speed=mode;b.textContent=mode;b.onclick=()=>{if(game.setSpeed(mode))game.consoleOpen=false;};$('speedChoices').append(b);}
 $('angle').onclick=()=>{if(!view)return;view.inspect=!view.inspect;$('angle').textContent=view.inspect?'侧视':'斜视';};
 $('sound').textContent=audio.enabled?'声音开':'静音';$('sound').onclick=()=>{const on=audio.toggle();$('sound').textContent=on?'声音开':'静音';try{save.storage.setItem('roundhouse_sound',on?'yes':'no');}catch{}};
 $('reduced').checked=matchMedia('(prefers-reduced-motion: reduce)').matches;try{$('reduced').checked=save.storage.getItem('roundhouse_reduced_motion')==='yes'||$('reduced').checked;}catch{}

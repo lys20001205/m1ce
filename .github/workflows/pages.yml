@@ -118,7 +118,7 @@ jobs:
         env:
           PAGES_URL: ${{ steps.deployment.outputs.page_url }}
         run: python tools/verify_pages.py
-      - name: Verify ordinary public entry and retained native caches
+      - name: Verify fresh entry and retained-profile ordinary reload
         env:
           LIBGL_ALWAYS_SOFTWARE: '1'
           WEBKIT_DISABLE_DMABUF_RENDERER: '1'
@@ -131,4 +131,5 @@ jobs:
             pages-verification.json
             pages-browser-proof/*.json
             pages-browser-proof/*.png
+            pages-browser-proof/*.tar.gz
           retention-days: 14

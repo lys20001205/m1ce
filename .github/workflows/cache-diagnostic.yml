@@ -1,0 +1,49 @@
+name: Public cache and reload diagnostic
+on:
+  pull_request:
+    branches: [master]
+    paths:
+      - tools/probe_public_cache.py
+      - tools/reproduce_cache_upgrade.py
+      - .github/workflows/cache-diagnostic.yml
+permissions:
+  contents: read
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      LIBGL_ALWAYS_SOFTWARE: '1'
+      WEBKIT_DISABLE_DMABUF_RENDERER: '1'
+      EXPECTED_PUBLIC_SHA: ${{ github.event.pull_request.base.sha }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.13'
+      - run: |
+          pip install playwright==1.56.0
+          python -m playwright install --with-deps chromium webkit
+      - run: timeout --kill-after=10s 300s xvfb-run -a python -u tools/probe_public_cache.py
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Build actual legacy and candidate releases
+        run: |
+          npm ci --ignore-scripts --omit=dev
+          npm run build
+          git fetch origin c1210d307d3da6b489e76d78e71a1e93d44748b1
+          git worktree add --detach /tmp/roundhouse-v12 c1210d307d3da6b489e76d78e71a1e93d44748b1
+          ln -s "$PWD/node_modules" /tmp/roundhouse-v12/node_modules
+          (cd /tmp/roundhouse-v12 && GITHUB_SHA=c1210d307d3da6b489e76d78e71a1e93d44748b1 node tools/build.mjs)
+      - name: Native legacy homepage cache and ordinary reload
+        run: timeout --kill-after=10s 300s xvfb-run -a python -u tools/reproduce_cache_upgrade.py --old-dist /tmp/roundhouse-v12/dist
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: public-cache-diagnostic-${{ github.run_attempt }}
+          path: |
+            artifacts/public-cache-diagnostic/
+            artifacts/cache-upgrade-repro/
+          include-hidden-files: true
+          retention-days: 14

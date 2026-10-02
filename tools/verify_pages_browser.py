@@ -1,5 +1,5 @@
 """Ordinary public entry on fresh and retained native browser profiles. No test API."""
-import asyncio, json, os, sys
+import asyncio, json, os, sys, tarfile
 from pathlib import Path
 from playwright.async_api import async_playwright
 
@@ -16,10 +16,27 @@ async def check(p, name, profile, expected=None):
     try:
         page=await context.new_page()
         page.on('pageerror',lambda e:errors.append(str(e)))
-        await page.goto(URL, wait_until='networkidle', timeout=60000)
+        response=await page.goto(URL, wait_until='networkidle', timeout=60000)
+        navigation_headers=await response.all_headers()
         assert page.url==URL, 'Public entry redirected: '+page.url
         await page.wait_for_function('window.__RH_DEBUG?.snapshot().assetModelsLoaded===21',timeout=60000)
         s=await page.evaluate('__RH_DEBUG.snapshot()')
+        initial_build=s['build'];ordinary_reload=False;save_preserved=None;reload_headers=None
+        (OUT/(profile+'-'+sys.argv[1]+'-navigation.json')).write_text(json.dumps({'url':page.url,'build':initial_build,'expected':expected,'automaticUpgrade':initial_build==expected if expected else None,'headers':navigation_headers},indent=2)+'\n')
+        # A fresh entry must be current immediately. Retained profiles separately
+        # measure first navigation, then the user's ordinary refresh recovery.
+        # Never relabel a stale first navigation as automatic migration success.
+        if expected and profile.endswith('-warm'):
+            if initial_build!=expected:
+                await page.screenshot(path=str(OUT/(profile+'-stale-navigation.png')),timeout=60000)
+            saved=await page.evaluate('localStorage.getItem("roundhouse_save_v11")')
+            response=await page.reload(wait_until='networkidle',timeout=60000)
+            reload_headers=await response.all_headers()
+            await page.wait_for_function('window.__RH_DEBUG?.snapshot().assetModelsLoaded===21',timeout=60000)
+            assert page.url==URL, 'Ordinary reload redirected: '+page.url
+            s=await page.evaluate('__RH_DEBUG.snapshot()');ordinary_reload=True
+            save_preserved=saved==await page.evaluate('localStorage.getItem("roundhouse_save_v11")')
+            assert save_preserved, 'Ordinary reload changed retained save'
         assert not await page.evaluate('!!window.__RH_TEST'), 'Mutable test API on public entry'
         assert not s['test'] and not s['dev'] and s['renderer']=='WebGL2' and s['modelsLoaded']==3 and not s['assetFailures'], s
         if expected:
@@ -31,7 +48,12 @@ async def check(p, name, profile, expected=None):
         s=await page.evaluate('__RH_DEBUG.snapshot()')
         assert not errors and s['errors']==0 and await page.locator('#fatal').is_hidden(), errors
         await page.screenshot(path=str(OUT/(profile+'-'+sys.argv[1]+'.png')),timeout=60000)
-        return {'browser':name,'profile':profile,'url':page.url,'build':s['build'],'elapsed':s['elapsed'],'routeT':s['routeT'],'models':s['assetModelsLoaded'],'errors':errors,'passed':True}
+        return {'browser':name,'profile':profile,'url':page.url,'initialBuild':initial_build,'automaticUpgrade':initial_build==expected if expected else None,'ordinaryReloadPerformed':ordinary_reload,'savePreservedByReload':save_preserved,'navigationHeaders':navigation_headers,'reloadHeaders':reload_headers,'build':s['build'],'elapsed':s['elapsed'],'routeT':s['routeT'],'models':s['assetModelsLoaded'],'errors':errors,'passed':True}
+    except Exception:
+        if 'page' in locals():
+            try:await page.screenshot(path=str(OUT/(profile+'-'+sys.argv[1]+'-failure.png')),timeout=60000)
+            except Exception as capture_error:print('Failure screenshot unavailable:',str(capture_error),flush=True)
+        raise
     finally:
         await context.close()
 
@@ -52,6 +74,7 @@ async def main():
             for name in ['chromium','webkit']:
                 profile=OUT/(name+'-warm')
                 assert profile.is_dir() and any(profile.iterdir()), 'Missing retained native profile: '+name
+            assert (OUT/'seed-profiles.tar.gz').is_file(), 'Missing pre-deployment profile archive'
             report['seed']=seed
         async with async_playwright() as p:
             for name in ['chromium','webkit']:
@@ -62,7 +85,18 @@ async def main():
         report['error']=str(error)
         raise
     finally:
-        (OUT/(mode+'.json')).write_text(json.dumps(report,indent=2)+'\n')
-        print(json.dumps(report),flush=True)
+        try:
+            # Archive closed profiles immediately after seeding, even on a partial
+            # seed failure, before deployment/hash checks can fail or alter state.
+            if mode=='seed':
+                with tarfile.open(OUT/'seed-profiles.tar.gz','w:gz') as archive:
+                    for name in ['chromium','webkit']:
+                        profile=OUT/(name+'-warm')
+                        if profile.is_dir():archive.add(profile,arcname=name+'-warm')
+        except Exception as error:
+            report['passed']=False;report['archiveError']=str(error);raise
+        finally:
+            (OUT/(mode+'.json')).write_text(json.dumps(report,indent=2)+'\n')
+            print(json.dumps(report),flush=True)
 
 if __name__=='__main__':asyncio.run(main())

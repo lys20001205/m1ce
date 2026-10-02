@@ -1,0 +1,15 @@
+# Homepage cache upgrade and recovery
+
+GitHub Pages served the bare `/m1ce/` document with `Cache-Control: max-age=600`, ETag and Last-Modified on 2026-10-02. The application does not register a service worker. Public diagnosis run [37003035594](https://github.com/lys20001205/m1ce/actions/runs/37003035594) verified normal reload and representative save retention in Chromium and WebKit.
+
+The first V13 deployment genuinely failed automatic migration: a retained V12 Chromium profile reopened cached V12 HTML immediately after deployment. Its original profile was not uploaded and cannot be recovered. The [first attempt](https://github.com/lys20001205/m1ce/actions/runs/36999483118/attempts/1) and artifact 11223288169 remain evidence of that failure. The successful second attempt seeded V13, so it is not evidence of automatic V12 migration.
+
+Independent reproduction used the actual c1210d3 V12 and ec89677 V13 builds, a native HTTP cache with the same max-age and conditional response semantics, and one retained browser profile. Initial navigation returned the V12 document from disk, without a server request; CDP reported `fromDiskCache=true` and `fromServiceWorker=false`. Ordinary refresh sent `Cache-Control: max-age=0` and If-Modified-Since, loaded V13, retained the complete representative save byte-for-byte, then started a normal run. The new document requested V13-versioned modules. No request interception, data clearing, cache clearing or fresh profile was substituted for upgrade. This was a controlled local reproduction, not replay of the lost public profile.
+
+If the original link still displays V12, ordinary browser refresh is the supported recovery action. Do not clear site data: saves live in localStorage. The old document cannot execute new update logic before it is fetched again; adding code to a newer release cannot retroactively fix an already cached V12 document.
+
+[Dual-browser replay 37003601139](https://github.com/lys20001205/m1ce/actions/runs/37003601139) reproduced stale first navigation in both Chromium and WebKit; both ordinary reloads recovered. Artifact 11225240625 retains the original profile cold backups and evidence.
+
+`tools/reproduce_cache_upgrade.py` retains old-profile cold backups, document/module observations, screenshots and native request evidence. `tools/probe_public_cache.py` measures current public HTTP headers, service worker state, ordinary refresh and a legal save fixture. Intel is excluded from the byte-preservation fixture because opening route selection intentionally consumes that item; its behavior remains covered by the preparation tests.
+
+Deployment verification records initial navigation separately from recovery. A stale initial navigation remains `automaticUpgrade: false`; the retained-profile check then explicitly performs an ordinary refresh and requires the expected build and unchanged save. Fresh profiles must load the expected build on first navigation. Seed profiles are archived before verification. Successful refresh recovery must never be described as automatic migration passing.
