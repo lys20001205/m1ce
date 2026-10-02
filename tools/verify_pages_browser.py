@@ -74,10 +74,7 @@ async def main():
             for name in ['chromium','webkit']:
                 profile=OUT/(name+'-warm')
                 assert profile.is_dir() and any(profile.iterdir()), 'Missing retained native profile: '+name
-            # Preserve pre-upgrade HTTP caches and storage before verification can alter them.
-            with tarfile.open(OUT/'seed-profiles.tar.gz','w:gz') as archive:
-                for name in ['chromium','webkit']:
-                    archive.add(OUT/(name+'-warm'),arcname=name+'-warm')
+            assert (OUT/'seed-profiles.tar.gz').is_file(), 'Missing pre-deployment profile archive'
             report['seed']=seed
         async with async_playwright() as p:
             for name in ['chromium','webkit']:
@@ -88,7 +85,18 @@ async def main():
         report['error']=str(error)
         raise
     finally:
-        (OUT/(mode+'.json')).write_text(json.dumps(report,indent=2)+'\n')
-        print(json.dumps(report),flush=True)
+        try:
+            # Archive closed profiles immediately after seeding, even on a partial
+            # seed failure, before deployment/hash checks can fail or alter state.
+            if mode=='seed':
+                with tarfile.open(OUT/'seed-profiles.tar.gz','w:gz') as archive:
+                    for name in ['chromium','webkit']:
+                        profile=OUT/(name+'-warm')
+                        if profile.is_dir():archive.add(profile,arcname=name+'-warm')
+        except Exception as error:
+            report['passed']=False;report['archiveError']=str(error);raise
+        finally:
+            (OUT/(mode+'.json')).write_text(json.dumps(report,indent=2)+'\n')
+            print(json.dumps(report),flush=True)
 
 if __name__=='__main__':asyncio.run(main())
