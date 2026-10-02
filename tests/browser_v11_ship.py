@@ -36,7 +36,7 @@ async def run(p,name):
         report['checks']['non_test_query_has_no_mutable_api']=await page.evaluate('!window.__RH_TEST&&!__RH_DEBUG.snapshot().test&&!__RH_DEBUG.snapshot().dev')
         meta=await page.evaluate('(async()=>({build:await(await fetch("./build.json")).json(),manifest:await(await fetch("./manifest.webmanifest")).json(),title:document.title}))()')
         report['metadata']=meta
-        report['checks']['version_and_entrypoint_are_current']=meta['build']['build']==expected_build() and meta['build']['version']=='13.0.0' and meta['manifest']['start_url']=='./?build=v13r9' and meta['manifest']['name']=='ROUNDHOUSE V13 R9' and 'V13 R9' in meta['title']
+        report['checks']['version_and_entrypoint_are_current']=meta['build']['build']==expected_build() and meta['build']['version']=='13.0.0' and meta['manifest']['start_url']=='./?build=v13r10' and meta['manifest']['name']=='ROUNDHOUSE V13 R10' and 'V13 R10' in meta['title']
         report['checks']['provenance_has_commit']=len(meta['build'].get('commit',''))==40
         raw=await page.evaluate('JSON.stringify(__RH_DEBUG.snapshot()).length');report['localSnapshotBytes']=raw
         await page.wait_for_timeout(200);report['checks']['no_upload_before_explicit_consent']=len(posts)==0 and not await page.locator('#telemetry').is_checked()
