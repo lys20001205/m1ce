@@ -59,11 +59,11 @@ async def run_browser(p,name):
         normal=await page.screenshot(path=str(ART/f'{name}-yard.png'))
         checks['interior_not_occluded']=not await page.evaluate('window.__RH_DEBUG.occlusion()')
         checks['wheels_have_position']=await page.evaluate('window.__RH_TEST.view().carTemplate.children.filter(n=>n.name==="Wheel").every(n=>Math.abs(n.position.x)>2)')
-        await page.click('#angle');await page.wait_for_timeout(150)
+        await page.click('#statusToggle');await page.click('#angle');await page.click('#closeStatus');await page.wait_for_timeout(150)
         angled=await page.screenshot(path=str(ART/f'{name}-angled.png'))
         diff=ImageChops.difference(Image.open(io.BytesIO(normal)).convert('RGB'),Image.open(io.BytesIO(angled)).convert('RGB'))
         checks['3d_view_angle_changes_pixels']=sum(1 for px in diff.getdata() if sum(px)>55)>1500
-        await page.click('#angle')
+        await page.click('#statusToggle');await page.click('#angle');await page.click('#closeStatus')
         poses=await page.evaluate("""() => {
           const a=window.__RH_TEST,g=a.game(),v=a.view();g.pause(false);a.forcePlayer(4.2);g.player.cooldown=0;
           g.attack();v.render(0);const first=v.playerRig.userData.arm.rotation.z;a.step(.12);g.pause(true);v.render(0);
