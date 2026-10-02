@@ -9,10 +9,9 @@ export function cargoNavigation(g){
     const d=g.nearestDepot();if(g.playerLayer==='DEPOT'||g.cargoUsed>=g.cargoCapacity||!g.depotConnected(d)||!g.cargoCrates.some(c=>c.location==='depot'&&c.depotId===d.id))return null;
     const stock=g.cargoCrates.filter(c=>c.location==='depot'&&c.depotId===d.id).reduce((n,c)=>n+c.value,0),stockGuide=o=>({...o,text:'站内库存 '+Math.round(stock).toLocaleString()+' · '+o.text});
     const cargoHere=g.cars[g.currentCar]?.type==='cargo',cargoBridge=g.cars[Math.floor(d.x/LENGTH)]?.type==='cargo';
-    if(g.playerLayer==='INTERIOR'&&!cargoHere)return null;
-    if(g.playerLayer==='INTERIOR'&&cargoHere&&!cargoBridge){const ladder=(g.currentCar+.52)*LENGTH,near=Math.abs(p.x-ladder)<=1.8;return stockGuide({text:near?'W 上车顶 · 然后 '+(d.x<p.x?'←':'→')+' 去中央桥 '+Math.abs(d.x-p.x).toFixed(1)+'m · F 入站':(ladder<p.x?'←':'→')+' 去黄色梯 '+Math.abs(ladder-p.x).toFixed(1)+'m · W 上车顶后去中央桥',action:'接桥在机车侧',goal:{x:ladder,y:2.8,z:-1.15,label:'黄色梯 W'}});}
+    if(g.playerLayer==='INTERIOR'&&(!cargoHere||!cargoBridge)){const ladder=(g.currentCar+.52)*LENGTH,near=Math.abs(p.x-ladder)<=1.8;return stockGuide({cue:near?'W 上车顶 · 再'+(d.x<p.x?'←':'→')+'走向接驳桥':(ladder<p.x?'←':'→')+' 黄色梯 '+Math.abs(ladder-p.x).toFixed(1)+'m · W 上车顶',text:near?'W 上车顶 · 然后 '+(d.x<p.x?'←':'→')+' 去中央桥 '+Math.abs(d.x-p.x).toFixed(1)+'m · F 入站':(ladder<p.x?'←':'→')+' 去黄色梯 '+Math.abs(ladder-p.x).toFixed(1)+'m · W 上车顶后去中央桥',action:near?'上车顶接桥':'去黄色梯',goal:{x:ladder,y:2.8,z:-1.15,label:'黄色梯 W'}});}
     const near=cargoHere&&cargoBridge&&g.playerLayer==='INTERIOR'||Math.abs(p.x-d.x)<=V11.depot.boardRadius;
-    return stockGuide({text:near?'接桥可用 · F 入站自动取箱':(d.x<p.x?'←':'→')+' 去中央桥 '+Math.abs(d.x-p.x).toFixed(1)+'m · F 入站',action:near?'入站取箱':'去中央桥',goal:near?null:{x:d.x,y:ROOF+.25,z:d.z,label:'中央桥'}});
+    return stockGuide({cue:near?'已对准桥 · F 入站自动取箱':(d.x<p.x?'←':'→')+' 接驳桥 '+Math.abs(d.x-p.x).toFixed(1)+'m · 到桥按 F 入站',text:near?'接桥可用 · F 入站自动取箱':(d.x<p.x?'←':'→')+' 去中央桥 '+Math.abs(d.x-p.x).toFixed(1)+'m · F 入站',action:near?'入站取箱':'去中央桥',goal:near?null:{x:d.x,y:ROOF+.25,z:d.z,label:'中央桥'}});
   }
   const cargos=g.cars.map((c,i)=>({c,i,x:(i+.5)*LENGTH})).filter(o=>o.c.type==='cargo'&&o.c.hp>0).sort((a,b)=>Math.abs(a.x-g.player.x)-Math.abs(b.x-g.player.x));
   const target=cargos[0];if(!target)return {text:'货车已损毁 · 寻找可用货车',action:'寻找货车',goal:null};

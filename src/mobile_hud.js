@@ -41,7 +41,8 @@ export class MobileHUD {
   for(const[id,label]of Object.entries(names))d.getElementById(id).dataset.short=label;
   let cue='';
   if(g.playerLayer==='DEPOT')cue=g.player.carry?(nav?.goal?'回中央桥 · '+nav.goal.label:'回车装货'):g.cargoUsed>=g.cargoCapacity?'货舱已满 · 回车':'靠近箱子自动拾取';
-  else if(nav?.goal)cue=nav.goal.label;
+  else if(nav?.cue)cue=nav.cue;
+  else if(nav?.goal)cue=nav.text.replace(/^站内库存 [\d,]+ · /,'').replace(/^携带 [\d,]+ · 尚未装车 · /,'');
   else if(g.player.carry)cue='携带 '+amount(l.held)+' · '+(nav?.action||'返回货车');
   else if(l.atRisk>0)cue='货物被抱走 · 追击！';
   else if(g.consoleOpen)cue='选择速度 · 倒车需先刹停';

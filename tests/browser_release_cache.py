@@ -50,7 +50,7 @@ async def run(p,name,base):
         page=await context.new_page();page.on('pageerror',lambda e:errors.append(str(e)))
         page.on('request',lambda r:requests.append(r.url))
         await page.goto(base+'/',wait_until='networkidle');await page.wait_for_function('window.__RH_DEBUG?.snapshot().assetModelsLoaded===21')
-        report['checks']['authored_revision_and_entry']=await page.evaluate('__RH_DEBUG.snapshot().build')==BUILD and 'V13 R6' in await page.title()
+        report['checks']['authored_revision_and_entry']=await page.evaluate('__RH_DEBUG.snapshot().build')==BUILD and 'V13 R7' in await page.title()
         game=[u for u in requests if urlparse(u).path.startswith('/src/') and urlparse(u).path.endswith('.js')]
         assets=[u for u in requests if urlparse(u).path.startswith('/assets/')]
         report['checks']['canonical_game_module_versions']=len(game)>=20 and all(parse_qs(urlparse(u).query).get('build')==[BUILD] for u in game)

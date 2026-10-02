@@ -8,6 +8,7 @@ import {rollTrainWheels} from "./train_wheels.js";
 import {AssetLibrary} from './assets3d.js';
 import {V11} from './balance.js';
 import {assetURL} from './cache_identity.js';
+import {showCarHealthLabel} from './world_label_layout.js';
 const v=new T.Vector3();
 export class View {
  constructor(canvas,game,log){this.game=game;this.log=log;this.canvas=canvas;this.frames=0;this.loaded=0;this.carCount=0;this.inspect=false;this.cameraX=game.player.x;this.syncs=0;this.floorCrates=[];this.enemyModels=new Map();this.enemyPool=[];this.enemyMaterials=new Map();this.cylinderCache=new Map();this.bulletPool=[];this.particlePool=[];this.matCache=new Map();
@@ -55,7 +56,8 @@ export class View {
   const hubView=g.status==='ready',hubMin=Math.min(0,g.length*.5-30),hubMax=g.length;const desiredX=hubView?(hubMin+hubMax)*.5:g.alive?p.x:V11.respawnX;this.cameraX+=(desiredX-this.cameraX)*(1-Math.exp(-dt*14));if(Math.abs(this.cameraX-desiredX)>8||Math.abs(this.cameraX-desiredX)<.001)this.cameraX=desiredX;
   const aspect=this.w/this.h,vertical=hubView?Math.max(15,(hubMax-hubMin+14)/aspect):10.6;this.camera.aspect=aspect;this.camera.updateProjectionMatrix();
   this.train.updateMatrixWorld(true);const target=new T.Vector3(this.cameraX,3.4,.1).applyMatrix4(this.train.matrixWorld);this.camera.position.copy(target).add(new T.Vector3(this.inspect?8:1.2,this.inspect?9:4.5,vertical/(2*Math.tan(25*Math.PI/360))).applyAxisAngle(new T.Vector3(0,1,0),heading));this.camera.lookAt(target);this.camera.updateMatrixWorld(true);this.sun.position.set(focus-8,18,10);this.sun.target.position.set(focus,0,0);const restart=g.effects.find(f=>f.type==='restart');if(restart&&!this.reducedMotion)this.camera.position.y+=Math.sin(g.elapsed*36)*.05*restart.life;if(routeRunning&&!this.reducedMotion){this.camera.position.y+=Math.sin(g.elapsed*19)*.025*g.speed;}this.renderer.render(this.scene,this.camera);this.juice.updateLabels();this.frames++;
-  this.cars.forEach(({m,tag})=>{const pos=this.project(m.position.x,.45,1.7);tag.style.left=pos.x+'px';tag.style.top=pos.y+'px';tag.hidden=!m.visible||pos.x<0||pos.x>this.w;});
+  const labelControls=[...document.querySelectorAll('#controls button,#pause,#statusToggle')].map(n=>n.getBoundingClientRect()).filter(r=>r.width&&r.height);
+  this.cars.forEach(({m,tag},i)=>{const pos=this.project(m.position.x,2.0,1.7);tag.style.left=pos.x+'px';tag.style.top=pos.y+'px';tag.hidden=!m.visible||pos.x<0||pos.x>this.w||!showCarHealthLabel(g.cars[i],this.inspect,pos,labelControls);});
   const s=this.project(p.x,p.y+1.85,p.z??.7);const tag=document.getElementById('playerTag');tag.style.left=s.x+'px';tag.style.top=s.y+'px';tag.hidden=!g.alive||s.x<0||s.x>this.w;tag.textContent=g.playerLayer==='DEPOT'?'YOU · DEPOT':p.carry?'YOU · 搬运':p.roof?'YOU · 车顶':'YOU · 车内';
  }
  recordFrame(ms){if(!Number.isFinite(ms)||ms<=0)return;this.frameDeltas??=[];this.frameDeltas.push(ms);if(this.frameDeltas.length>600)this.frameDeltas.shift();}
