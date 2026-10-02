@@ -5,7 +5,9 @@ from urllib.request import urlopen
 from playwright.async_api import async_playwright
 URL='https://lys20001205.github.io/m1ce/'
 OUT=Path('artifacts/public-cache-diagnostic');OUT.mkdir(parents=True,exist_ok=True)
-SAVE={'version':11,'bank':4321,'career':{'boots':1,'hull':1,'kit':2},'starterWeapon':'shotgun','prep':{'reroll':1,'repairKit':1,'intel':1}}
+# Intel is intentionally consumed when route selection opens; exclude that active
+# consumable from a byte-preservation fixture (its behavior has a separate gate).
+SAVE={'version':11,'bank':4321,'career':{'boots':1,'hull':1,'kit':2},'starterWeapon':'shotgun','prep':{'reroll':1,'repairKit':1,'intel':0}}
 async def run(p,name,build):
     opts={'headless':True,'viewport':{'width':844,'height':390}}
     if name=='chromium':opts['args']=['--no-sandbox','--use-angle=swiftshader','--enable-unsafe-swiftshader']
