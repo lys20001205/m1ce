@@ -37,6 +37,8 @@ async def run(p,name):
         await page.evaluate('(()=>{const p=document.getElementById("armoryPanel");p.scrollTop=p.scrollHeight})()')
         report['checks']['scrolled_armory_close_target']=await page.evaluate('(()=>{const n=document.getElementById("closeArmory"),r=n.getBoundingClientRect();return r.width>=44&&r.height>=44&&n.contains(document.elementFromPoint(r.x+r.width/2,r.y+r.height/2))})()')
         await page.locator('#closeArmory').tap()
+        # Visibility is presented on the next actual animation frame.
+        await page.wait_for_selector('#armoryPanel',state='hidden')
         report['checks']['scrolled_armory_close_works']=await page.locator('#armoryPanel').is_hidden()
         await page.locator('#interact').tap()
         await page.wait_for_selector('#armoryPanel:not([hidden])')
