@@ -50,7 +50,10 @@ jobs:
       - name: Every actual browser gate
         run: |
           set -euo pipefail
-          for suite in tests/browser_*.py; do xvfb-run -a python "$suite"; done
+          for suite in tests/browser_*.py; do
+            echo "Running required browser gate: $suite"
+            timeout --kill-after=10s 300s xvfb-run -a python -u "$suite"
+          done
       - name: Validation Success - exact commit and all evidence
         run: python tools/check_release.py
       - name: Capture validation provenance
