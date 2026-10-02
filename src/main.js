@@ -127,7 +127,9 @@ function showEnd(){
 function debugOpen(){clearInput();if(active())game.pause(true);audio.silence();$('debug').hidden=false;debugRefresh();}
 function debugRefresh(){$('remote').textContent=telemetry.status+' · SESSION '+telemetry.session;$('debugText').textContent=JSON.stringify(telemetry.report(),null,2);}
 $('log').onclick=debugOpen;$('closeLog').onclick=()=>{$('debug').hidden=true;};$('upload').onclick=async()=>{await telemetry.flush(true);debugRefresh();};$('copy').onclick=async()=>{try{await navigator.clipboard.writeText(JSON.stringify(telemetry.report()));$('remote').textContent='日志已复制';}catch{$('remote').textContent='复制不可用，可长按下方日志选取。';}};
-let resizeTimer;function resize(){clearTimeout(resizeTimer);resizeTimer=setTimeout(()=>{const height=Math.min(innerHeight,window.visualViewport?.height||innerHeight);if(height>=100)$('app').style.height=height+'px';view?.resize();const portrait=innerHeight>innerWidth;$('portrait').hidden=!portrait||!active();if(portrait&&active()){clearInput();game.pause(true);audio.silence();}},80);}
+// Stop input and simulation before resizing GPU surfaces; software/mobile GPUs
+// can block in renderer.resize, so safety must not wait for that work.
+let resizeTimer;function resize(){const portrait=innerHeight>innerWidth;$('portrait').hidden=!portrait||!active();if(portrait&&active()){clearInput();game.pause(true);audio.silence();}clearTimeout(resizeTimer);resizeTimer=setTimeout(()=>{const height=Math.min(innerHeight,window.visualViewport?.height||innerHeight);if(height>=100)$('app').style.height=height+'px';view?.resize();},80);}
 addEventListener('resize',resize);addEventListener('orientationchange',resize);window.visualViewport?.addEventListener('resize',resize);addEventListener('pageshow',resize);
 addEventListener('blur',()=>{clearInput();if(active())game.pause(true);audio.silence();});
 document.addEventListener('visibilitychange',()=>{clearInput();if(document.hidden){if(active())game.pause(true);audio.silence();telemetry.log('hidden');telemetry.flush(true);}else{last=0;resize();telemetry.log('visible');}});
