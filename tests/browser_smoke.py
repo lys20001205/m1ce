@@ -120,6 +120,10 @@ async def run_browser(p,name):
         await page.screenshot(path=str(ART/f'{name}-long-train.png'))
         long_grace=await page.evaluate('window.__RH_TEST.game().damageCar(0,180,"test");window.__RH_DEBUG.snapshot().rescue.window')
         checks['long_train_gets_reachable_grace']=long_grace>20
+        # Viewport screenshots must not consume the preceding live rescue/route
+        # fixture on slow software GPUs. The rotation case resumes this same
+        # twelve-car world and must independently prove pause and input clearing.
+        await page.evaluate('window.__RH_TEST.game().pause(true)')
         for width,height in [(812,332),(932,430)]:
             await page.set_viewport_size({'width':width,'height':height});await page.wait_for_timeout(250)
             s=await page.evaluate('window.__RH_DEBUG.snapshot()')
@@ -128,9 +132,15 @@ async def run_browser(p,name):
             rects=await page.evaluate("""() => {const r=id=>{const b=document.getElementById(id).getBoundingClientRect();return {top:b.top,bottom:b.bottom,left:b.left,right:b.right}};return {scene:r('viewport'),hud:r('hud'),controls:r('controls'),repair:r('repairPanel')};}""")
             checks[f'{width}_ui_does_not_cover_scene']=rects['scene']['bottom']-rects['scene']['top']>=height*.95 and await page.evaluate('''()=>{const s=__RH_DEBUG.snapshot();return ['L','R','layer','reverse','brake','interact','fix','attack','ranged'].every(id=>{const n=document.getElementById(id),r=n.getBoundingClientRect();return n.contains(document.elementFromPoint(r.x+r.width/2,r.y+r.height/2))&&!(s.playerScreenX>=r.x&&s.playerScreenX<=r.right&&s.playerScreenY>=r.y&&s.playerScreenY<=r.bottom);});}''')
             await page.screenshot(path=str(ART/f'{name}-{width}x{height}.png'))
+        await page.evaluate('window.__RH_TEST.game().pause(false)')
+        result['portrait_before']=await page.evaluate('({status:__RH_TEST.game().status,paused:__RH_TEST.game().paused,route:__RH_TEST.game().t,rescue:__RH_TEST.game().rescue})')
+        checks['portrait_starts_from_running']=result['portrait_before']['status']=='running' and not result['portrait_before']['paused']
+        await page.keyboard.down('d')
         await page.set_viewport_size({'width':390,'height':844})
-        try:await page.wait_for_function('window.__RH_TEST.game().paused && !document.getElementById("portrait").hidden',timeout=2500);checks['portrait_pauses_game']=True
+        try:await page.wait_for_function('window.__RH_TEST.game().paused && !window.__RH_TEST.input().move && !document.getElementById("portrait").hidden',timeout=2500);checks['portrait_pauses_game']=True
         except:checks['portrait_pauses_game']=False
+        result['portrait_after']=await page.evaluate('({status:__RH_TEST.game().status,paused:__RH_TEST.game().paused,move:__RH_TEST.input().move,portraitHidden:document.getElementById("portrait").hidden,width:innerWidth,height:innerHeight})')
+        await page.keyboard.up('d')
         await page.set_viewport_size({'width':844,'height':390})
         try:await page.wait_for_function('window.__RH_TEST.game().paused',timeout=2500);checks['landscape_requires_explicit_resume']=True
         except:checks['landscape_requires_explicit_resume']=False
