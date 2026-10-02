@@ -135,10 +135,17 @@ async def run_browser(p,name):
         await page.evaluate('window.__RH_TEST.game().pause(false)')
         result['portrait_before']=await page.evaluate('({status:__RH_TEST.game().status,paused:__RH_TEST.game().paused,route:__RH_TEST.game().t,rescue:__RH_TEST.game().rescue})')
         checks['portrait_starts_from_running']=result['portrait_before']['status']=='running' and not result['portrait_before']['paused']
+        await page.evaluate('''()=>{window.__qaPortraitTrace=null;let beforeX=null;const targets=[[window,'resize'],[window,'orientationchange'],[window.visualViewport,'resize']].filter(([target])=>target);function beforeResize(){if(innerHeight>innerWidth)beforeX=__RH_TEST.game().player.x;}function afterResize(event){if(innerHeight<=innerWidth)return;const g=__RH_TEST.game();window.__qaPortraitTrace={event:event.type,target:event.target===window.visualViewport?'visualViewport':'window',paused:g.paused,move:__RH_TEST.input().move,beforeX,afterX:g.player.x,portraitHidden:document.getElementById("portrait").hidden};for(const[target,type]of targets){target.removeEventListener(type,beforeResize,true);target.removeEventListener(type,afterResize,false);}}for(const[target,type]of targets){target.addEventListener(type,beforeResize,true);target.addEventListener(type,afterResize,false);}}''')
         await page.keyboard.down('d')
         await page.set_viewport_size({'width':390,'height':844})
-        try:await page.wait_for_function('window.__RH_TEST.game().paused && !window.__RH_TEST.input().move && !document.getElementById("portrait").hidden',timeout=2500);checks['portrait_pauses_game']=True
+        # These are event/DOM safety states, not GPU-frame completion states.
+        # Keep the same deadline; timer polling avoids starving behind a software
+        # WebGL RAF while ordered capture/bubble observers prove immediate pause.
+        try:await page.wait_for_function('window.__RH_TEST.game().paused && !window.__RH_TEST.input().move && !document.getElementById("portrait").hidden',polling=50,timeout=2500);checks['portrait_pauses_game']=True
         except:checks['portrait_pauses_game']=False
+        result['portrait_event']=await page.evaluate('window.__qaPortraitTrace')
+        trace=result['portrait_event'] or {}
+        checks['portrait_pause_precedes_gpu_resize']=trace.get('paused') is True and trace.get('move')==0 and trace.get('beforeX')==trace.get('afterX') and trace.get('portraitHidden') is False
         result['portrait_after']=await page.evaluate('({status:__RH_TEST.game().status,paused:__RH_TEST.game().paused,move:__RH_TEST.input().move,portraitHidden:document.getElementById("portrait").hidden,width:innerWidth,height:innerHeight})')
         await page.keyboard.up('d')
         await page.set_viewport_size({'width':844,'height':390})
