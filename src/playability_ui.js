@@ -40,7 +40,7 @@ export class PlayabilityUI{
     const mark=view.project(g.craneX,6.8,.65);this.hazardTag.hidden=g.phase!=='crane'||mark.x<0||mark.x>view.w;this.hazardTag.style.left=Math.min(view.w-85,Math.max(85,mark.x))+'px';this.hazardTag.style.top=Math.max(32,mark.y)+'px';this.hazardTag.textContent=g.player.roof?'↓ 红边横栏 · 下车内':'红边横栏 · 车内安全';
     const hp=this.doc.getElementById('playerTag');if(g.alive)hp.textContent=(g.player.face<0?'◀ ':'▶ ')+(g.playerLayer==='DEPOT'?'你 · 货站':(g.player.roof?'你 · 车顶':'你 · 车内')+(g.player.carry?' · 搬运':''));
     const direction=this.doc.getElementById('reverse');direction.textContent=g.lastDirection==='REVERSE'?'前进':'倒车';direction.title='B 刹停 0.5 秒 → V 换向（倒车 28%）';
-    this.doc.getElementById('versionTag').textContent='V13 R8 · '+(g.elapsed<3&&g.t===0?'转盘对轨 · 0%':(g.speed<0?'→ 倒车 ':g.speed>0?'← 前进 ':'■ 停车 ')+Math.round(Math.abs(g.speed)*100)+'%');
+    this.doc.getElementById('versionTag').textContent='V13 R9 · '+(g.elapsed<3&&g.t===0?'转盘对轨 · 0%':(g.speed<0?'→ 倒车 ':g.speed>0?'← 前进 ':'■ 停车 ')+Math.round(Math.abs(g.speed)*100)+'%');
     const age=g.director.stopAge(g);if(['STOP','REVERSE'].includes(g.speedMode)&&age>=25&&age<35)this.doc.getElementById('centerHint').textContent='停站警戒升级 · '+Math.ceil(35-age)+'秒后增援 · 可回车防守或前进';
     const progress=g.combatProgress;this.doc.getElementById('scrapHud').textContent=g.scrap+' · '+progress.kills+'击杀';
     this.doc.getElementById('engineVital').textContent=Math.ceil(g.cars[0].hp)+'/'+g.cars[0].max;
