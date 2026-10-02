@@ -1,0 +1,33 @@
+name: Public cache and reload diagnostic
+on:
+  pull_request:
+    branches: [master]
+    paths:
+      - tools/probe_public_cache.py
+      - .github/workflows/cache-diagnostic.yml
+permissions:
+  contents: read
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      LIBGL_ALWAYS_SOFTWARE: '1'
+      WEBKIT_DISABLE_DMABUF_RENDERER: '1'
+      EXPECTED_PUBLIC_SHA: ${{ github.event.pull_request.base.sha }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.13'
+      - run: |
+          pip install playwright==1.56.0
+          python -m playwright install --with-deps chromium webkit
+      - run: timeout --kill-after=10s 300s xvfb-run -a python -u tools/probe_public_cache.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: public-cache-diagnostic-${{ github.run_attempt }}
+          path: artifacts/public-cache-diagnostic/
+          include-hidden-files: true
+          retention-days: 14
