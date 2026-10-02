@@ -12,7 +12,7 @@
 #vitals{min-width:136px;gap:8px}#vitals .vital{display:grid;grid-template-columns:16px auto;min-width:58px;gap:1px 3px}
 #vitals .vital::before{content:'♥';color:#b6edc9;font-size:13px}#vitals .vital:first-child::before{content:'⚙';color:#e5c789}
 #hud #healthBlock{height:40px;padding:4px 8px}#hud nav{pointer-events:auto;margin-left:auto;gap:0}
-#pause{height:44px;min-width:44px;border-radius:50%;background:#0a202998;border:1px solid #b7e7e366;font-size:11px}
+#hud nav #pause,.touchUI #hud nav #pause{width:44px;height:44px;min-width:44px;min-height:44px;flex:0 0 44px;border-radius:50%;background:#0a202998;border:1px solid #b7e7e366;font-size:11px}
 #route{position:absolute;z-index:10;top:54px;left:14px;width:calc(100% - 92px);height:4px;padding:0;border:0;border-radius:2px;background:#1426328c;box-shadow:none;overflow:visible;pointer-events:none}
 #fill{height:4px;border-radius:2px;background:#b3d5c29c}#phase,#progress{position:absolute!important;left:0;top:7px;color:#c7dddd;font-size:10px;max-width:75%;overflow:hidden;text-overflow:ellipsis}#phase{display:none}#route #progress{margin:0;white-space:nowrap}#route .depotMarker{font-size:8px;bottom:-4px}
 #controls,.touchUI #controls{position:absolute;inset:0;z-index:12;display:block;padding:0;pointer-events:none;max-width:none}
@@ -26,11 +26,11 @@
 #controls #combatControls button,.touchUI #controls #combatControls button{width:62px;min-width:62px;height:62px;padding:0;border-radius:50%}
 #controls button,#controls #utilityControls button,#controls #combatControls button,#controls #interact,#controls #attack,#controls #ranged,#controls #brake,#controls #fix{font-size:0;background:#102a355c;border:1px solid #c7e5e46e;box-shadow:0 1px 5px #0003;text-shadow:0 1px 3px #000;white-space:normal}
 #controls button::before,.touchUI #controls button::before{content:attr(data-icon);display:block;font:23px/1 system-ui;color:#e6f4f3;opacity:1;margin:0 0 2px}
-#controls button::after{content:attr(data-short);display:block;font:600 9px/1.1 system-ui;color:#d7eeeb}
+#controls button::after{content:attr(data-short);display:block;font:600 11px/1.1 system-ui;color:#f1fffc}
 #movementPad button::before{font-size:22px;margin:0}#movementPad button::after{display:none}
 #controls #interact{border-color:#9ee9c888}#controls #attack{border-color:#f0c5929c}#controls #ranged{border-color:#97d7f1aa}
 #controls button.active{background:#79bfbb9c!important;border-color:#e5fff7!important;box-shadow:0 0 0 2px #dffff366}
-#controls button[data-ready=false]{opacity:.5}#controls button:disabled{opacity:.45}#controls button:focus-visible{outline:2px solid #fff4b0}
+#controls button[data-ready=false]{background:#102a353d;border-color:#c7e5e440}#controls button:disabled{opacity:.65}#controls button:focus-visible{outline:2px solid #fff4b0}
 #quickCargo{position:absolute;z-index:11;left:14px;top:78px;display:flex;gap:10px;background:#0a202b88;border-radius:7px;padding:5px 8px;pointer-events:none;font:600 11px system-ui;color:#d7f2e8}
 #quickCargo span::before{content:attr(data-icon);margin-right:4px;color:#a2dcca}#quickCargo #cargoRisk{color:#ffb391}#quickCargo #cargoRisk::before{color:#ffb391}
 #guardStatus{position:absolute;z-index:11;top:110px;left:14px;color:#acdbe9;font:600 11px system-ui;pointer-events:none;background:#09212c80;border-radius:6px;padding:3px 6px}
@@ -40,7 +40,7 @@
 #contextCue[data-repair=true]::after{content:'';position:absolute;bottom:0;left:0;width:var(--repair-progress);height:3px;border-radius:2px;background:#b8f0cf}
 #event{top:76px;left:50%;transform:translateX(-50%);max-width:46%;padding:5px 10px;border:0;border-radius:15px;font-size:11px;background:#081b27ae}#event[data-quiet=true]{visibility:hidden}
 #shipmentToast{top:110px;right:14px;max-width:32%;padding:6px 9px;background:#12372eb8;box-shadow:none}#shipmentToast b{font-size:15px}#shipmentToast small{font-size:10px}#shipmentToast small{max-height:28px;overflow:hidden}
-#playerTag{font-size:9px;padding:1px 4px;background:#0d283480;box-shadow:none}#carTags .tag{font-size:9px;padding:2px 4px;background:#0d28347a;box-shadow:none}
+#playerTag{font-size:11px;padding:1px 4px;background:#0d2834bd;box-shadow:none}#carTags .tag{font-size:11px;padding:2px 4px;background:#0d2834bd;box-shadow:none;color:#e8ffff}
 #statusDrawer{position:absolute;right:max(12px,env(safe-area-inset-right));top:max(8px,env(safe-area-inset-top));z-index:18;color:#dceeea}
 #statusToggle{display:flex;align-items:center;justify-content:center;width:44px;height:44px;padding:0;border:1px solid #c1dfdf66;border-radius:50%;background:#09212ba6;color:#deeee9;font-size:22px;list-style:none}
 #statusToggle::-webkit-details-marker{display:none}
@@ -53,6 +53,7 @@
 #keyboardLegend{display:grid;grid-template-columns:1fr 1fr;font-size:10px;gap:7px;white-space:normal;padding:8px 0}
 #statusMenu{display:flex;gap:8px;margin:10px 0}#statusMenu button,#closeStatus{min-height:44px}#closeStatus{width:100%;background:#284c46}
 #armoryPanel,#speedPanel{left:50%;top:50%;bottom:auto;transform:translate(-50%,-50%);width:min(500px,calc(100% - 100px));max-height:calc(100% - 124px);padding:13px;border-radius:15px;background:#10252bf5;z-index:17;overflow:auto;touch-action:pan-y}
+#armoryPanel .armoryHead{position:sticky;top:-13px;z-index:2;background:#10252b;padding:8px 0;margin-top:-8px;border-bottom:1px solid #73979980}
 #speedChoices{display:grid;grid-template-columns:repeat(5,minmax(44px,1fr));gap:6px}#speedChoices button{min-height:44px}
 #weaponChoices{grid-template-columns:1fr 1fr;gap:8px}#weaponChoices button{min-height:60px;font-size:11px;padding:9px}#closeArmory{min-width:44px;min-height:44px}#armoryHelp{font-size:10px!important}
 #modal{background:#06121cbf;padding:14px}#modal article{width:min(760px,96%);padding:20px;border-radius:20px;background:#10232ef2;border-color:#78979866}

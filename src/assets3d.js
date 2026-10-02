@@ -1,6 +1,6 @@
 import * as T from '../vendor/three.module.min.js';
 import {GLTFLoader} from '../vendor/loaders/GLTFLoader.js';
-import {cutForeground,catwalkBaseY,buildServiceCarBody} from './train_cutaway.js';
+import {cutForeground,catwalkBaseY,buildServiceCarBody,fitCarUpperBody} from './train_cutaway.js';
 import {prepareTrainWheels} from './train_wheels.js';
 import {assetURL} from './cache_identity.js';
 // Selected CC0 models and palettes are vendored locally. Gameplay retains its validated
@@ -18,9 +18,9 @@ export class AssetLibrary{
  car(m,type){if(!this.models.has('train/train-carriage-flatbed'))return false;
   m.getObjectByName('Hull').visible=false;for(const o of m.children)if(o.name==='Wheel')o.visible=false;m.getObjectByName('RoofCutaway').visible=false;
   const flatbed=this.add(m,'train/train-carriage-flatbed',[7.9,2.78,3.0],[0,0,0],-Math.PI/2);if(flatbed)this.cutawayTriangles+=cutForeground(flatbed,m,{floor:1.12}).removedTriangles;
-  if(type==='engine')this.add(m,'train/train-diesel-a',[7.4,2.65,1.65],[0,.14,-.72],-Math.PI/2);
-  else if(type==='cargo')this.add(m,'train/train-carriage-container-red',[7.5,3.35,1.15],[0,0,-1.05],-Math.PI/2);
-  else this.add(m,'industrial/shipping-container-a',[5.8,type==='battery'?2.2:1.4,1.05],[0,1.1,-.94],Math.PI/2);
+  if(type==='engine'){const body=this.add(m,'train/train-diesel-a',[7.4,2.65,1.65],[0,.14,-.72],-Math.PI/2);if(body)fitCarUpperBody(body,m,{names:['train-diesel-a']});}
+  else if(type==='cargo'){const body=this.add(m,'train/train-carriage-container-red',[7.5,3.35,1.15],[0,0,-1.05],-Math.PI/2);if(body)fitCarUpperBody(body,m,{names:['cargo']});}
+  else {const body=this.add(m,'industrial/shipping-container-a',[5.8,type==='battery'?2.2:1.4,1.05],[0,1.1,-.94],Math.PI/2);if(body)fitCarUpperBody(body,m,{names:['shipping-container-a']});}
   buildServiceCarBody(this.view,m,type);
   this.add(m,'train/train-connector',[.45,.45,.65],[4.07,.45,0],Math.PI/2);
   return true;

@@ -33,6 +33,13 @@ async def run(p,name):
         await page.evaluate('(()=>{const a=__RH_TEST,g=a.game();a.forcePlayer(1.7);g.scrap=120;g.pause(false)})()')
         await page.click('#interact');await page.wait_for_selector('#armoryPanel:not([hidden])')
         report['checks']['ranged_initially_available']=not await page.locator('[data-weapon=handgun]').is_disabled() and not await page.locator('[data-weapon=shotgun]').is_disabled() and await page.evaluate('__RH_TEST.game().meleeTier===1&&__RH_TEST.game().ranged===null')
+        # Scrolling to the last weapon must retain a real, reachable close target.
+        await page.evaluate('(()=>{const p=document.getElementById("armoryPanel");p.scrollTop=p.scrollHeight})()')
+        report['checks']['scrolled_armory_close_target']=await page.evaluate('(()=>{const n=document.getElementById("closeArmory"),r=n.getBoundingClientRect();return r.width>=44&&r.height>=44&&n.contains(document.elementFromPoint(r.x+r.width/2,r.y+r.height/2))})()')
+        await page.locator('#closeArmory').tap()
+        report['checks']['scrolled_armory_close_works']=await page.locator('#armoryPanel').is_hidden()
+        await page.locator('#interact').tap()
+        await page.wait_for_selector('#armoryPanel:not([hidden])')
         before=await page.evaluate('(()=>{const g=__RH_TEST.game();return {t:g.t,time:g.elapsed,hp:g.player.hp,engine:g.cars[0].hp,enemies:g.enemies.map(e=>[e.id,e.x,e.hp])}})()')
         # Await an actual production frame, rather than assuming software WebGL
         # can render in 150ms. A paused world still times out and fails this gate.

@@ -73,12 +73,12 @@ async def run(p,name):
         for w,h in SIZES:
             await page.set_viewport_size({'width':w,'height':h});await stable_viewport(page,w,h)
             rect=await page.evaluate("""()=>{const r=id=>{const b=document.getElementById(id).getBoundingClientRect();return {x:b.x,y:b.y,w:b.width,h:b.height,bottom:b.bottom,right:b.right}};
-                return {size:[innerWidth,innerHeight],buttons:['L','R','layer','interact','brake','fix','attack','ranged'].map(r),canvas:r('game'),controls:r('controls'),vitals:r('vitals')};}""")
+                return {size:[innerWidth,innerHeight],buttons:['L','R','layer','reverse','interact','brake','fix','attack','ranged','pause','statusToggle'].map(r),canvas:r('game'),controls:r('controls'),vitals:r('vitals')};}""")
             key=f'{w}x{h}_';report['samples'].append(rect)
             check(key+'actual_size',rect['size']==[w,h]);b=rect['buttons']
             check(key+'targets_44',all(x['w']>=44 and x['h']>=44 and x['x']>=0 and x['right']<=w+.5 and x['bottom']<=h+.5 for x in b))
             check(key+'controls_no_overlap',all(min(a['right'],c['right'])-max(a['x'],c['x'])<=.5 or min(a['bottom'],c['bottom'])-max(a['y'],c['y'])<=.5 for i,a in enumerate(b) for c in b[i+1:]))
-            check(key+'edge_controls_world_visible',rect['canvas']['h']>=h*.95 and await page.evaluate('''()=>['L','R','layer','interact','brake','fix','attack','ranged'].every(id=>{const n=document.getElementById(id),r=n.getBoundingClientRect();return n.contains(document.elementFromPoint(r.x+r.width/2,r.y+r.height/2));})'''))
+            check(key+'edge_controls_world_visible',rect['canvas']['h']>=h*.95 and await page.evaluate('''()=>['L','R','layer','reverse','interact','brake','fix','attack','ranged','pause','statusToggle'].every(id=>{const n=document.getElementById(id),r=n.getBoundingClientRect();return n.contains(document.elementFromPoint(r.x+r.width/2,r.y+r.height/2));})'''))
             check(key+'canvas_area',rect['canvas']['h']>=160 and rect['canvas']['w']>=w-40)
             check(key+'distinct_vitals',await page.locator('#engineVital').is_visible() and await page.locator('#playerVital').is_visible())
             await page.screenshot(path=str(ART/f'{name}-mobile-art-{w}x{h}.png'))

@@ -3,8 +3,30 @@ import * as T from '../vendor/three.module.min.js';
 // The authored GLB, wheels, rear rails, collision floor and shared materials stay intact.
 const variants=new WeakMap();
 const serviceBodies=new WeakMap();
+const upperBodies=new WeakMap();
 export const CATWALK_DECK_FRACTION=(.1+.147247374)/(.454119623+.147247374);
 export function catwalkBaseY(floor,height){return floor-height*CATWALK_DECK_FRACTION;}
+
+// Integrate the imported cab/container into the one playable carriage height.
+// Derive only its body vertices above the interior floor: bogies, chassis,
+// imported source geometry, axle pivots and authored texture coordinates survive.
+export function fitCarUpperBody(model,root,{floor=1.12,top=4.04,names=[]}={}){
+ root.updateWorldMatrix(true,true);const inverse=root.matrixWorld.clone().invert(),point=new T.Vector3();let count=0;
+ model.traverse(mesh=>{
+  // GLTFLoader wraps a node that has both a mesh and children in a Group,
+  // naming its body mesh <node>_1. Match that body, never its wheel children.
+  if(!mesh.isMesh||!(names.includes(mesh.name)||names.includes(mesh.parent?.name)&&mesh.name===mesh.parent.name+'_1'))return;
+  const source=mesh.geometry,position=source.getAttribute('position'),matrix=new T.Matrix4().multiplyMatrices(inverse,mesh.matrixWorld),back=matrix.clone().invert();let highest=-Infinity;
+  for(let i=0;i<position.count;i++){point.fromBufferAttribute(position,i).applyMatrix4(matrix);highest=Math.max(highest,point.y);}
+  if(highest<=floor+.05)return;
+  const key=[floor,top,...matrix.elements.map(n=>Math.round(n*1e6)/1e6)].join(':');let cache=upperBodies.get(source);if(!cache){cache=new Map();upperBodies.set(source,cache);}let derived=cache.get(key);
+  if(!derived){derived=source.clone();const dest=derived.getAttribute('position'),ratio=(top-floor)/(highest-floor);
+   for(let i=0;i<position.count;i++){point.fromBufferAttribute(position,i).applyMatrix4(matrix);if(point.y>floor)point.y=floor+(point.y-floor)*ratio;point.applyMatrix4(back);dest.setXYZ(i,point.x,point.y,point.z);}
+   derived.computeVertexNormals();derived.computeBoundingBox();derived.computeBoundingSphere();cache.set(key,derived);
+  }
+  mesh.geometry=derived;mesh.userData.integratedBodyTop=top;count++;
+ });return count;
+}
 
 // A side-cut railway service body, rather than a factory walkway hovering above
 // a complete locomotive. All vertical structure sits behind the Z=.65 play lane.
@@ -16,22 +38,23 @@ export function buildServiceCarBody(view,car,type,{floor=1.12,roof=4.12}={}){
  const [paint,dark]=palette[type]||palette.workshop,body=new T.Group();body.name='Service-Car-Body-'+type;car.add(body);
  const part=(name,x,y,z,sx,sy,sz,color)=>{const m=view.box(body,x,y,z,sx,sy,sz,color);m.name=name;return m;};
  // Rear wall, roof band and end pillars form one continuous load-bearing outline.
- part('Car-Rear-Lower-Wall',0,1.98,-1.43,7.74,1.72,.10,dark);
- part('Car-Rear-Upper-Wall',0,3.43,-1.43,7.74,1.30,.10,paint);
- for(const x of [-3.82,3.82])part('Car-End-Pillar',x,(floor+roof)/2,-1.11,.16,roof-floor,.72,dark);
- part('Car-Roof-Fascia',0,roof-.13,-1.35,7.96,.25,.18,paint);
- const deck=part('RoofWalkSurface',0,roof-.08,-.025,8,.16,2.75,0x526a75);
- // A single rear safety rail belongs to the carriage. No front pipes cross actors.
- part('Car-Rear-Safety-Rail',0,roof+.43,-1.34,7.85,.065,.065,0xe7b54f);
- for(const x of [-3.78,-1.9,0,1.9,3.78])part('Car-Rear-Rail-Stanchion',x,roof+.22,-1.34,.05,.44,.05,dark);
- part('RoofWalkEdge',0,roof+.008,1.32,7.98,.016,.035,0xe7b54f);
- for(const x of [-3,-2,-1,0,1,2,3])part('RoofWalkGrip',x,roof+.008,.45,.025,.016,1.62,0x94a6ac);
+ part('Car-Rear-Lower-Wall',0,1.98,-1.48,7.42,1.72,.06,dark);
+ part('Car-Rear-Upper-Wall',0,3.43,-1.48,7.42,1.30,.06,paint);
+ for(const x of [-3.70,3.70])part('Car-End-Pillar',x,(floor+roof)/2,-1.25,.09,roof-floor,.36,dark);
+ part('Car-Roof-Fascia',0,roof-.075,-1.46,7.5,.15,.08,paint);
+ // The roof sits INSIDE the chassis footprint, with a short cut edge. The old
+ // full-width awning, upper rail and grip stripes made it look like a terrace.
+ const deck=part('RoofWalkSurface',0,roof-.045,-.28,7.60,.09,2.32,paint);
+ part('RoofWalkEdge',0,roof-.025,.87,7.60,.04,.025,dark);
+ // Very short flush metal lips leave readable footing without an external rail.
+ for(const x of [-3.70,3.70])part('Car-Roof-End-Cap',x,roof-.025,-.28,.05,.04,2.30,dark);
+ part('Roof-Gangway',4.15,roof-.045,.65,.85,.09,.60,dark);
  // Type-specific upper body: cab windows, freight ribs, power vents or tool lockers.
  if(type==='engine'){
   for(const x of [-2.65,-.95,.95,2.65]){
-   part('Cab-Window-Frame',x,3.42,-1.35,1.44,.78,.075,dark);
-   part('Cab-Window',x,3.44,-1.29,1.28,.61,.035,0x284b5b);
-   part('Cab-Window-Glint',x-.37,3.58,-1.265,.04,.24,.016,0x83bac3);
+   part('Cab-Window-Frame',x,3.42,-1.40,1.44,.78,.065,dark);
+   part('Cab-Window',x,3.44,-1.35,1.28,.61,.025,0x284b5b);
+   part('Cab-Window-Glint',x-.37,3.58,-1.33,.04,.24,.012,0x83bac3);
   }
   part('Cab-Front-Windscreen',-3.72,3.41,-.91,.035,.70,.61,0x284b5b);
  }else if(type==='cargo'){
