@@ -74,3 +74,10 @@ test('role grading isolates shared imported materials and reuses derived copies'
  const another=new T.Mesh(geometry,source);roles.apply(another,'enemy');assert.equal(another.material,enemy.material);
  assert.equal(enemy.geometry,player.geometry,'presentation does not replace geometry');
 });
+
+test('touch cargo guidance names available buttons while keyboard instructions remain intact',async()=>{
+ const {cargoInstruction}=await import('../src/cargo_navigation.js');
+ const text='W 上车顶 · 到桥按 F 入站 · 货车 LOAD';
+ assert.equal(cargoInstruction(text,true),'⇅ 上车顶 · 到桥按 ↗ 入站 · 货车 LOAD');
+ assert.equal(cargoInstruction(text,false),text);
+});

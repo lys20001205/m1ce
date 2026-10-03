@@ -105,7 +105,7 @@ async def run(p,name):
         await page.evaluate('''()=>{const a=__RH_TEST,g=a.game();g.director.rest=9999;g.t=.26;g.elapsed=5;g.phase='yard';g.speedMode='STOP';a.forcePlayer(12.45,true);a.step(0);}''')
         await page.wait_for_function('document.getElementById("centerHint").textContent.includes("站内库存 2,250")')
         stock_hint=await page.locator('#centerHint').text_content()
-        check('depot_stock','站内库存 2,250' in stock_hint and 'F 入站' in stock_hint)
+        check('depot_stock','站内库存 2,250' in stock_hint and '↗ 入站' in stock_hint and 'F 入站' not in stock_hint)
         await page.keyboard.press('KeyF');await page.wait_for_function('__RH_TEST.game().playerLayer==="DEPOT"')
         await page.keyboard.press('KeyF');await page.wait_for_function('!!__RH_TEST.game().heldCargo')
         await page.wait_for_function('document.getElementById("centerHint").textContent.includes("尚未装车")')

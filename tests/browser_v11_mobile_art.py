@@ -10,7 +10,7 @@ BASE='http://127.0.0.1:8792/?test=1'
 SIZES=[(812,332),(844,390),(932,430),(1280,720)]
 VIEW_KEYS=['actual_size','targets_44','controls_no_overlap','edge_controls_world_visible','canvas_area','distinct_vitals']
 CASE_KEYS=['normal_entry','world_first_compact_hud','status_drawer_pause','status_drawer_economy_visible','status_drawer_resume','manual_pause_survives_drawer','locked_ranged_explained','move_response','hold_slide_reverse','neutral_stops','capture_release_stops','second_key_survives',
- 'empty_context_says_return','empty_context_returns','crate_context_says_pickup','crate_pickup','carry_return','load_credits','cargo_cue_clears_carrier','cargo_receipt_not_duplicated','asset_role_materials_isolated',
+ 'empty_context_says_return','empty_context_returns','crate_context_says_pickup','crate_pickup','carry_return','load_credits','cargo_cue_clears_carrier','cargo_receipt_not_duplicated','asset_role_materials_isolated','guard_and_reinforcement_distinct',
  'portrait_pauses','portrait_clears','landscape_stays_paused','resume_works','player_marker_present',
  'polish_instance_budget','polish_rebuild_bounded','polish_geometry_bounded','tunnel_visible','all_route_livery',
  'dead_marker_hidden','art_backdrop','train_shadow','player_visual_kit','enemy_role_kits','windup_telegraph','melee_arc','muzzle_flash','route_mood_changes','no_errors','completed']
@@ -125,6 +125,7 @@ async def run(p,name):
         await page.locator('#interact').tap();await page.wait_for_function('!!__RH_TEST.game().heldCargo');check('crate_pickup',True)
         await page.wait_for_function('document.getElementById("contextCue").dataset.depot==="true"&&document.getElementById("cargoHeld").textContent==="450"',timeout=2500)
         check('cargo_cue_clears_carrier',await page.evaluate('''()=>{const g=__RH_TEST.game(),v=__RH_TEST.view(),p=v.project(g.player.x,g.player.y+1.72,g.player.z??.65),r=document.getElementById('contextCue').getBoundingClientRect();return document.getElementById('playerTag').hidden&&(r.right<p.x-15||r.left>p.x+15||r.bottom<p.y-15||r.top>p.y+15);}'''))
+        check('guard_and_reinforcement_distinct','本人护盾' in await page.locator('#guardStatus').text_content() and '增援暂停' in await page.locator('#progress').text_content() and '货车仍可能受损' in await page.locator('#statusExplainer').text_content())
         check('cargo_receipt_not_duplicated',await page.evaluate('''()=>!Array.from(document.querySelectorAll('.combatPop')).some(n=>!n.hidden&&n.textContent==='CARGO')&&document.getElementById('cargoHeld').textContent==='450' '''))
         await page.screenshot(path=str(ART/f'{name}-mobile-art-cargo.png'))
         await page.locator('#layer').tap();await page.wait_for_function('__RH_TEST.game().playerLayer==="INTERIOR"');check('carry_return',True)
