@@ -1,4 +1,4 @@
-import {cargoNavigation} from './cargo_navigation.js';
+import {cargoNavigation,cargoInstruction} from './cargo_navigation.js';
 const amount=n=>Math.round(n).toLocaleString();
 // Presentation only: all existing input targets and economy authorities remain intact.
 export class MobileHUD {
@@ -9,7 +9,7 @@ export class MobileHUD {
   const summary=node('summary','statusToggle',this.drawer,'☰');summary.setAttribute('aria-label','状态、账本与操作说明');
   const panel=node('section','statusBody',this.drawer);
   node('h2','statusTitle',panel,'行车状态');
-  node('p','statusExplainer',panel,'货物未兑现前仍有风险；回库结算后才计入 Bank。');
+  node('p','statusExplainer',panel,'货物未兑现前仍有风险；回库结算后才计入 Bank。靠站的本人护盾只保护玩家；增援暂停只延缓新敌登车，旧敌仍会攻击，货车仍可能受损。');
   this.combat=node('p','combatSummary',panel);
   panel.append(doc.getElementById('cargoLedger'));
   node('h3','controlTitle',panel,'操作');panel.append(doc.getElementById('centerStack'));panel.append(doc.getElementById('keyboardLegend'));
@@ -35,12 +35,12 @@ export class MobileHUD {
   }
   this.bank.textContent='BANK '+amount(l.bank);
   this.combat.textContent='击杀 '+g.totalKills+' · Scrap '+amount(g.scrap);
-  const remaining=g.dockingPlayerRemaining;this.guard.hidden=remaining<=0;this.guard.textContent='◈ '+Math.ceil(remaining)+'s';this.guard.title='一次性靠站护盾；结束后旧敌恢复攻击';
+  const remaining=g.dockingPlayerRemaining;this.guard.hidden=remaining<=0;this.guard.textContent='本人护盾 '+Math.ceil(remaining)+'s';this.guard.title='只保护玩家；旧敌仍在，货车仍可能受损';
   const names={layer:g.playerLayer==='DEPOT'?'回车':g.player.roof?'下车内':'上车顶',reverse:g.lastDirection==='REVERSE'?'前进':'倒车',brake:'刹停',interact:'交互',fix:'维修',attack:g.melee.name||g.melee.id,ranged:g.ranged?(({handgun:'手枪',smg:'冲锋',rifle:'步枪',shotgun:'霰弹'}[g.ranged.id]||g.ranged.name)+' '+(g.rangedMagazine?.reloadRemaining>0?'装弹':g.rangedMagazine?.rounds+'/'+g.rangedMagazine?.max)):'未解锁'};
   const nav=cargoNavigation(g);if(nav?.action)names.interact=nav.action.replace(/F\s*[·/]?\s*/,'').slice(0,8);else names.interact=d.getElementById('interact').textContent.slice(0,8);
   for(const[id,label]of Object.entries(names))d.getElementById(id).dataset.short=label;
   let cue='';
-  if(g.playerLayer==='DEPOT')cue=g.player.carry?(nav?.goal?'回中央桥 · '+nav.goal.label:'回车装货'):g.cargoUsed>=g.cargoCapacity?'货舱已满 · 回车':'靠近箱子自动拾取';
+  if(g.playerLayer==='DEPOT')cue=g.player.carry?(nav?.goal?nav.text.replace(/^携带 [\d,]+ · 尚未装车 · /,''):'回车装货'):g.cargoUsed>=g.cargoCapacity?'货舱已满 · 回车':'靠近箱子自动拾取';
   else if(nav?.cue)cue=nav.cue;
   else if(nav?.goal)cue=nav.text.replace(/^站内库存 [\d,]+ · /,'').replace(/^携带 [\d,]+ · 尚未装车 · /,'');
   else if(g.player.carry)cue='携带 '+amount(l.held)+' · '+(nav?.action||'返回货车');
@@ -48,7 +48,7 @@ export class MobileHUD {
   else if(g.consoleOpen)cue='选择速度 · 倒车需先刹停';
   else if(g.player.roof&&['approach','crane','tunnel'].includes(g.phase))cue='低净空 · 下车内躲避';
   else if(g.cars[0].hp<g.cars[0].max*.3)cue='动力危急 · 返回机车维修';
-  if(nav?.goal&&!nav.cue){const distance=nav.text.match(/([0-9]+(?:\.[0-9]+)?)m/);if(distance)cue+=' · '+distance[1]+'m';}
+  if(nav?.goal&&!nav.cue&&g.playerLayer!=='DEPOT'){const distance=nav.text.match(/([0-9]+(?:\.[0-9]+)?)m/);if(distance)cue+=' · '+distance[1]+'m';}
   if(g.rescue)cue=g.alive?(g.playerLayer==='DEPOT'?'动力停机 · 回中央桥后 RETURN':g.player.carry?(g.player.roof?'动力停机 · 到货车 LOAD 放货':'动力停机 · 先放货再维修'):g.player.roof?'动力停机 · 下车内维修':'动力停机 · 返回机车按住维修'):'';
   if(g.repairJob)cue=d.getElementById('repairText').textContent;
   if(!g.rescue&&!g.repairJob&&g.notices.at(-1))cue=g.notices.at(-1).title;
@@ -57,7 +57,7 @@ export class MobileHUD {
   const full=d.getElementById('centerHint').textContent;
   if(!cue&&full!==this.lastHint){this.hintUntil=g.elapsed+4;this.lastHint=full;}
   if(!cue&&g.elapsed<this.hintUntil&&/不可|无法|停机|离开|护盾结束/.test(full))cue=full.split(' · ')[0].slice(0,24);
-  this.cue.textContent=cue;this.cue.hidden=!cue||!live||g.armoryOpen;
+  this.cue.textContent=cargoInstruction(cue,d.getElementById('app').classList.contains('touchUI'));this.cue.hidden=!cue||!live||g.armoryOpen;this.cue.dataset.depot=String(g.playerLayer==='DEPOT');
   this.cue.dataset.repair=String(!!g.repairJob);this.cue.style.setProperty('--repair-progress',g.repairJob?Math.min(100,100*g.repairJob.progress/g.repairJob.duration)+'%':'0%');
   const event=d.getElementById('event');if(event.textContent!==this.lastEvent){this.lastEvent=event.textContent;this.eventUntil=g.elapsed+4;}
   event.dataset.quiet=String(!active||!!cue||g.alive&&!g.rescue&&g.elapsed>this.eventUntil);event.title=event.textContent;

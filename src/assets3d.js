@@ -3,10 +3,16 @@ import {GLTFLoader} from '../vendor/loaders/GLTFLoader.js';
 import {cutForeground,catwalkBaseY,buildServiceCarBody,fitCarUpperBody} from './train_cutaway.js';
 import {prepareTrainWheels} from './train_wheels.js';
 import {assetURL} from './cache_identity.js';
+import {MaterialRoles} from './material_roles.js';
 // Selected CC0 models and palettes are vendored locally. Gameplay retains its validated
 // floor, roof and combat sockets; meshes never become collision or reward authority.
 export class AssetLibrary{
- constructor(view){this.view=view;this.models=new Map();this.failures=[];this.replacements=0;this.cutawayTriangles=0;}
+ constructor(view){this.view=view;this.models=new Map();this.failures=[];this.replacements=0;this.cutawayTriangles=0;this.materialRoles=new MaterialRoles();}
+ // Derived materials are shared within a visual role, never written back into
+ // imported assets: scenery, playable cargo and the player may share a source.
+ tint(group,role){
+  this.materialRoles.apply(group,role);
+ }
  async load(){const manifest=await fetch(assetURL('../assets/kenney/manifest.json',import.meta.url)).then(r=>{if(!r.ok)throw Error('Asset manifest unavailable');return r.json();}),manager=new T.LoadingManager();manager.setURLModifier(uri=>assetURL(uri,import.meta.url));const loader=new GLTFLoader(manager);
   await Promise.all(Object.entries(manifest.packs).flatMap(([pack,p])=>p.models.map(async ({file})=>{const key=pack+'/'+file.replace('.glb','');try{const gltf=await loader.loadAsync(new URL('../assets/kenney/'+pack+'/'+file,import.meta.url).href);if(pack==="train")prepareTrainWheels(gltf.scene);gltf.scene.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true;}});this.models.set(key,gltf);}catch(e){this.failures.push(key);this.view.log('asset_load_failed',{asset:key,message:String(e)});}})));
   if(this.failures.length){const n=document.createElement('div');n.id='assetWarning';n.textContent='V13 素材加载失败：'+this.failures.join(', ')+' · 此处使用简化备份，请重新加载';document.getElementById('viewport').append(n);}
@@ -26,6 +32,7 @@ export class AssetLibrary{
   return true;
  }
  actor(rig,enemy){const key=enemy?'characters/character-h':'characters/character-g',body=this.fit(key,[.65,1.72,.65],Math.PI/2);if(!body)return;
+  if(enemy)this.tint(body,'enemy');
   for(const name of ['Body','LegL','LegR','Player-visual-kit']){const o=rig.getObjectByName(name);if(o)o.visible=false;}
   // Keep attack meshes and muzzle sockets. Replace original torso/head/legs with the
   // animated character; role equipment remains recognisable across enemy behaviours.
@@ -36,7 +43,7 @@ export class AssetLibrary{
   if(theme==='industrial'){this.add(parts,i%2?'industrial/building-h':'industrial/building-i',[12,7+(i%3)*2,9],[0,0,0]);if(i%3===0)this.add(parts,'industrial/water-tower',[3,12,3],[7,0,-5]);if(i%4===0)this.add(parts,'factory/crane',[8,11,7],[-7,0,0]);}
   else if(theme==='freight'){for(let k=0;k<4;k++)this.add(parts,'industrial/shipping-container-a',[6,2.5,3.5],[(k%2)*6.4-3.2,Math.floor(k/2)*2.5,0],Math.PI/2);if(i%3===0)this.add(parts,'factory/crane',[8,10,6],[7,0,-3]);}
   else {for(const x of [-5.7,5.7]){this.add(parts,'factory/structure-wall',[.8,10,7],[x,0,0]);this.add(parts,'factory/structure-tall',[.6,10,2],[x,0,3]);}this.add(parts,'factory/structure-doorway-wide',[12,2,1],[0,9,0]);}
-  return true;
+  this.tint(parts,'scenery');return true;
  }
  depot(group){if(!this.models.has('factory/catwalk-straight'))return;
   // Keep bridge identity/visibility authoritative; replace the station floor and rails.

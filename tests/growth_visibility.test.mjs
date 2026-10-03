@@ -51,3 +51,33 @@ test('late bridge return guides a carrier to cargo LOAD rather than the unavaila
 test('an actual off-center landing returns on the engine roof, then movement and F load at cargo correctly',()=>{
  const g=new Game();g.chooseRoute('freight');g.chooseCar('cargo');g.start();g.elapsed=40;g.t=.255;g.speedMode='STOP';g.director.rest=999;const d=g.nearestDepot();assert(d.x<8.3);g.player.x=d.x;g.player.roof=true;g.player.layer='ROOF';assert(g.interact());g.step(.025);assert(g.interact());assert(g.heldCargo);assert.match(cargoNavigation(g).text,/再去货车 LOAD/);assert(g.interact());assert.equal(g.playerLayer,'ROOF');assert(g.heldCargo);assert.match(cargoNavigation(g).text,/→ 去货车/);for(let i=0;i<80;i++)g.step(.025,{move:1});assert.equal(g.currentCar,1);assert.equal(cargoNavigation(g).action,'LOAD 装载');assert(g.interact());assert.equal(g.money,1450);assert.equal(g.storedCargo,1);
 });
+
+test('cargo navigation keeps the carrier and fixed phone HUD clear',async()=>{
+ const {cargoGoalPosition}=await import('../src/world_label_layout.js');
+ for(const [width,height] of [[844,390],[812,332]]){
+  const player={x:width/2,head:160,feet:235},p=cargoGoalPosition({x:width/2,y:185},player,width,height);
+  assert(Math.abs(p.x-player.x)>=88,'label yields horizontally to the carrier');
+  assert(p.y-24>=110&&p.y<=height-88,'fixed HUD and touch controls remain clear');
+  const edge=cargoGoalPosition({x:-300,y:20},player,width,height);
+  assert(edge.x>=68&&edge.y>=135);
+ }
+});
+
+test('role grading isolates shared imported materials and reuses derived copies',async()=>{
+ const T=await import('three'),{MaterialRoles}=await import('../src/material_roles.js');
+ const source=new T.MeshStandardMaterial({color:0xffffff}),roles=new MaterialRoles(),geometry=new T.BoxGeometry();
+ const player=new T.Mesh(geometry,source),enemy=new T.Mesh(geometry,source),scenery=new T.Mesh(geometry,source);
+ roles.apply(enemy,'enemy');roles.apply(scenery,'scenery');
+ assert.equal(player.material,source);assert.equal(source.color.getHex(),0xffffff);
+ assert.notEqual(enemy.material,scenery.material);assert(enemy.material.color.r>enemy.material.color.b);
+ assert(scenery.material.color.r<enemy.material.color.r);
+ const another=new T.Mesh(geometry,source);roles.apply(another,'enemy');assert.equal(another.material,enemy.material);
+ assert.equal(enemy.geometry,player.geometry,'presentation does not replace geometry');
+});
+
+test('touch cargo guidance names available buttons while keyboard instructions remain intact',async()=>{
+ const {cargoInstruction}=await import('../src/cargo_navigation.js');
+ const text='W 上车顶 · 到桥按 F 入站 · 货车 LOAD';
+ assert.equal(cargoInstruction(text,true),'⇅ 上车顶 · 到桥按 ↗ 入站 · 货车 LOAD');
+ assert.equal(cargoInstruction(text,false),text);
+});

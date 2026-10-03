@@ -1,5 +1,6 @@
 import {LENGTH,ROOF} from './sim.js';
 import {V11} from './balance.js';
+export function cargoInstruction(text,touch=false){return touch?text.replace(/\bF\b/g,'↗').replace(/\bW\b/g,'⇅'):text;}
 // Navigation reflects the actual bridge landing; returning on the engine side
 // cannot promise an automatic load at a cargo hatch further along the roof.
 export function cargoNavigation(g){
