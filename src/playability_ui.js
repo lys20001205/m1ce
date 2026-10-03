@@ -44,7 +44,7 @@ export class PlayabilityUI{
     // head label competes with the return instruction and the top HUD.
     if(g.playerLayer==='DEPOT')hp.hidden=true;
     const direction=this.doc.getElementById('reverse');direction.textContent=g.lastDirection==='REVERSE'?'前进':'倒车';direction.title='B 刹停 0.5 秒 → V 换向（倒车 28%）';
-    this.doc.getElementById('versionTag').textContent='V13 R12 · '+(g.elapsed<3&&g.t===0?'转盘对轨 · 0%':(g.speed<0?'→ 倒车 ':g.speed>0?'← 前进 ':'■ 停车 ')+Math.round(Math.abs(g.speed)*100)+'%');
+    this.doc.getElementById('versionTag').textContent='V13 R13 · '+(g.elapsed<3&&g.t===0?'转盘对轨 · 0%':(g.speed<0?'→ 倒车 ':g.speed>0?'← 前进 ':'■ 停车 ')+Math.round(Math.abs(g.speed)*100)+'%');
     const age=g.director.stopAge(g);if(['STOP','REVERSE'].includes(g.speedMode)&&age>=25&&age<35)this.doc.getElementById('centerHint').textContent='停站警戒升级 · '+Math.ceil(35-age)+'秒后增援 · 可回车防守或前进';
     const progress=g.combatProgress;this.doc.getElementById('scrapHud').textContent=g.scrap+' · '+progress.kills+'击杀';
     this.doc.getElementById('engineVital').textContent=Math.ceil(g.cars[0].hp)+'/'+g.cars[0].max;

@@ -10,7 +10,7 @@ BASE='http://127.0.0.1:8792/?test=1'
 SIZES=[(812,332),(844,390),(932,430),(1280,720)]
 VIEW_KEYS=['actual_size','targets_44','controls_no_overlap','edge_controls_world_visible','canvas_area','distinct_vitals']
 CASE_KEYS=['normal_entry','world_first_compact_hud','status_drawer_pause','status_drawer_economy_visible','status_drawer_resume','manual_pause_survives_drawer','locked_ranged_explained','move_response','hold_slide_reverse','neutral_stops','capture_release_stops','second_key_survives',
- 'empty_context_says_return','empty_context_returns','crate_context_says_pickup','crate_pickup','carry_return','load_credits','cargo_cue_clears_carrier','cargo_receipt_not_duplicated','asset_role_materials_isolated','guard_and_reinforcement_distinct','cargo_direction_survives_layout',
+ 'empty_context_says_return','empty_context_returns','crate_context_says_pickup','crate_pickup','carry_return','load_credits','cargo_cue_clears_carrier','cargo_receipt_not_duplicated','asset_role_materials_isolated','guard_and_reinforcement_distinct','cargo_direction_survives_layout','engine_service_action_matches','engine_service_panel_guidance','engine_armory_action_matches',
  'portrait_pauses','portrait_clears','landscape_stays_paused','resume_works','player_marker_present',
  'polish_instance_budget','polish_rebuild_bounded','polish_geometry_bounded','tunnel_visible','all_route_livery',
  'dead_marker_hidden','art_backdrop','train_shadow','player_visual_kit','enemy_role_kits','windup_telegraph','melee_arc','muzzle_flash','route_mood_changes','no_errors','completed']
@@ -136,6 +136,20 @@ async def run(p,name):
 
         await page.locator('#layer').tap();await page.wait_for_function('__RH_TEST.game().playerLayer==="INTERIOR"');check('carry_return',True)
         await page.wait_for_function('__RH_TEST.game().storedCargo===1');check('load_credits',await page.evaluate('__RH_TEST.game().money===1450'))
+        # A connected depot must not relabel an executable engine service as a ladder.
+        await page.evaluate("()=>{const a=__RH_TEST,g=a.game();a.forcePlayer(5.8,false);g.consoleOpen=false;a.step(0);}")
+        await page.wait_for_function('document.getElementById("interact").dataset.short==="SPEED"',timeout=2500)
+        check('engine_service_action_matches',await page.evaluate('document.getElementById("contextCue").textContent.includes("↗ SPEED")&&document.getElementById("cargoGoal").hidden'))
+        await page.locator('#interact').tap()
+        await page.wait_for_function('!document.getElementById("speedPanel").hidden&&document.getElementById("contextCue").textContent.includes("CRUISE 离站")',timeout=2500)
+        check('engine_service_panel_guidance',True)
+        await page.screenshot(path=str(ART/f'{name}-r13-engine-service.png'))
+        await page.evaluate("()=>{const a=__RH_TEST,g=a.game();g.consoleOpen=false;a.forcePlayer(1.7,false);a.step(0);}")
+        await page.wait_for_function('document.getElementById("interact").dataset.short==="ARMORY"',timeout=2500)
+        await page.locator('#interact').tap()
+        await page.wait_for_function('__RH_TEST.game().armoryOpen',timeout=2500)
+        check('engine_armory_action_matches',True)
+        await page.locator('#closeArmory').tap()
         await page.keyboard.down('KeyD');await page.set_viewport_size({'width':390,'height':844});await page.wait_for_timeout(600)
         check('portrait_pauses',await page.evaluate('__RH_TEST.game().paused'));check('portrait_clears',await page.evaluate('__RH_TEST.input().move===0'))
         await page.keyboard.up('KeyD');await page.set_viewport_size({'width':844,'height':390});await page.wait_for_timeout(600)
