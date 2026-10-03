@@ -123,7 +123,7 @@ async def run(p,name):
         await page.keyboard.press('KeyF');await page.wait_for_function('__RH_TEST.game().playerLayer==="DEPOT"')
         await page.wait_for_function('document.getElementById("interact").textContent==="取箱 / 回车"');check('crate_context_says_pickup',True)
         await page.locator('#interact').tap();await page.wait_for_function('!!__RH_TEST.game().heldCargo');check('crate_pickup',True)
-        await page.wait_for_function('document.getElementById("contextCue").dataset.depot==="true"')
+        await page.wait_for_function('document.getElementById("contextCue").dataset.depot==="true"&&document.getElementById("cargoHeld").textContent==="450"',timeout=2500)
         check('cargo_cue_clears_carrier',await page.evaluate('''()=>{const g=__RH_TEST.game(),v=__RH_TEST.view(),p=v.project(g.player.x,g.player.y+1.72,g.player.z??.65),r=document.getElementById('contextCue').getBoundingClientRect();return document.getElementById('playerTag').hidden&&(r.right<p.x-15||r.left>p.x+15||r.bottom<p.y-15||r.top>p.y+15);}'''))
         check('cargo_receipt_not_duplicated',await page.evaluate('''()=>!Array.from(document.querySelectorAll('.combatPop')).some(n=>!n.hidden&&n.textContent==='CARGO')&&document.getElementById('cargoHeld').textContent==='450' '''))
         await page.screenshot(path=str(ART/f'{name}-mobile-art-cargo.png'))
