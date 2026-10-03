@@ -25,5 +25,5 @@
 
 #careerShop .starterLabel{margin:9px 0 3px;color:#b8e3d7;font-size:12px}#careerShop .starterChoice.selected{border-color:#83e3b5;background:#25483f;opacity:1}
 
-#cargoGoal{position:absolute;transform:translate(-50%,-100%);background:#152f34e8;border:1px solid #f6cf72;color:#ffe3a0;padding:3px 7px;font-size:12px;border-radius:5px;pointer-events:none;z-index:8}#cargoGoal::after{content:"▼";display:block;position:absolute;bottom:-9px;left:calc(50% - 4px);color:#f6cf72;font-size:10px}
+#cargoGoal{position:absolute;transform:translate(-50%,-100%);background:#152f34e8;border:1px solid #f6cf72;color:#ffe3a0;padding:3px 7px;font-size:12px;border-radius:5px;pointer-events:none;z-index:8}/* Navigation names yield to actors/HUD; do not draw a false precise arrow after displacement. */
 @media(max-height:350px){#cargoGoal{font-size:10px;padding:2px 5px}}

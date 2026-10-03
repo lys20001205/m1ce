@@ -40,7 +40,7 @@ export class MobileHUD {
   const nav=cargoNavigation(g);if(nav?.action)names.interact=nav.action.replace(/F\s*[·/]?\s*/,'').slice(0,8);else names.interact=d.getElementById('interact').textContent.slice(0,8);
   for(const[id,label]of Object.entries(names))d.getElementById(id).dataset.short=label;
   let cue='';
-  if(g.playerLayer==='DEPOT')cue=g.player.carry?(nav?.goal?'回中央桥 · '+nav.goal.label:'回车装货'):g.cargoUsed>=g.cargoCapacity?'货舱已满 · 回车':'靠近箱子自动拾取';
+  if(g.playerLayer==='DEPOT')cue=g.player.carry?(nav?.goal?nav.text.replace(/^携带 [\d,]+ · 尚未装车 · /,''):'回车装货'):g.cargoUsed>=g.cargoCapacity?'货舱已满 · 回车':'靠近箱子自动拾取';
   else if(nav?.cue)cue=nav.cue;
   else if(nav?.goal)cue=nav.text.replace(/^站内库存 [\d,]+ · /,'').replace(/^携带 [\d,]+ · 尚未装车 · /,'');
   else if(g.player.carry)cue='携带 '+amount(l.held)+' · '+(nav?.action||'返回货车');
@@ -48,7 +48,7 @@ export class MobileHUD {
   else if(g.consoleOpen)cue='选择速度 · 倒车需先刹停';
   else if(g.player.roof&&['approach','crane','tunnel'].includes(g.phase))cue='低净空 · 下车内躲避';
   else if(g.cars[0].hp<g.cars[0].max*.3)cue='动力危急 · 返回机车维修';
-  if(nav?.goal&&!nav.cue){const distance=nav.text.match(/([0-9]+(?:\.[0-9]+)?)m/);if(distance)cue+=' · '+distance[1]+'m';}
+  if(nav?.goal&&!nav.cue&&g.playerLayer!=='DEPOT'){const distance=nav.text.match(/([0-9]+(?:\.[0-9]+)?)m/);if(distance)cue+=' · '+distance[1]+'m';}
   if(g.rescue)cue=g.alive?(g.playerLayer==='DEPOT'?'动力停机 · 回中央桥后 RETURN':g.player.carry?(g.player.roof?'动力停机 · 到货车 LOAD 放货':'动力停机 · 先放货再维修'):g.player.roof?'动力停机 · 下车内维修':'动力停机 · 返回机车按住维修'):'';
   if(g.repairJob)cue=d.getElementById('repairText').textContent;
   if(!g.rescue&&!g.repairJob&&g.notices.at(-1))cue=g.notices.at(-1).title;

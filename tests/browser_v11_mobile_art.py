@@ -10,7 +10,7 @@ BASE='http://127.0.0.1:8792/?test=1'
 SIZES=[(812,332),(844,390),(932,430),(1280,720)]
 VIEW_KEYS=['actual_size','targets_44','controls_no_overlap','edge_controls_world_visible','canvas_area','distinct_vitals']
 CASE_KEYS=['normal_entry','world_first_compact_hud','status_drawer_pause','status_drawer_economy_visible','status_drawer_resume','manual_pause_survives_drawer','locked_ranged_explained','move_response','hold_slide_reverse','neutral_stops','capture_release_stops','second_key_survives',
- 'empty_context_says_return','empty_context_returns','crate_context_says_pickup','crate_pickup','carry_return','load_credits','cargo_cue_clears_carrier','cargo_receipt_not_duplicated','asset_role_materials_isolated','guard_and_reinforcement_distinct',
+ 'empty_context_says_return','empty_context_returns','crate_context_says_pickup','crate_pickup','carry_return','load_credits','cargo_cue_clears_carrier','cargo_receipt_not_duplicated','asset_role_materials_isolated','guard_and_reinforcement_distinct','cargo_direction_survives_layout',
  'portrait_pauses','portrait_clears','landscape_stays_paused','resume_works','player_marker_present',
  'polish_instance_budget','polish_rebuild_bounded','polish_geometry_bounded','tunnel_visible','all_route_livery',
  'dead_marker_hidden','art_backdrop','train_shadow','player_visual_kit','enemy_role_kits','windup_telegraph','melee_arc','muzzle_flash','route_mood_changes','no_errors','completed']
@@ -128,6 +128,12 @@ async def run(p,name):
         check('guard_and_reinforcement_distinct','本人护盾' in await page.locator('#guardStatus').text_content() and '增援暂停' in await page.locator('#progress').text_content() and '货车仍可能受损' in await page.locator('#statusExplainer').text_content())
         check('cargo_receipt_not_duplicated',await page.evaluate('''()=>!Array.from(document.querySelectorAll('.combatPop')).some(n=>!n.hidden&&n.textContent==='CARGO')&&document.getElementById('cargoHeld').textContent==='450' '''))
         await page.screenshot(path=str(ART/f'{name}-mobile-art-cargo.png'))
+        await page.evaluate('''()=>{const a=__RH_TEST,g=a.game();window.__depotBefore=g.player.depotX;g.player.depotX=3;g.syncDepotPlayer();a.step(0);}''')
+        await page.wait_for_function('document.getElementById("contextCue").textContent.includes("← 回中央桥")',timeout=2500)
+        check('cargo_direction_survives_layout',await page.evaluate('''()=>{const cue=document.getElementById('contextCue').textContent,tip=getComputedStyle(document.getElementById('cargoGoal'),'::after').content;return cue.includes('3.0m')&&cue.includes('↗ 回车')&&!cue.includes('F 回车')&&cue.split('中央桥').length===2&&['none','normal','""'].includes(tip);}'''))
+        await page.screenshot(path=str(ART/f'{name}-r12-far-bridge.png'))
+        await page.evaluate('''()=>{const a=__RH_TEST,g=a.game();g.player.depotX=window.__depotBefore;g.syncDepotPlayer();a.step(0);}''')
+
         await page.locator('#layer').tap();await page.wait_for_function('__RH_TEST.game().playerLayer==="INTERIOR"');check('carry_return',True)
         await page.wait_for_function('__RH_TEST.game().storedCargo===1');check('load_credits',await page.evaluate('__RH_TEST.game().money===1450'))
         await page.keyboard.down('KeyD');await page.set_viewport_size({'width':390,'height':844});await page.wait_for_timeout(600)
