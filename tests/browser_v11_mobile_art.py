@@ -130,7 +130,7 @@ async def run(p,name):
         await page.screenshot(path=str(ART/f'{name}-mobile-art-cargo.png'))
         await page.evaluate('''()=>{const a=__RH_TEST,g=a.game();window.__depotBefore=g.player.depotX;g.player.depotX=3;g.syncDepotPlayer();a.step(0);}''')
         await page.wait_for_function('document.getElementById("contextCue").textContent.includes("← 回中央桥")',timeout=2500)
-        check('cargo_direction_survives_layout','engine_service_action_matches','engine_service_panel_guidance','engine_armory_action_matches',await page.evaluate('''()=>{const cue=document.getElementById('contextCue').textContent,tip=getComputedStyle(document.getElementById('cargoGoal'),'::after').content;return cue.includes('3.0m')&&cue.includes('↗ 回车')&&!cue.includes('F 回车')&&cue.split('中央桥').length===2&&['none','normal','""'].includes(tip);}'''))
+        check('cargo_direction_survives_layout',await page.evaluate('''()=>{const cue=document.getElementById('contextCue').textContent,tip=getComputedStyle(document.getElementById('cargoGoal'),'::after').content;return cue.includes('3.0m')&&cue.includes('↗ 回车')&&!cue.includes('F 回车')&&cue.split('中央桥').length===2&&['none','normal','""'].includes(tip);}'''))
         await page.screenshot(path=str(ART/f'{name}-r12-far-bridge.png'))
         await page.evaluate('''()=>{const a=__RH_TEST,g=a.game();g.player.depotX=window.__depotBefore;g.syncDepotPlayer();a.step(0);}''')
 
