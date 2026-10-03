@@ -11,9 +11,9 @@ test('healthy world labels are quiet and damaged labels cannot cover touch contr
  assert.equal(showCarHealthLabel({hp:100,max:100},true,{x:140,y:190},controls),true);
 });
 test('early engine-side docking gives an executable ladder then bridge direction',()=>{
- const g=new Game();g.chooseRoute('freight');g.chooseCar('cargo');g.start();g.t=.255;g.speedMode='STOP';g.player.x=1.7;
- let nav=cargoNavigation(g);assert(nav);assert.match(nav.cue,/→ 黄色梯/);assert.doesNotMatch(nav.cue,/F 入站/);
- g.player.x=4.316;nav=cargoNavigation(g);assert.match(nav.cue,/W 上车顶/);
+ const g=new Game();g.chooseRoute('freight');g.chooseCar('cargo');g.start();g.t=.255;g.speedMode='STOP';g.player.x=8;
+ let nav=cargoNavigation(g);assert(nav);assert.match(nav.cue,/← 黄色梯/);assert.doesNotMatch(nav.cue,/F 入站/);
+ g.player.x=3.2;nav=cargoNavigation(g);assert.match(nav.cue,/W 上车顶/);
  g.player.roof=true;g.player.layer='ROOF';nav=cargoNavigation(g);assert.match(nav.cue,/接驳桥|已对准桥/);
  g.player.x=g.nearestDepot().x;nav=cargoNavigation(g);assert.match(nav.cue,/已对准桥 · F 入站/);
 });
@@ -80,4 +80,18 @@ test('touch cargo guidance names available buttons while keyboard instructions r
  const text='W 上车顶 · 到桥按 F 入站 · 货车 LOAD';
  assert.equal(cargoInstruction(text,true),'⇅ 上车顶 · 到桥按 ↗ 入站 · 货车 LOAD');
  assert.equal(cargoInstruction(text,false),text);
+});
+
+ test('nearby depot guidance yields to executable engine services without changing cargo interactions',()=>{
+ const g=new Game();g.chooseRoute('freight');g.chooseCar('cargo');g.start();g.t=.26;g.speedMode='STOP';
+ g.player.x=5.8;let nav=cargoNavigation(g);assert.equal(nav.action,'SPEED');assert.equal(nav.goal,null);assert.match(nav.cue,/换速或离站/);assert(g.interact());assert(g.consoleOpen);assert.match(cargoNavigation(g).cue,/选择 CRUISE 离站/);
+ g.consoleOpen=false;g.player.x=1.7;nav=cargoNavigation(g);assert.equal(nav.action,'ARMORY');assert(g.interact());assert(g.armoryOpen);g.closeArmory();
+ g.player.x=12.45;nav=cargoNavigation(g);assert.equal(nav.action,'入站取箱');assert(g.interact());assert.equal(g.playerLayer,'DEPOT');
+});
+ test('engine service guidance does not replace held cargo, rooftop, damaged equipment or floor pickup',()=>{
+ const g=new Game();g.chooseRoute('freight');g.chooseCar('cargo');g.start();g.t=.26;g.speedMode='STOP';g.player.x=5.8;
+ const c=g.createCargo(450,'player');g.player.carry=c.id;assert.match(cargoNavigation(g).action,/货车装载/);
+ g.player.carry=false;c.location='floor';c.carIndex=0;c.x=5.8;assert.notEqual(cargoNavigation(g).action,'SPEED');assert(g.interact());assert(g.heldCargo);
+ g.player.carry=false;c.location='lost';g.player.roof=true;g.player.layer='ROOF';assert.notEqual(cargoNavigation(g).action,'SPEED');
+ g.player.roof=false;g.player.layer='INTERIOR';g.cars[0].hp=0;assert.notEqual(cargoNavigation(g).action,'SPEED');
 });

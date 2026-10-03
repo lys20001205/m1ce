@@ -8,6 +8,13 @@ export function cargoNavigation(g){
   const p=g.player;
   if(!g.heldCargo){
     const d=g.nearestDepot();if(g.playerLayer==='DEPOT'||g.cargoUsed>=g.cargoCapacity||!g.depotConnected(d)||!g.cargoCrates.some(c=>c.location==='depot'&&c.depotId===d.id))return null;
+    // Engine services consume the same interaction key before any ladder/bridge
+    // guidance. Keep the displayed action aligned with Game.interact().
+    const floorCargo=g.cargoCrates.some(c=>c.location==='floor'&&c.carIndex===g.currentCar&&Math.abs(c.x-p.x)<V11.depot.crateRadius);
+    if(g.playerLayer==='INTERIOR'&&g.currentCar===0&&g.cars[0].hp>0&&!floorCargo){
+      if(g.atArmory)return {text:'F ARMORY · 购买或切换武器',cue:'F ARMORY · 购买或切换武器',action:'ARMORY',goal:null};
+      if(g.atConsole){const cue=g.consoleOpen?'选择 CRUISE 离站 · 也可继续取货':'F SPEED · 换速或离站';return {text:cue,cue,action:'SPEED',goal:null};}
+    }
     const stock=g.cargoCrates.filter(c=>c.location==='depot'&&c.depotId===d.id).reduce((n,c)=>n+c.value,0),stockGuide=o=>({...o,text:'站内库存 '+Math.round(stock).toLocaleString()+' · '+o.text});
     const cargoHere=g.cars[g.currentCar]?.type==='cargo',cargoBridge=g.cars[Math.floor(d.x/LENGTH)]?.type==='cargo';
     if(g.playerLayer==='INTERIOR'&&(!cargoHere||!cargoBridge)){const ladder=(g.currentCar+.52)*LENGTH,near=Math.abs(p.x-ladder)<=1.8;return stockGuide({cue:near?'W 上车顶 · 再'+(d.x<p.x?'←':'→')+'走向接驳桥':(ladder<p.x?'←':'→')+' 黄色梯 '+Math.abs(ladder-p.x).toFixed(1)+'m · W 上车顶',text:near?'W 上车顶 · 然后 '+(d.x<p.x?'←':'→')+' 去中央桥 '+Math.abs(d.x-p.x).toFixed(1)+'m · F 入站':(ladder<p.x?'←':'→')+' 去黄色梯 '+Math.abs(ladder-p.x).toFixed(1)+'m · W 上车顶后去中央桥',action:near?'上车顶接桥':'去黄色梯',goal:{x:ladder,y:2.8,z:-1.15,label:'黄色梯 W'}});}
