@@ -10,7 +10,7 @@ BASE='http://127.0.0.1:8792/?test=1'
 SIZES=[(812,332),(844,390),(932,430),(1280,720)]
 VIEW_KEYS=['actual_size','targets_44','controls_no_overlap','edge_controls_world_visible','canvas_area','distinct_vitals']
 CASE_KEYS=['normal_entry','world_first_compact_hud','status_drawer_pause','status_drawer_economy_visible','status_drawer_resume','manual_pause_survives_drawer','locked_ranged_explained','move_response','hold_slide_reverse','neutral_stops','capture_release_stops','second_key_survives',
- 'empty_context_says_return','empty_context_returns','crate_context_says_pickup','crate_pickup','carry_return','load_credits',
+ 'empty_context_says_return','empty_context_returns','crate_context_says_pickup','crate_pickup','carry_return','load_credits','cargo_cue_clears_carrier','cargo_receipt_not_duplicated','asset_role_materials_isolated',
  'portrait_pauses','portrait_clears','landscape_stays_paused','resume_works','player_marker_present',
  'polish_instance_budget','polish_rebuild_bounded','polish_geometry_bounded','tunnel_visible','all_route_livery',
  'dead_marker_hidden','art_backdrop','train_shadow','player_visual_kit','enemy_role_kits','windup_telegraph','melee_arc','muzzle_flash','route_mood_changes','no_errors','completed']
@@ -123,6 +123,9 @@ async def run(p,name):
         await page.keyboard.press('KeyF');await page.wait_for_function('__RH_TEST.game().playerLayer==="DEPOT"')
         await page.wait_for_function('document.getElementById("interact").textContent==="取箱 / 回车"');check('crate_context_says_pickup',True)
         await page.locator('#interact').tap();await page.wait_for_function('!!__RH_TEST.game().heldCargo');check('crate_pickup',True)
+        await page.wait_for_function('document.getElementById("contextCue").dataset.depot==="true"')
+        check('cargo_cue_clears_carrier',await page.evaluate('''()=>{const g=__RH_TEST.game(),v=__RH_TEST.view(),p=v.project(g.player.x,g.player.y+1.72,g.player.z??.65),r=document.getElementById('contextCue').getBoundingClientRect();return document.getElementById('playerTag').hidden&&(r.right<p.x-15||r.left>p.x+15||r.bottom<p.y-15||r.top>p.y+15);}'''))
+        check('cargo_receipt_not_duplicated',await page.evaluate('''()=>!Array.from(document.querySelectorAll('.combatPop')).some(n=>!n.hidden&&n.textContent==='CARGO')&&document.getElementById('cargoHeld').textContent==='450' '''))
         await page.screenshot(path=str(ART/f'{name}-mobile-art-cargo.png'))
         await page.locator('#layer').tap();await page.wait_for_function('__RH_TEST.game().playerLayer==="INTERIOR"');check('carry_return',True)
         await page.wait_for_function('__RH_TEST.game().storedCargo===1');check('load_credits',await page.evaluate('__RH_TEST.game().money===1450'))
@@ -140,6 +143,8 @@ async def run(p,name):
         check('enemy_role_kits',await page.evaluate('''()=>{const v=__RH_TEST.view(),m=[...v.enemyModels.values()][0];return m&&Object.keys(m.userData.enemyKits||{}).sort().join(',')==='boarder,bruiser,clinger,saboteur,thief';}'''))
         await page.wait_for_function('__RH_TEST.view().train.getObjectByName("Enemy-windup-telegraphs").count>0',timeout=2500)
         check('windup_telegraph',True)
+        check('asset_role_materials_isolated',await page.evaluate('''()=>{const v=__RH_TEST.view(),m=[...v.enemyModels.values()][0],enemy=m.getObjectByName('Kenney-characters/character-h'),player=v.playerRig.getObjectByName('Kenney-characters/character-g');let em,pm;enemy.traverse(n=>{if(n.isMesh)em=n.material});player.traverse(n=>{if(n.isMesh)pm=n.material});const cache=v.assets.materialRoles.cache;return em!==pm&&em.color.r>em.color.b&&Array.from(cache.keys()).some(k=>k.startsWith('scenery:'))&&!Array.from(cache.values()).includes(pm);}'''))
+
         await page.screenshot(path=str(ART/f'{name}-art2-windup.png'))
         await page.evaluate('''()=>{const a=__RH_TEST,g=a.game();g.enemies=[];g.paused=true;g.player.swing=.22;a.step(0);}''')
         await page.wait_for_function('__RH_TEST.view().juice.swingArc.visible',timeout=2500)

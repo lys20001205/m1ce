@@ -57,7 +57,7 @@ export class MobileHUD {
   const full=d.getElementById('centerHint').textContent;
   if(!cue&&full!==this.lastHint){this.hintUntil=g.elapsed+4;this.lastHint=full;}
   if(!cue&&g.elapsed<this.hintUntil&&/不可|无法|停机|离开|护盾结束/.test(full))cue=full.split(' · ')[0].slice(0,24);
-  this.cue.textContent=cue;this.cue.hidden=!cue||!live||g.armoryOpen;
+  this.cue.textContent=cue;this.cue.hidden=!cue||!live||g.armoryOpen;this.cue.dataset.depot=String(g.playerLayer==='DEPOT');
   this.cue.dataset.repair=String(!!g.repairJob);this.cue.style.setProperty('--repair-progress',g.repairJob?Math.min(100,100*g.repairJob.progress/g.repairJob.duration)+'%':'0%');
   const event=d.getElementById('event');if(event.textContent!==this.lastEvent){this.lastEvent=event.textContent;this.eventUntil=g.elapsed+4;}
   event.dataset.quiet=String(!active||!!cue||g.alive&&!g.rescue&&g.elapsed>this.eventUntil);event.title=event.textContent;

@@ -38,6 +38,7 @@
 #versionTag{bottom:4px;right:14px;font-size:8px;background:none;opacity:.7}
 #contextCue{position:absolute;z-index:11;top:76px;left:50%;transform:translateX(-50%);max-width:46%;padding:6px 10px;border-radius:16px;background:#081b27b3;color:#e9e8bd;font:600 12px system-ui;text-align:center;pointer-events:none}
 #contextCue[data-repair=true]::after{content:'';position:absolute;bottom:0;left:0;width:var(--repair-progress);height:3px;border-radius:2px;background:#b8f0cf}
+#contextCue[data-depot=true]{left:auto;right:14px;transform:none;max-width:36%}
 #event{top:76px;left:50%;transform:translateX(-50%);max-width:46%;padding:5px 10px;border:0;border-radius:15px;font-size:11px;background:#081b27ae}#event[data-quiet=true]{visibility:hidden}
 #shipmentToast{top:110px;right:14px;max-width:32%;padding:6px 9px;background:#12372eb8;box-shadow:none}#shipmentToast b{font-size:15px}#shipmentToast small{font-size:10px}#shipmentToast small{max-height:28px;overflow:hidden}
 #playerTag{font-size:11px;padding:1px 4px;background:#0d2834bd;box-shadow:none}#carTags .tag{font-size:11px;padding:2px 4px;background:#0d2834bd;box-shadow:none;color:#e8ffff}
