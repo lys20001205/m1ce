@@ -7,7 +7,7 @@ BASE='http://127.0.0.1:8789/?test=1'
 VIEWPORTS=[(812,332),(844,390),(932,430),(1280,720)]
 VIEW_CHECKS=['css_size','routes_in_first_screen','zero_bank_folded','practice_secondary','shop_native_toggle',
              'cargo_preview','battery_preview','departure_objective','start_visible','depot_markers','world_first_hud']
-OTHER_CHECKS=['armory_choices_explained','first_gun_without_melee_gate','three_native_purchases','one_scrap_goal','net_excludes_starting_funds',
+OTHER_CHECKS=['weapon_limits_in_armory','starter_matches_armory','starter_selection_persists','armory_choices_explained','first_gun_without_melee_gate','three_native_purchases','one_scrap_goal','net_excludes_starting_funds',
  'kills_upgrades_visible','zero_incidents_secondary','ledger_reconciles','cashout_keeps_history','cashout_shop',
  'restart_clears_history','depot_stock','depot_pickup_unsecured','loaded_delta','reload_no_duplicate_credit',
  'full_return_guidance','stall_wins','death_hides_ordinary_guide','inventory_zero_bank_opens','formal_save_untouched',
@@ -77,6 +77,10 @@ async def run(p,name):
         await page.keyboard.press('KeyF');await page.locator('#armoryPanel').wait_for(state='visible')
         help_text=await page.locator('#armoryHelp').inner_text()
         check('armory_choices_explained',all(text in help_text for text in ['按玩法选择武器','已购免费切换','比较期间时间暂停']))
+        weapon_details=await page.locator('#weaponChoices button').evaluate_all("nodes=>Object.fromEntries(nodes.map(n=>[n.dataset.weapon,n.textContent.split('\\n').slice(1).join('\\n')]))")
+        check('weapon_limits_in_armory',len(weapon_details)==7 and '5 弹丸散射 · 4m 后减伤' in weapon_details['shotgun']
+              and '最多穿透 3 名敌人 · 逐个减伤' in weapon_details['rifle'] and '快速连射' in weapon_details['smg']
+              and '8.5m · 6 发 / 自动装填 1.15s' in weapon_details['handgun'])
         for weapon in ['handgun','knife','axe']:
             await page.locator(f'[data-weapon={weapon}]').click()
             await page.wait_for_function('''id=>{const g=__RH_TEST.game();return g.melee.id===id||g.ranged?.id===id;}''',arg=weapon)
@@ -138,6 +142,19 @@ async def run(p,name):
         await page.reload(wait_until='networkidle');await page.wait_for_function('window.__RH_TEST')
         check('inventory_zero_bank_opens',await page.locator('#prepShop').is_visible() and await page.evaluate('__RH_TEST.game().prep.reroll===1'))
         check('formal_save_untouched',await page.evaluate('JSON.parse(localStorage.getItem("roundhouse_save_v11")).bank===7777'))
+        # Deterministic unlocked-kit fixture; both menus must share accurate details.
+        await page.evaluate("localStorage.setItem('roundhouse_test_save_v11',JSON.stringify({version:11,bank:700,career:{kit:3},starterWeapon:'handgun'}))")
+        await page.set_viewport_size({'width':812,'height':332})
+        await page.reload(wait_until='networkidle');await page.wait_for_function('document.querySelectorAll("[data-starter]").length===4')
+        starter_details=await page.locator('[data-starter]').evaluate_all("nodes=>Object.fromEntries(nodes.map(n=>[n.dataset.starter,n.textContent.split('\\n').slice(1).join('\\n')]))")
+        check('starter_matches_armory',all(starter_details[id]==weapon_details[id] for id in ['handgun','smg','rifle','shotgun']))
+        await page.locator('[data-starter=shotgun]').click()
+        await page.reload(wait_until='networkidle');await page.wait_for_function('document.querySelector("[data-starter=shotgun]")?.disabled')
+        await page.locator('[data-starter=shotgun]').scroll_into_view_if_needed()
+        await page.screenshot(path=str(ART/f'{name}-design-weapon-summary.png'))
+        await page.locator('[data-route=freight]').click();await page.locator('[data-car=cargo]').click();await page.locator('#start').click()
+        await page.wait_for_function('__RH_TEST.game().status==="running"')
+        check('starter_selection_persists',await page.evaluate('__RH_TEST.game().ranged.id==="shotgun"&&__RH_TEST.game().rangedMagazine.max===2&&__RH_TEST.game().bank===700&&__RH_TEST.game().career.kit===3'))
         check('no_page_errors',not errors);check('completed_suite',True)
         await context.close()
     except Exception as e:

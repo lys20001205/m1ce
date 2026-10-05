@@ -66,3 +66,19 @@ test('six natural full-health boarder kills can buy a first gun without mandator
  for(let n=0;n<6;n++){const e=enemy(g,3.8,'boarder');for(let t=0;t<2;t+=.025)g.step(.025,{attack:true});assert.equal(e.hp,0);g.player.x=3;g.player.face=1;}
  assert.equal(g.scrap,12);g.player.x=V11.armoryX;assert(g.openArmory());assert(g.buyWeapon('ranged','handgun'));assert.equal(g.melee.id,'wrench');assert.equal(g.ranged.id,'handgun');assert.equal(g.scrap,0);
 });
+
+
+test('both menu summaries describe the actual ranged limits and reload costs',async()=>{
+ const {weaponSummary}=await import('../src/weapon_presentation.js');
+ for(const id of ['handgun','smg','rifle','shotgun']){
+   const {name,detail}=weaponSummary(id),spec=V11.weapons[id];
+   assert(name.includes(id==='rifle'?'PIERCING RIFLE':id.toUpperCase()));
+   assert(detail.includes(`${spec.range}m`));assert(detail.includes(`${spec.magazine} 发`));
+   assert(detail.includes(`自动装填 ${spec.reload}s`));
+ }
+ assert(weaponSummary('shotgun').detail.includes(`${V11.weapons.shotgun.falloffStart}m 后减伤`));
+ assert(weaponSummary('shotgun').detail.includes(`${V11.weapons.shotgun.pellets} 弹丸`));
+ assert(weaponSummary('rifle').detail.includes(`穿透 ${V11.weapons.rifle.pierce} 名敌人 · 逐个减伤`));
+ assert(weaponSummary('smg').detail.includes('快速连射'));
+ for(const id of ['wrench','knife','axe'])assert(weaponSummary(id).detail.includes(`攻击间隔 ${V11.weapons[id].cooldown}s`));
+});
